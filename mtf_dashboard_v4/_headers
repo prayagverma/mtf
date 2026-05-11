@@ -30,7 +30,12 @@
 # Pre-gzipped chunks — served as raw bytes; the dashboard JS handles decompression
 # via DecompressionStream. We deliberately DO NOT set Content-Encoding: gzip,
 # otherwise the browser would auto-decompress and JS would try to decompress
-# plaintext (boom). Long cache because filenames are content-stable.
+# plaintext (boom).
+#
+# IMPORTANT: filenames here are content-stable (same path, new bytes on every
+# data refresh) so they MUST NOT be marked immutable — that would let Cloudflare's
+# edge serve stale data forever. Short s-maxage (30 min) keeps the dashboard's
+# data near-real-time after each workflow run.
 /compressed_data/*.json.gz
-  Cache-Control: public, max-age=86400, s-maxage=604800, immutable
+  Cache-Control: public, max-age=600, s-maxage=1800
   Content-Type: application/octet-stream
