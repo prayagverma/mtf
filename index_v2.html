@@ -819,7 +819,9 @@
 
             async loadManifest() {
                 try {
-                    const response = await fetch('compressed_data/manifest.json');
+                    // Bust browser + CDN cache on the manifest itself so we always
+                    // discover the freshest data-version key on every page load.
+                    const response = await fetch('compressed_data/manifest.json?_=' + Date.now(), { cache: 'no-store' });
                     this.manifest = await response.json();
                     return this.manifest;
                 } catch (error) {
@@ -828,8 +830,16 @@
                 }
             }
 
+            // Cache-bust query string built from manifest.created — unique per deploy.
+            // Every downstream data fetch appends this so a fresh deploy invalidates
+            // the CDN/browser cache for all data URLs simultaneously.
+            _bust() {
+                const v = this.manifest && this.manifest.created;
+                return v ? '?v=' + encodeURIComponent(v) : '';
+            }
+
             async loadCompressedJson(url) {
-                const response = await fetch(url);
+                const response = await fetch(url + this._bust());
                 const blob = await response.blob();
                 const ds = new DecompressionStream('gzip');
                 const decompressedStream = blob.stream().pipeThrough(ds);
@@ -918,6 +928,10 @@
             async init() {
                 try {
                     await this.waitForECharts();
+                    // Load manifest first so its `created` timestamp becomes the
+                    // cache-bust key for every other data fetch. Manifest is tiny
+                    // (~475 B) so this serial extra step costs ~50ms.
+                    try { await this.dataLoader.loadManifest(); } catch (_) { /* fallback: no bust */ }
                     await Promise.all([
                         this.loadDailyTotalsData(),
                         this.loadCompressedStockData()
@@ -946,9 +960,10 @@
                 let raw = null;
                 // Try canonical filename first (what prod ships); fall back to _complete only
                 // if the canonical isn't present (e.g. running from a half-extracted dev tree).
+                const bust = this.dataLoader._bust();
                 for (const url of ['mtf_daily_totals.json', 'mtf_daily_totals_complete.json']) {
                     try {
-                        const r = await fetch(url);
+                        const r = await fetch(url + bust);
                         if (r.ok) { raw = await r.json(); break; }
                     } catch (_) { /* try next */ }
                 }

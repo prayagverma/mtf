@@ -17,9 +17,16 @@
 /sitemap.xml
   Cache-Control: public, max-age=86400
 
-# Daily totals — refresh hourly at the edge, served fast at the browser
+# Daily totals — long-cached because the dashboard appends ?v=<manifest.created>
+# as a cache-bust query, so a fresh deploy yields a unique URL anyway.
 /*.json
-  Cache-Control: public, max-age=600, s-maxage=3600
+  Cache-Control: public, max-age=86400, s-maxage=604800, immutable
+  Content-Type: application/json; charset=utf-8
+
+# Manifest is the version-source for the bust query, so it MUST be fresh on every
+# page load. The dashboard appends ?_=Date.now() to bypass cache too — belt + braces.
+/compressed_data/manifest.json
+  Cache-Control: public, max-age=60, s-maxage=60, must-revalidate
   Content-Type: application/json; charset=utf-8
 
 # CSV exports
@@ -32,10 +39,10 @@
 # otherwise the browser would auto-decompress and JS would try to decompress
 # plaintext (boom).
 #
-# IMPORTANT: filenames here are content-stable (same path, new bytes on every
-# data refresh) so they MUST NOT be marked immutable — that would let Cloudflare's
-# edge serve stale data forever. Short s-maxage (30 min) keeps the dashboard's
-# data near-real-time after each workflow run.
+# Long cache + immutable is safe here because the dashboard appends
+# ?v=<manifest.created> to every chunk URL — each deploy gives every URL a new
+# query string, which the CDN treats as a fresh resource. So edge serves cached
+# content forever per-version while the data still updates instantly on deploy.
 /compressed_data/*.json.gz
-  Cache-Control: public, max-age=600, s-maxage=1800
+  Cache-Control: public, max-age=86400, s-maxage=604800, immutable
   Content-Type: application/octet-stream
