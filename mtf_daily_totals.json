@@ -32576,5 +32576,24 @@
     "exposure_liquidated": 602562.29,
     "end_outstanding": 11819035.82,
     "securities_count": 2147
+  },
+  {
+    "date": "2026-05-08",
+    "exchange": "BSE",
+    "amount_financed": 427328.51,
+    "beginning_outstanding": 419344.26,
+    "exposure_taken": 22740.88,
+    "exposure_liquidated": 14756.6,
+    "end_outstanding": 427328.54,
+    "securities_count": 1738
+  },
+  {
+    "date": "2026-05-08",
+    "exchange": "NSE",
+    "beginning_outstanding": 11818945.51,
+    "fresh_exposure": 737638.35,
+    "exposure_liquidated": 545221.9,
+    "end_outstanding": 12011361.95,
+    "securities_count": 2145
   }
 ]
