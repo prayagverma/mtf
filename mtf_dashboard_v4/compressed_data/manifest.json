@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "created": "2026-05-11T00:14:27.003206",
+  "base_file": "stock_analytics_base.json.gz",
+  "chunks": [
+    "stock_data_chunk_1.json.gz",
+    "stock_data_chunk_2.json.gz",
+    "stock_data_chunk_3.json.gz",
+    "stock_data_chunk_4.json.gz",
+    "stock_data_chunk_5.json.gz"
+  ],
+  "total_stocks": 5869,
+  "compression_stats": {
+    "original_size_mb": 612,
+    "compressed_size_mb": 38.03074264526367,
+    "compression_ratio": 6.21
+  }
+}

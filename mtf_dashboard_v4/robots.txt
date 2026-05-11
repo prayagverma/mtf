@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+# Crawl the dashboard but skip the heavy data files (tools can fetch them directly).
+Disallow: /compressed_data/
+
+Sitemap: /sitemap.xml

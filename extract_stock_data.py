@@ -1,0 +1,599 @@
+#!/usr/bin/env python3
+"""
+Stock-Level MTF Data Extraction Script
+Extracts individual stock data from BSE and NSE MTF files to enable stock-level analytics
+"""
+
+import os
+import re
+import pandas as pd
+import zipfile
+import json
+from datetime import datetime
+import logging
+from collections import defaultdict
+
+# Drop dates earlier than this — the daily-totals files were trimmed to the same cutoff.
+MIN_DATE = datetime(2017, 6, 22)
+
+# Set up logging
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+class StockMTFExtractor:
+    def __init__(self):
+        self.stock_data = defaultdict(list)  # {stock_symbol: [daily_records]}
+        self.exchange_summary = {'NSE': {}, 'BSE': {}}
+        
+    def extract_nse_stocks(self, filepath, date):
+        """Extract individual stock data from NSE MTF file"""
+        try:
+            with zipfile.ZipFile(filepath, 'r') as z:
+                csv_name = z.namelist()[0]
+                csv_content = z.read(csv_name).decode('utf-8')
+            
+            lines = csv_content.split('\n')
+            
+            # Find the data section
+            data_start = False
+            stocks = []
+            
+            for line in lines:
+                if 'Symbol,Name,Qty Fin by all the members' in line:
+                    data_start = True
+                    continue
+                
+                if data_start and line.strip() and ',' in line:
+                    parts = line.split(',')
+                    if len(parts) >= 4:
+                        try:
+                            symbol = parts[0].strip()
+                            name = parts[1].strip()
+                            qty_financed = float(parts[2]) if parts[2] else 0
+                            amount_financed = float(parts[3].strip().rstrip('\r')) if parts[3] else 0
+                            
+                            # Skip empty symbols or header-like rows
+                            if not symbol or symbol.lower() in ['symbol', 'total']:
+                                continue
+                            
+                            stock_record = {
+                                'date': date.strftime('%Y-%m-%d'),
+                                'exchange': 'NSE',
+                                'symbol': symbol,
+                                'name': name,
+                                'qty_financed': qty_financed,
+                                'amount_financed': amount_financed,
+                                'avg_price': amount_financed / qty_financed if qty_financed > 0 else 0
+                            }
+                            
+                            stocks.append(stock_record)
+                            self.stock_data[symbol].append(stock_record)
+                            
+                        except (ValueError, ZeroDivisionError):
+                            continue
+            
+            return stocks
+            
+        except Exception as e:
+            logger.error(f"Error processing NSE file {filepath}: {e}")
+            return []
+    
+    def extract_bse_stocks(self, filepath, date):
+        """Extract individual stock data from a BSE MTF file.
+
+        Handles three layouts:
+          1) Legacy TSV (.xls): scrip_code, scripname, ..., NO_EOD  (≤ 2025-10-01)
+          2) New SEBI CSV (.csv) 5-col Symbol|Name (Sept-Oct 2025)
+          3) New SEBI CSV (.csv) 4-col Name|ISIN (Oct 2025 onwards)
+        """
+        try:
+            with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+                head = f.read(200)
+            if head.lstrip().startswith('SEBI REPORT'):
+                return self._extract_bse_new_csv(filepath, date)
+            return self._extract_bse_legacy_tsv(filepath, date)
+        except Exception as e:
+            logger.error(f"Error processing BSE file {filepath}: {e}")
+            return []
+
+    def _extract_bse_legacy_tsv(self, filepath, date):
+        df = pd.read_csv(filepath, sep='\t')
+        df = df[df['scripname'].astype(str).str.lower() != 'total'].copy()
+        df = df.dropna(subset=['scrip_code'])
+        stocks = []
+        for _, row in df.iterrows():
+            try:
+                # Use the BSE scrip name as the key — short ticker-like form
+                # (e.g. "TATAMOT", "ABB"). This matches the new CSV "Symbol" column
+                # so legacy + new records merge into the same time series per stock.
+                name = str(row['scripname']).strip()
+                key = name.upper()
+                qty_financed = float(row.get('Financed by Members QUANTITY_FINANCED', 0))
+                amount_financed = float(row.get('Financed by Members AMOUNT_FINANCED', 0))
+                beginning_outstanding = float(row.get('TO_BOD', 0))
+                exposure_taken = float(row.get('ET_DD', 0))
+                exposure_liquidated = float(row.get('EL_DD', 0))
+                end_outstanding = float(row.get('NO_EOD', 0))
+
+                stock_record = {
+                    'date': date.strftime('%Y-%m-%d'),
+                    'exchange': 'BSE',
+                    'symbol': key,
+                    'name': name,
+                    'scrip_code': str(row['scrip_code']),
+                    'qty_financed': qty_financed,
+                    'amount_financed': amount_financed,
+                    'beginning_outstanding': beginning_outstanding,
+                    'exposure_taken': exposure_taken,
+                    'exposure_liquidated': exposure_liquidated,
+                    'end_outstanding': end_outstanding,
+                    'avg_price': amount_financed / qty_financed if qty_financed > 0 else 0,
+                    'net_change': end_outstanding - beginning_outstanding,
+                    'activity_ratio': (exposure_taken + exposure_liquidated) / amount_financed if amount_financed > 0 else 0,
+                }
+                stocks.append(stock_record)
+                self.stock_data[key].append(stock_record)
+            except (ValueError, KeyError):
+                continue
+        return stocks
+
+    def _extract_bse_new_csv(self, filepath, date):
+        """Parse new-format BSE CSV (post-2025-10-03)."""
+        import csv as _csv
+        with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
+            lines = f.readlines()
+
+        # Find the securities header row.
+        header_idx = -1
+        cols = []
+        for i, line in enumerate(lines):
+            if 'Qty Fin' in line and 'Amt Fin' in line:
+                header_idx = i
+                cols = [c.strip().lower() for c in line.strip().split(',')]
+                break
+        if header_idx < 0:
+            return []
+
+        # Find the symbol/name/qty/amt column indexes.
+        sym_idx = next((i for i, c in enumerate(cols) if c == 'symbol'), -1)
+        name_idx = next((i for i, c in enumerate(cols) if c == 'name'), -1)
+        isin_idx = next((i for i, c in enumerate(cols) if c == 'isin'), -1)
+        qty_idx = next((i for i, c in enumerate(cols) if 'qty fin' in c), -1)
+        amt_idx = next((i for i, c in enumerate(cols) if 'amt fin' in c), -1)
+        if qty_idx < 0 or amt_idx < 0 or (sym_idx < 0 and name_idx < 0):
+            return []
+
+        stocks = []
+        reader = _csv.reader(lines[header_idx + 1:])
+        for row in reader:
+            if not row:
+                continue
+            first = row[0].strip()
+            if not first or first.startswith('*') or first.lower() == 'total':
+                continue
+            if len(row) <= max(qty_idx, amt_idx):
+                continue
+            try:
+                qty_financed = float(row[qty_idx].strip()) if row[qty_idx].strip() else 0
+                amount_financed = float(row[amt_idx].strip()) if row[amt_idx].strip() else 0
+            except ValueError:
+                continue
+
+            # Determine the merge key.
+            # 5-col format has Symbol → use that (matches legacy scripname semantics).
+            # 4-col format has Name + ISIN → derive a short name token from Name.
+            if sym_idx >= 0:
+                key = row[sym_idx].strip().upper()
+                name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else key
+            else:
+                # Strip common company suffixes to better merge with legacy scrip names.
+                name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else ''
+                key = self._bse_key_from_name(name)
+            if not key:
+                continue
+
+            stock_record = {
+                'date': date.strftime('%Y-%m-%d'),
+                'exchange': 'BSE',
+                'symbol': key,
+                'name': name or key,
+                'isin': row[isin_idx].strip() if isin_idx >= 0 and len(row) > isin_idx else None,
+                'qty_financed': qty_financed,
+                'amount_financed': amount_financed,
+                # New format doesn't carry per-stock outstanding/exposure breakdowns.
+                'beginning_outstanding': None,
+                'exposure_taken': None,
+                'exposure_liquidated': None,
+                'end_outstanding': None,
+                'avg_price': amount_financed / qty_financed if qty_financed > 0 else 0,
+                'net_change': None,
+                'activity_ratio': None,
+            }
+            stocks.append(stock_record)
+            self.stock_data[key].append(stock_record)
+        return stocks
+
+    @staticmethod
+    def _bse_key_from_name(name: str) -> str:
+        """Best-effort merge key from a BSE company name. Strips common suffixes."""
+        if not name:
+            return ''
+        n = re.sub(r'[^A-Za-z0-9 &]+', ' ', name).upper()
+        n = re.sub(r'\b(LIMITED|LTD|LIMITE|PVT|PRIVATE|CORPORATION|CORP|COMPANY|INC|INCORPORATED|INDIA)\b', ' ', n)
+        n = re.sub(r'\s+', ' ', n).strip()
+        # Take first 3 words at most as the short key.
+        return ' '.join(n.split()[:3])
+    
+    def calculate_stock_analytics(self):
+        """Calculate comprehensive stock analytics with daily time-series data"""
+        analytics = {
+            'daily_stock_data': {},  # {stock_symbol: [daily_records sorted by date]}
+            'latest_snapshot': {
+                'nse_stocks': {
+                    'top_funded': [],
+                    'least_funded': [],
+                    'volume_breakers': [],
+                    'concentration_analysis': {}
+                },
+                'bse_stocks': {
+                    'top_funded': [],
+                    'least_funded': [],
+                    'volume_breakers': [],
+                    'concentration_analysis': {}
+                },
+                'combined_stocks': {
+                    'top_funded': [],
+                    'least_funded': [],
+                    'volume_breakers': []
+                },
+                'sudden_changes': [],
+                'cross_exchange_stocks': [],
+                'momentum_stocks': []
+            },
+            'time_series_summary': {
+                'date_range': {},
+                'total_trading_days': 0,
+                'stocks_by_exchange': {}
+            }
+        }
+        
+        # Build daily time-series data for each stock
+        all_dates = set()
+        for symbol, records in self.stock_data.items():
+            if records:
+                # Sort records by date for time-series analysis
+                sorted_records = sorted(records, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+                analytics['daily_stock_data'][symbol] = sorted_records
+                
+                # Collect all trading dates
+                for record in records:
+                    all_dates.add(record['date'])
+        
+        # Calculate time series summary
+        if all_dates:
+            sorted_dates = sorted(list(all_dates))
+            analytics['time_series_summary']['date_range'] = {
+                'start_date': sorted_dates[0],
+                'end_date': sorted_dates[-1]
+            }
+            analytics['time_series_summary']['total_trading_days'] = len(sorted_dates)
+        
+        # Count stocks by exchange over time
+        nse_stocks_count = len([s for s, r in self.stock_data.items() if any(record['exchange'] == 'NSE' for record in r)])
+        bse_stocks_count = len([s for s, r in self.stock_data.items() if any(record['exchange'] == 'BSE' for record in r)])
+        
+        analytics['time_series_summary']['stocks_by_exchange'] = {
+            'NSE': nse_stocks_count,
+            'BSE': bse_stocks_count,
+            'total_unique': len(self.stock_data)
+        }
+        
+        # Now calculate latest snapshot for UI display
+        latest_data_nse = {}
+        latest_data_bse = {}
+        latest_data_combined = {}
+        
+        for symbol, records in self.stock_data.items():
+            if records:
+                # Separate by exchange
+                nse_records = [r for r in records if r['exchange'] == 'NSE']
+                bse_records = [r for r in records if r['exchange'] == 'BSE']
+                
+                if nse_records:
+                    latest_nse = max(nse_records, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+                    latest_data_nse[symbol] = latest_nse
+                    
+                if bse_records:
+                    latest_bse = max(bse_records, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+                    latest_data_bse[symbol] = latest_bse
+                
+                # Combined (use latest record regardless of exchange)
+                latest_record = max(records, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+                latest_data_combined[symbol] = latest_record
+        
+        # NSE Analytics (latest snapshot)
+        nse_funded_stocks = [(symbol, data) for symbol, data in latest_data_nse.items() 
+                            if data.get('amount_financed', 0) > 0]
+        
+        analytics['latest_snapshot']['nse_stocks']['top_funded'] = sorted(nse_funded_stocks, 
+                                                                        key=lambda x: x[1]['amount_financed'], 
+                                                                        reverse=True)[:50]
+        analytics['latest_snapshot']['nse_stocks']['least_funded'] = sorted(nse_funded_stocks, 
+                                                                          key=lambda x: x[1]['amount_financed'])[:50]
+        
+        nse_volume_stocks = [(symbol, data) for symbol, data in latest_data_nse.items() 
+                           if data.get('qty_financed', 0) > 0]
+        analytics['latest_snapshot']['nse_stocks']['volume_breakers'] = sorted(nse_volume_stocks, 
+                                                                             key=lambda x: x[1]['qty_financed'], 
+                                                                             reverse=True)[:50]
+        
+        # BSE Analytics (latest snapshot)
+        bse_funded_stocks = [(symbol, data) for symbol, data in latest_data_bse.items() 
+                            if data.get('amount_financed', 0) > 0]
+        
+        analytics['latest_snapshot']['bse_stocks']['top_funded'] = sorted(bse_funded_stocks, 
+                                                                        key=lambda x: x[1]['amount_financed'], 
+                                                                        reverse=True)[:50]
+        analytics['latest_snapshot']['bse_stocks']['least_funded'] = sorted(bse_funded_stocks, 
+                                                                          key=lambda x: x[1]['amount_financed'])[:50]
+        
+        bse_volume_stocks = [(symbol, data) for symbol, data in latest_data_bse.items() 
+                           if data.get('qty_financed', 0) > 0]
+        analytics['latest_snapshot']['bse_stocks']['volume_breakers'] = sorted(bse_volume_stocks, 
+                                                                             key=lambda x: x[1]['qty_financed'], 
+                                                                             reverse=True)[:50]
+        
+        # Combined Analytics (latest snapshot)
+        combined_funded_stocks = [(symbol, data) for symbol, data in latest_data_combined.items() 
+                                 if data.get('amount_financed', 0) > 0]
+        
+        analytics['latest_snapshot']['combined_stocks']['top_funded'] = sorted(combined_funded_stocks, 
+                                                                             key=lambda x: x[1]['amount_financed'], 
+                                                                             reverse=True)[:50]
+        analytics['latest_snapshot']['combined_stocks']['least_funded'] = sorted(combined_funded_stocks, 
+                                                                               key=lambda x: x[1]['amount_financed'])[:50]
+        
+        combined_volume_stocks = [(symbol, data) for symbol, data in latest_data_combined.items() 
+                                 if data.get('qty_financed', 0) > 0]
+        analytics['latest_snapshot']['combined_stocks']['volume_breakers'] = sorted(combined_volume_stocks, 
+                                                                                  key=lambda x: x[1]['qty_financed'], 
+                                                                                  reverse=True)[:50]
+        
+        # Calculate sudden changes (compare with previous days)
+        sudden_changes = []
+        for symbol, records in self.stock_data.items():
+            if len(records) >= 2:
+                sorted_records = sorted(records, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
+                latest = sorted_records[-1]
+                previous = sorted_records[-2]
+                
+                if previous.get('amount_financed', 0) > 0:
+                    change_pct = ((latest.get('amount_financed', 0) - previous.get('amount_financed', 0)) / 
+                                previous.get('amount_financed', 1)) * 100
+                    
+                    if abs(change_pct) > 50:  # More than 50% change
+                        sudden_changes.append((symbol, latest, change_pct))
+        
+        analytics['latest_snapshot']['sudden_changes'] = sorted(sudden_changes, 
+                                                               key=lambda x: abs(x[2]), 
+                                                               reverse=True)[:50]
+        
+        # Cross-exchange analysis
+        nse_symbols = set(latest_data_nse.keys())
+        bse_symbols = set(latest_data_bse.keys())
+        cross_exchange_symbols = nse_symbols.intersection(bse_symbols)
+        
+        # Create cross-exchange stock details
+        cross_exchange_details = []
+        for symbol in cross_exchange_symbols:
+            nse_data = latest_data_nse.get(symbol)
+            bse_data = latest_data_bse.get(symbol)
+            
+            if nse_data and bse_data:
+                cross_exchange_details.append({
+                    'symbol': symbol,
+                    'name': nse_data.get('name', bse_data.get('name', symbol)),
+                    'nse_data': nse_data,
+                    'bse_data': bse_data,
+                    'total_funding': nse_data.get('amount_financed', 0) + bse_data.get('amount_financed', 0),
+                    'funding_difference': abs(nse_data.get('amount_financed', 0) - bse_data.get('amount_financed', 0))
+                })
+        
+        analytics['latest_snapshot']['cross_exchange_stocks'] = sorted(cross_exchange_details, 
+                                                                     key=lambda x: x['total_funding'], 
+                                                                     reverse=True)[:50]
+        
+        # Market concentration analysis for each exchange
+        # NSE Concentration
+        nse_total_funding = sum(data['amount_financed'] for _, data in latest_data_nse.items())
+        nse_top_10_funding = sum(data['amount_financed'] for _, data in analytics['latest_snapshot']['nse_stocks']['top_funded'][:10])
+        nse_top_50_funding = sum(data['amount_financed'] for _, data in analytics['latest_snapshot']['nse_stocks']['top_funded'][:50])
+        
+        analytics['latest_snapshot']['nse_stocks']['concentration_analysis'] = {
+            'total_funding': nse_total_funding,
+            'total_stocks': len(latest_data_nse),
+            'top_10_share': (nse_top_10_funding / nse_total_funding * 100) if nse_total_funding > 0 else 0,
+            'top_50_share': (nse_top_50_funding / nse_total_funding * 100) if nse_total_funding > 0 else 0,
+        }
+        
+        # BSE Concentration
+        bse_total_funding = sum(data['amount_financed'] for _, data in latest_data_bse.items())
+        bse_top_10_funding = sum(data['amount_financed'] for _, data in analytics['latest_snapshot']['bse_stocks']['top_funded'][:10])
+        bse_top_50_funding = sum(data['amount_financed'] for _, data in analytics['latest_snapshot']['bse_stocks']['top_funded'][:50])
+        
+        analytics['latest_snapshot']['bse_stocks']['concentration_analysis'] = {
+            'total_funding': bse_total_funding,
+            'total_stocks': len(latest_data_bse),
+            'top_10_share': (bse_top_10_funding / bse_total_funding * 100) if bse_total_funding > 0 else 0,
+            'top_50_share': (bse_top_50_funding / bse_total_funding * 100) if bse_total_funding > 0 else 0,
+        }
+        
+        return analytics
+    
+    def export_analytics(self, analytics, output_path):
+        """Export analytics to JSON file for dashboard consumption"""
+        
+        def format_stock_list(stock_list):
+            return [
+                {
+                    'symbol': symbol,
+                    'name': data.get('name', symbol),
+                    'exchange': data['exchange'],
+                    'amount_financed': data['amount_financed'],
+                    'qty_financed': data.get('qty_financed', 0),
+                    'avg_price': data.get('avg_price', 0),
+                    'date': data['date']
+                }
+                for symbol, data in stock_list
+            ]
+        
+        # Convert analytics to serializable format
+        export_data = {
+            # Daily time-series data for all stocks (this is the main addition!)
+            'daily_stock_data': analytics['daily_stock_data'],
+            'time_series_summary': analytics['time_series_summary'],
+            
+            # Latest snapshot for current dashboard UI (backward compatibility)
+            'nse_stocks': {
+                'top_funded': format_stock_list(analytics['latest_snapshot']['nse_stocks']['top_funded']),
+                'least_funded': format_stock_list(analytics['latest_snapshot']['nse_stocks']['least_funded']),
+                'volume_breakers': format_stock_list(analytics['latest_snapshot']['nse_stocks']['volume_breakers']),
+                'concentration_analysis': analytics['latest_snapshot']['nse_stocks']['concentration_analysis']
+            },
+            'bse_stocks': {
+                'top_funded': format_stock_list(analytics['latest_snapshot']['bse_stocks']['top_funded']),
+                'least_funded': format_stock_list(analytics['latest_snapshot']['bse_stocks']['least_funded']),
+                'volume_breakers': format_stock_list(analytics['latest_snapshot']['bse_stocks']['volume_breakers']),
+                'concentration_analysis': analytics['latest_snapshot']['bse_stocks']['concentration_analysis']
+            },
+            'combined_stocks': {
+                'top_funded': format_stock_list(analytics['latest_snapshot']['combined_stocks']['top_funded']),
+                'least_funded': format_stock_list(analytics['latest_snapshot']['combined_stocks']['least_funded']),
+                'volume_breakers': format_stock_list(analytics['latest_snapshot']['combined_stocks']['volume_breakers'])
+            },
+            'sudden_changes': [
+                {
+                    'symbol': symbol,
+                    'name': data.get('name', symbol),
+                    'exchange': data['exchange'],
+                    'amount_financed': data['amount_financed'],
+                    'change_percent': change_pct,
+                    'date': data['date']
+                }
+                for symbol, data, change_pct in analytics['latest_snapshot']['sudden_changes']
+            ],
+            'cross_exchange_stocks': analytics['latest_snapshot']['cross_exchange_stocks'],
+            'extraction_date': datetime.now().isoformat(),
+            'total_stock_records': sum(len(records) for records in self.stock_data.values())
+        }
+        
+        with open(output_path, 'w') as f:
+            json.dump(export_data, f, indent=2)
+        
+        logger.info(f"Stock analytics exported to {output_path}")
+        
+    def run_extraction(self, sample_size=None):
+        """Run the complete stock extraction process"""
+        logger.info("Starting stock-level MTF data extraction...")
+        
+        total_files_processed = 0
+        total_stocks_extracted = 0
+        
+        # Process NSE files
+        nse_dir = "mtf_reports/NSE"
+        if os.path.exists(nse_dir):
+            nse_files = sorted([f for f in os.listdir(nse_dir) if f.endswith('.zip')])
+            if sample_size:
+                nse_files = nse_files[-sample_size:]  # Take recent files for sample
+            logger.info(f"Processing {len(nse_files)} NSE files (filter: dates >= {MIN_DATE.date()})...")
+
+            for i, filename in enumerate(nse_files):
+                if i % 200 == 0:
+                    logger.info(f"  NSE {i}/{len(nse_files)}  ({total_stocks_extracted:,} records so far)")
+                filepath = os.path.join(nse_dir, filename)
+                date_str = filename.replace('NSE_MTF_', '').replace('.zip', '')
+                try:
+                    date = datetime.strptime(date_str, '%d%m%Y')
+                    if date < MIN_DATE:
+                        continue
+                    stocks = self.extract_nse_stocks(filepath, date)
+                    total_stocks_extracted += len(stocks)
+                    total_files_processed += 1
+                except Exception as e:
+                    logger.warning(f"Failed to process {filename}: {e}")
+                    continue
+
+        # Process BSE files (both legacy .xls and new .csv formats)
+        bse_dir = "mtf_reports/BSE"
+        if os.path.exists(bse_dir):
+            bse_files = sorted([f for f in os.listdir(bse_dir)
+                                if f.startswith('BSE_MTF_') and f.endswith(('.xls', '.csv'))])
+            if sample_size:
+                bse_files = bse_files[-sample_size:]
+            xls_n = sum(1 for f in bse_files if f.endswith('.xls'))
+            csv_n = sum(1 for f in bse_files if f.endswith('.csv'))
+            logger.info(f"Processing {len(bse_files)} BSE files (legacy .xls: {xls_n}, new .csv: {csv_n}, filter: dates >= {MIN_DATE.date()})...")
+
+            for i, filename in enumerate(bse_files):
+                if i % 200 == 0:
+                    logger.info(f"  BSE {i}/{len(bse_files)}  ({total_stocks_extracted:,} records so far)")
+                filepath = os.path.join(bse_dir, filename)
+                date_str = filename.replace('BSE_MTF_', '').rsplit('.', 1)[0]
+                try:
+                    date = datetime.strptime(date_str, '%d%m%Y')
+                    if date < MIN_DATE:
+                        continue
+                    stocks = self.extract_bse_stocks(filepath, date)
+                    total_stocks_extracted += len(stocks)
+                    total_files_processed += 1
+                except Exception as e:
+                    logger.warning(f"Failed to process {filename}: {e}")
+                    continue
+        
+        logger.info(f"Extraction complete!")
+        logger.info(f"Files processed: {total_files_processed}")
+        logger.info(f"Stock records extracted: {total_stocks_extracted}")
+        logger.info(f"Unique stocks found: {len(self.stock_data)}")
+        
+        # Calculate analytics
+        logger.info("Calculating stock analytics...")
+        analytics = self.calculate_stock_analytics()
+        
+        # Export results
+        output_file = "stock_analytics.json"
+        self.export_analytics(analytics, output_file)
+        
+        # Print summary
+        print("\n" + "="*80)
+        print("STOCK-LEVEL MTF ANALYTICS SUMMARY")
+        print("="*80)
+        print(f"Total unique stocks analyzed: {len(self.stock_data):,}")
+        print(f"Total stock records processed: {total_stocks_extracted:,}")
+        print(f"NSE stocks: {analytics['latest_snapshot']['nse_stocks']['concentration_analysis']['total_stocks']:,}")
+        print(f"BSE stocks: {analytics['latest_snapshot']['bse_stocks']['concentration_analysis']['total_stocks']:,}")
+        print(f"Cross-exchange stocks: {len(analytics['latest_snapshot']['cross_exchange_stocks']):,}")
+        print(f"NSE Market concentration (Top 10): {analytics['latest_snapshot']['nse_stocks']['concentration_analysis']['top_10_share']:.1f}%")
+        print(f"BSE Market concentration (Top 10): {analytics['latest_snapshot']['bse_stocks']['concentration_analysis']['top_10_share']:.1f}%")
+        
+        # Additional time-series info
+        ts = analytics['time_series_summary']
+        if 'date_range' in ts and ts['date_range']:
+            print(f"Date range: {ts['date_range']['start_date']} to {ts['date_range']['end_date']}")
+            print(f"Total trading days: {ts['total_trading_days']:,}")
+        print(f"Daily time-series data available for {len(analytics['daily_stock_data']):,} stocks")
+        print(f"Output file: {output_file}")
+        
+        return analytics
+
+def main():
+    """Main execution function"""
+    extractor = StockMTFExtractor()
+    
+    # Process all files for complete time period data
+    analytics = extractor.run_extraction()  # Process all files
+    
+    print("\nStock analytics extraction completed successfully!")
+    print("Use 'stock_analytics.json' file to power the stock analytics dashboard.")
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,11 @@
+# Backups produced by data refresh scripts
+*.bak
+*.pre-trim.bak
+
+# Local previews / scratch
+.DS_Store
+Thumbs.db
+*.log
+node_modules/
+.wrangler/
+dist/

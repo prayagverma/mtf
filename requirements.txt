@@ -1,0 +1,3 @@
+# Python deps for the MTF data pipeline + GitHub Actions workflow.
+requests==2.33.1
+pandas==2.2.3

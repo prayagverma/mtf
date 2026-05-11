@@ -1,0 +1,6 @@
+# Vanity redirects only.
+# Cloudflare Pages uses /404.html automatically for any unmatched path —
+# no explicit catch-all rule needed (and adding one shadows real files).
+/dashboard       /             301
+/analytics       /             301
+/index.htm       /             301

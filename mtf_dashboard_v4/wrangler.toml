@@ -1,0 +1,8 @@
+# Cloudflare Pages — pure static site, no Workers/Functions.
+# Used by `wrangler pages deploy .` and `wrangler pages dev`.
+name = "mtf"
+compatibility_date = "2026-05-01"
+pages_build_output_dir = "."
+
+[vars]
+ENVIRONMENT = "production"

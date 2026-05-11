@@ -1,0 +1,205 @@
+name: Refresh MTF data & deploy
+
+# Triggers
+#  - Daily at 22:00 IST Mon-Fri (16:30 UTC). Indian exchanges publish T+0 reports
+#    by ~19:00 IST, so this gives them a 3-hour buffer.
+#  - Manual via the "Run workflow" button on the Actions tab.
+on:
+  schedule:
+    - cron: "30 16 * * 1-5"   # 16:30 UTC = 22:00 IST, Mon-Fri
+  workflow_dispatch:
+    inputs:
+      lookback_days:
+        description: "Days of BSE/NSE reports to fetch (default 7)"
+        required: false
+        default: "7"
+        type: string
+      skip_deploy:
+        description: "Skip Cloudflare Pages deploy"
+        required: false
+        default: false
+        type: boolean
+      skip_commit:
+        description: "Skip committing new files back to git"
+        required: false
+        default: false
+        type: boolean
+
+# Allow the workflow to push commits back to main.
+permissions:
+  contents: write
+
+# Prevent two scheduled refreshes from racing each other (e.g. if the previous
+# run is still extracting when the next cron fires).
+concurrency:
+  group: mtf-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Need full history so we can push back; shallow=1 also works for git
+          # but we keep a slightly deeper clone in case anything later needs it.
+          fetch-depth: 1
+          # Use the default GITHUB_TOKEN's push permissions.
+          persist-credentials: true
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install Python deps
+        run: pip install -r requirements.txt
+
+      # 1) Pull any new BSE/NSE MTF reports.
+      #    mtf_downloader.py is idempotent: it skips files that already exist
+      #    and resolves the BSE legacy/new format automatically.
+      - name: Fetch new BSE & NSE reports
+        run: |
+          python mtf_downloader.py \
+            --last-days ${{ github.event.inputs.lookback_days || '7' }} \
+            --exchange both \
+            --delay 2
+
+      # 2) Daily totals: extract → sanitize → trim to 2017-06-22 cutoff.
+      - name: Extract daily totals
+        run: python extract_daily_totals_complete_fix.py
+
+      - name: Sanitize daily totals (drop transient glitches)
+        run: python sanitize_daily_totals.py --no-backup
+
+      - name: Trim to dates >= 2017-06-22
+        run: |
+          python - <<'PY'
+          import csv, json
+          MIN = '2017-06-22'
+          for f in [
+              'mtf_daily_totals.json',
+              'mtf_daily_totals_complete.json',
+              'mtf_daily_totals_crores.json',
+          ]:
+              try:
+                  with open(f, encoding='utf-8') as fp: rows = json.load(fp)
+              except FileNotFoundError:
+                  continue
+              kept = [r for r in rows if (r.get('date') or '') >= MIN]
+              with open(f, 'w', encoding='utf-8') as fp:
+                  json.dump(kept, fp, indent=2)
+              print(f'{f}: {len(rows)} -> {len(kept)} rows')
+
+          for f in [
+              'mtf_daily_totals.csv',
+              'mtf_daily_totals_complete.csv',
+              'mtf_daily_totals_crores.csv',
+              'mtf_daily_totals_complete_crores.csv',
+          ]:
+              try:
+                  with open(f, encoding='utf-8', newline='') as fp:
+                      r = csv.DictReader(fp); fields = r.fieldnames
+                      kept = [row for row in r if (row.get('date') or '') >= MIN]
+              except FileNotFoundError:
+                  continue
+              with open(f, 'w', encoding='utf-8', newline='') as fp:
+                  w = csv.DictWriter(fp, fieldnames=fields); w.writeheader(); w.writerows(kept)
+              print(f'{f}: kept {len(kept)} rows')
+          PY
+
+      # 3) Stock-level extraction + compression.
+      #    extract_stock_data.py also enforces the 2017-06-22 cutoff internally.
+      #    stock_analytics.json is ~1.7 GB intermediate -- stays in the runner only.
+      - name: Extract stock-level analytics
+        run: python extract_stock_data.py
+
+      - name: Compress stock data into gzipped chunks
+        run: python compress_stock_data.py
+
+      # 4) Sync the freshly-built data into the v4 deploy folder.
+      - name: Sync data into mtf_dashboard_v4/
+        run: |
+          cp -f mtf_daily_totals.json mtf_dashboard_v4/
+          rm -f mtf_dashboard_v4/compressed_data/*.json.gz mtf_dashboard_v4/compressed_data/manifest.json
+          cp -f compressed_data/manifest.json mtf_dashboard_v4/compressed_data/
+          cp -f compressed_data/stock_analytics_base.json.gz mtf_dashboard_v4/compressed_data/
+          cp -f compressed_data/stock_data_chunk_*.json.gz mtf_dashboard_v4/compressed_data/
+          du -sh mtf_dashboard_v4/
+
+      # 5) Deploy to Cloudflare Pages.
+      - name: Deploy to Cloudflare Pages
+        if: ${{ !inputs.skip_deploy }}
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy mtf_dashboard_v4 --project-name=mtf --commit-dirty=true
+
+      # 6) Stage a job summary so the Actions tab shows what changed.
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## MTF refresh"
+            echo ""
+            python - <<'PY'
+          import json, os
+          try:
+              d = json.load(open('mtf_daily_totals.json'))
+              dates = sorted(set(r.get('date') for r in d if r.get('date')))
+              print(f"- daily totals: **{len(d)}** rows, **{dates[0]} → {dates[-1]}**")
+          except Exception as e:
+              print(f"- daily totals: failed to read ({e})")
+          try:
+              size = os.path.getsize('mtf_dashboard_v4/compressed_data')
+          except Exception: size = 0
+          import glob
+          gz = glob.glob('mtf_dashboard_v4/compressed_data/*.json.gz')
+          total = sum(os.path.getsize(p) for p in gz)
+          print(f"- stock chunks: **{len(gz)} files**, **{total/1024/1024:.1f} MB**")
+          PY
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # 7) Commit refreshed raw reports + derived data back to git.
+      #    Run last so a failure here doesn't block the deploy.
+      - name: Commit refreshed data
+        if: ${{ !inputs.skip_commit }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add \
+            mtf_reports/ \
+            mtf_daily_totals.json \
+            mtf_daily_totals.csv \
+            mtf_daily_totals_complete.json \
+            mtf_daily_totals_complete.csv \
+            mtf_daily_totals_crores.json \
+            mtf_daily_totals_crores.csv \
+            mtf_daily_totals_complete_crores.csv \
+            mtf_dashboard_v4/mtf_daily_totals.json \
+            mtf_dashboard_v4/compressed_data/ \
+            compressed_data/ \
+            2>/dev/null || true
+
+          if git diff --cached --quiet; then
+            echo "No new data — nothing to commit."
+            exit 0
+          fi
+
+          STAMP="$(date -u +%Y-%m-%d)"
+          git commit -m "data: refresh MTF reports through ${STAMP}
+
+          Auto-generated by .github/workflows/refresh-and-deploy.yml
+          - new BSE/NSE reports fetched
+          - daily totals + stock-level chunks regenerated
+          - synced into mtf_dashboard_v4/"
+
+          git push
