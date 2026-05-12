@@ -16,6 +16,14 @@
 stock_analytics.json
 stock_analytics_compressed.json.gz
 
+# --- Compressed stock chunks (~38 MB / refresh) ----
+# Rebuilt fresh in CI every cron run and uploaded directly to Cloudflare Pages
+# via `wrangler pages deploy` (no git push needed). Keeping them out of git
+# avoids bloating history by ~38 MB per refresh.
+compressed_data/
+mtf_dashboard_v4/compressed_data/*.json.gz
+mtf_dashboard_v4/compressed_data/manifest.json
+
 # --- Run logs ----
 *.log
 *.log.*

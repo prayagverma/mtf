@@ -175,6 +175,10 @@ jobs:
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
 
+          # NOTE: compressed_data/ + mtf_dashboard_v4/compressed_data/ are
+          # intentionally NOT committed. They're rebuilt every run and shipped
+          # directly to Cloudflare Pages via `wrangler pages deploy` in step 5,
+          # so committing them only bloats git history (~38 MB per refresh).
           git add \
             mtf_reports/ \
             mtf_daily_totals.json \
@@ -185,8 +189,6 @@ jobs:
             mtf_daily_totals_crores.csv \
             mtf_daily_totals_complete_crores.csv \
             mtf_dashboard_v4/mtf_daily_totals.json \
-            mtf_dashboard_v4/compressed_data/ \
-            compressed_data/ \
             2>/dev/null || true
 
           if git diff --cached --quiet; then
