@@ -122,8 +122,11 @@ jobs:
         run: python compress_stock_data.py
 
       # 4) Sync the freshly-built data into the v4 deploy folder.
+      #    mtf_dashboard_v4/compressed_data/ is gitignored (chunks rebuilt each
+      #    run), so it doesn't exist on a fresh checkout — mkdir -p is required.
       - name: Sync data into mtf_dashboard_v4/
         run: |
+          mkdir -p mtf_dashboard_v4/compressed_data
           cp -f mtf_daily_totals.json mtf_dashboard_v4/
           rm -f mtf_dashboard_v4/compressed_data/*.json.gz mtf_dashboard_v4/compressed_data/manifest.json
           cp -f compressed_data/manifest.json mtf_dashboard_v4/compressed_data/
