@@ -590,59 +590,6 @@
                 Loading…
             </div>
 
-            <!-- Controls -->
-            <section class="panel" aria-label="Chart controls">
-                <div class="controls">
-                    <div class="control-group">
-                        <label for="exchangeFilter">Exchange</label>
-                        <select id="exchangeFilter">
-                            <option value="both">Both Exchanges</option>
-                            <option value="NSE">NSE Only</option>
-                            <option value="BSE">BSE Only</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="metricSelect">Metric</label>
-                        <select id="metricSelect">
-                            <option value="end_outstanding">End Outstanding</option>
-                            <option value="securities_count">Securities Count</option>
-                            <option value="fresh_exposure">Fresh Exposure (NSE)</option>
-                            <option value="exposure_liquidated">Exposure Liquidated</option>
-                            <option value="exposure_taken">Exposure Taken (BSE)</option>
-                            <option value="amount_financed">Amount Financed (BSE)</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label for="chartType">Chart Type</label>
-                        <select id="chartType">
-                            <option value="line">Line</option>
-                            <option value="area">Area</option>
-                        </select>
-                    </div>
-
-                    <div class="control-group">
-                        <label>Timeframe</label>
-                        <div class="timeframe-buttons" role="group" aria-label="Timeframe">
-                            <button class="timeframe-btn" data-period="1M" type="button">1M</button>
-                            <button class="timeframe-btn" data-period="3M" type="button">3M</button>
-                            <button class="timeframe-btn" data-period="6M" type="button">6M</button>
-                            <button class="timeframe-btn" data-period="1Y" type="button">1Y</button>
-                            <button class="timeframe-btn active" data-period="ALL" type="button">ALL</button>
-                        </div>
-                    </div>
-
-                    <div class="control-group">
-                        <label>Actions</label>
-                        <div class="button-group">
-                            <button id="updateChart" class="btn" type="button">Update Chart</button>
-                            <button id="downloadCSV" class="btn secondary" type="button">Download CSV</button>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
             <!-- Tab nav -->
             <nav class="tab-navigation" role="tablist" aria-label="Sections">
                 <button class="tab-btn active" data-tab="overview" role="tab" type="button">Overview</button>
@@ -655,6 +602,59 @@
             <!-- Overview -->
             <section class="tab-content active" id="overview-tab" role="tabpanel">
                 <div class="stats-grid" id="statsContainer"></div>
+
+                <!-- Chart controls (Overview-only — drive the chart below) -->
+                <section class="panel" aria-label="Chart controls">
+                    <div class="controls">
+                        <div class="control-group">
+                            <label for="exchangeFilter">Exchange</label>
+                            <select id="exchangeFilter">
+                                <option value="both">Both Exchanges</option>
+                                <option value="NSE">NSE Only</option>
+                                <option value="BSE">BSE Only</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="metricSelect">Metric</label>
+                            <select id="metricSelect">
+                                <option value="end_outstanding">End Outstanding</option>
+                                <option value="securities_count">Securities Count</option>
+                                <option value="fresh_exposure">Fresh Exposure (NSE)</option>
+                                <option value="exposure_liquidated">Exposure Liquidated</option>
+                                <option value="exposure_taken">Exposure Taken (BSE)</option>
+                                <option value="amount_financed">Amount Financed (BSE)</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label for="chartType">Chart Type</label>
+                            <select id="chartType">
+                                <option value="line">Line</option>
+                                <option value="area">Area</option>
+                            </select>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Timeframe</label>
+                            <div class="timeframe-buttons" role="group" aria-label="Timeframe">
+                                <button class="timeframe-btn" data-period="1M" type="button">1M</button>
+                                <button class="timeframe-btn" data-period="3M" type="button">3M</button>
+                                <button class="timeframe-btn" data-period="6M" type="button">6M</button>
+                                <button class="timeframe-btn" data-period="1Y" type="button">1Y</button>
+                                <button class="timeframe-btn active" data-period="ALL" type="button">ALL</button>
+                            </div>
+                        </div>
+
+                        <div class="control-group">
+                            <label>Actions</label>
+                            <div class="button-group">
+                                <button id="updateChart" class="btn" type="button">Update Chart</button>
+                                <button id="downloadCSV" class="btn secondary" type="button">Download CSV</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
                 <div class="panel">
                     <div class="chart-controls">
