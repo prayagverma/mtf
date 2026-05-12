@@ -28,7 +28,7 @@
     <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
 
     <style>:root{--font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;--font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;--background: #f7f8fa;--foreground: #0b1220;--card: #ffffff;--card-foreground: #0b1220;--primary: #2563eb;--primary-foreground: #ffffff;--secondary: #eef2f7;--secondary-foreground: #0b1220;--muted: #eef2f7;--muted-foreground: #5b6679;--faint: #f1f4f9;--faint-foreground: #8c97ab;--accent: #e6efff;--accent-foreground: #1d4ed8;--danger: #dc2626;--danger-foreground: #ffffff;--success: #059669;--success-foreground: #ffffff;--warning: #d97706;--warning-foreground: #ffffff;--border: #e3e8ef;--input: #d4dae3;--ring: #2563eb;--shadow-small: 0 1px 2px 0 rgb(15 23 42 / .04), 0 0 0 1px rgb(15 23 42 / .04);--shadow-medium: 0 1px 3px 0 rgb(15 23 42 / .08), 0 1px 2px -1px rgb(15 23 42 / .05);--shadow-large: 0 12px 24px -10px rgb(15 23 42 / .18), 0 4px 8px -4px rgb(15 23 42 / .08);--nse-color: #2563eb;--bse-color: #059669;--positive: #059669;--negative: #dc2626}body[data-theme=dark]{--background: #0b1020;--foreground: #e6eaf2;--card: #121831;--card-foreground: #e6eaf2;--primary: #60a5fa;--primary-foreground: #0b1020;--secondary: #1c2541;--secondary-foreground: #e6eaf2;--muted: #1c2541;--muted-foreground: #94a3b8;--faint: #161c34;--faint-foreground: #64748b;--accent: #1e2a4a;--accent-foreground: #93c5fd;--danger: #f87171;--danger-foreground: #0b1020;--success: #34d399;--success-foreground: #0b1020;--warning: #fbbf24;--warning-foreground: #0b1020;--border: #283050;--input: #283050;--ring: #60a5fa;color-scheme:dark;--nse-color: #60a5fa;--bse-color: #34d399;--positive: #34d399;--negative: #f87171;--shadow-small: 0 1px 2px 0 rgb(0 0 0 / .45);--shadow-medium: 0 1px 3px 0 rgb(0 0 0 / .45), 0 1px 2px -1px rgb(0 0 0 / .4);--shadow-large: 0 12px 24px -10px rgb(0 0 0 / .6), 0 4px 8px -4px rgb(0 0 0 / .4)}body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);min-height:100vh;-webkit-font-smoothing:antialiased}.num,.stat-value,.stat-change,td.num,.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}.mono{font-family:var(--font-mono)}.loading-overlay{position:fixed;inset:0;background:color-mix(in srgb,var(--background) 92%,transparent);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .3s ease}.loading-overlay.hidden{opacity:0;pointer-events:none}.loading-spinner{width:44px;height:44px;margin-bottom:1rem;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loading-text{font-weight:800;font-size:1rem;letter-spacing:-.02em}.loading-subtext{color:var(--muted-foreground);font-size:.76rem;margin-top:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}.app-header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--background) 88%,transparent);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--border)}.app-header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;gap:1rem}.brand{display:flex;align-items:baseline;gap:.65rem;min-width:0}.brand-mark{font-weight:900;font-size:1.05rem;letter-spacing:-.04em;color:var(--foreground);font-feature-settings:"ss01" 1}.brand-mark:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--primary);margin-left:.35rem;transform:translateY(-2px)}.brand-text{display:flex;flex-direction:column;line-height:1.15;min-width:0}.brand-text small{font-size:.68rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em;font-weight:600}.header-meta{display:flex;align-items:center;gap:1rem}.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--positive);animation:pulse 1.8s ease-in-out infinite}@keyframes pulse{50%{opacity:.4}}.meta-text{display:inline-flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--muted-foreground);white-space:nowrap;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;user-select:none;color:var(--muted-foreground);transition:background-color .15s,border-color .15s,color .15s}.theme-toggle:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}.theme-toggle svg{width:15px;height:15px}.theme-toggle span{display:none}main.app{max-width:1280px;margin:0 auto;padding:1.5rem 1.5rem 4rem;display:flex;flex-direction:column;gap:1.25rem}.status-bar{display:flex;align-items:center;gap:.5rem;padding:0;color:var(--muted-foreground);font-size:.76rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}.status-bar[data-status=error]{color:var(--danger)}.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:8px;background:var(--card);overflow:hidden}@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:540px){.stats-grid{grid-template-columns:1fr}}.stat{position:relative;padding:1.1rem 1.25rem 1.2rem;display:flex;flex-direction:column;gap:.45rem;min-height:110px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.stat-label{font-size:.68rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em}.stat-value{font-size:1.85rem;font-weight:800;letter-spacing:-.04em;line-height:1.1;color:var(--foreground)}.stat-sub{font-size:.76rem;color:var(--muted-foreground);font-weight:500}.stat-change{display:inline-flex;align-items:center;gap:.2rem;font-size:.78rem;font-weight:700;color:var(--positive);margin-top:auto}.stat-change.negative{color:var(--negative)}.stat-accent{display:none}.panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem}.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.9rem;align-items:end}.control-group{display:flex;flex-direction:column;gap:.4rem;min-width:0}.control-group>label{font-size:.68rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em}.control-group select{width:100%;padding:.55rem .8rem;border-radius:6px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.88rem;font-family:inherit;font-weight:600;cursor:pointer;transition:border-color .15s,box-shadow .15s}.control-group select:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 22%,transparent)}.timeframe-buttons{display:inline-flex;border:1px solid var(--border);border-radius:6px;padding:0;width:fit-content;overflow:hidden}.timeframe-btn{background:transparent;color:var(--muted-foreground);border:0;border-right:1px solid var(--border);padding:.5rem .85rem;font-size:.78rem;font-weight:700;letter-spacing:.03em;cursor:pointer;font-family:inherit;transition:background-color .15s,color .15s}.timeframe-btn:last-child{border-right:0}.timeframe-btn:hover{color:var(--foreground);background:var(--faint)}.timeframe-btn.active{background:var(--foreground);color:var(--background)}.button-group{display:flex;gap:.5rem;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem 1rem;background:var(--foreground);color:var(--background);border:1px solid var(--foreground);border-radius:6px;font-size:.82rem;font-weight:700;font-family:inherit;letter-spacing:-.005em;cursor:pointer;transition:opacity .15s,transform .12s}.btn:hover{opacity:.85}.btn:active{transform:translateY(1px)}.btn.secondary{background:transparent;color:var(--foreground);border-color:var(--border)}.btn.secondary:hover{background:var(--faint);border-color:var(--input);opacity:1}.btn:disabled{opacity:.4;cursor:not-allowed}.tab-navigation{display:flex;gap:0;flex-wrap:nowrap;border-bottom:1px solid var(--border);overflow-x:auto;margin:0 -1px}.tab-btn{display:inline-flex;align-items:center;gap:.4rem;padding:.8rem 1.1rem .85rem;background:transparent;color:var(--muted-foreground);border:0;border-bottom:2px solid transparent;margin-bottom:-1px;font-size:.85rem;font-weight:700;font-family:inherit;letter-spacing:-.01em;white-space:nowrap;cursor:pointer;transition:color .15s,border-color .15s}.tab-btn:hover{color:var(--foreground)}.tab-btn.active{color:var(--foreground);border-bottom-color:var(--foreground)}.tab-content{display:none;flex-direction:column;gap:1.25rem}.tab-content.active{display:flex}.chart-controls{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.85rem}.chart-title{font-weight:800;font-size:1.05rem;letter-spacing:-.02em;color:var(--foreground)}.chart-options{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}.chart-option{display:flex;align-items:center;gap:.35rem;font-size:.76rem;color:var(--muted-foreground);font-weight:700;text-transform:uppercase;letter-spacing:.08em}.chart-option input{accent-color:var(--primary)}.chart-content{width:100%;height:480px;position:relative}.stock-chart-container{position:relative}.lwc-legend{position:absolute;top:12px;left:16px;display:flex;flex-direction:column;gap:6px;padding:10px 14px;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-medium);font-size:.82rem;min-width:200px;pointer-events:none;z-index:5;transition:opacity .12s ease}.lwc-legend-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}.lwc-legend-name{display:inline-flex;align-items:center;gap:.45rem;color:var(--muted-foreground);font-weight:500}.lwc-legend-name:before{content:"";width:9px;height:9px;border-radius:50%;background:var(--legend-color, var(--primary));display:inline-block}.lwc-legend-value{color:var(--foreground);font-weight:600}.lwc-legend-delta{font-size:.76em;font-weight:600;margin-left:6px}.lwc-legend-delta.up{color:var(--positive)}.lwc-legend-delta.down{color:var(--negative)}.lwc-legend-meta{color:var(--faint-foreground);font-size:.72rem;margin-bottom:2px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}.chart-reset{background:transparent;border:1px solid var(--border);border-radius:7px;padding:.25rem .55rem;font-size:.75rem;color:var(--muted-foreground);cursor:pointer;font-family:inherit;font-weight:500;transition:background-color .12s,color .12s,border-color .12s}.chart-reset:hover{color:var(--foreground);border-color:var(--input);background:var(--accent)}.stock-search-container{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1rem}.search-controls{display:flex;gap:.5rem;flex-wrap:wrap}.stock-search-input{flex:1 1 240px;padding:.6rem .85rem;border-radius:8px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.9rem;font-family:inherit;transition:border-color .15s,box-shadow .15s}.stock-search-input:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 25%,transparent)}.chart-stock-btn{white-space:nowrap}.search-results{display:none;max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:var(--shadow-small)}.search-result-item{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.65rem .9rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background-color .12s}.search-result-item:last-child{border-bottom:0}.search-result-item:hover{background:var(--accent)}.search-result-item.selected{background:color-mix(in srgb,var(--primary) 10%,transparent)}.selected-stock-chart{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;box-shadow:var(--shadow-small)}.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}.stock-chart-container{width:100%;height:380px}.close-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--muted-foreground);font-size:.9rem}.close-btn:hover{color:var(--foreground)}.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem}.analytics-section{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.2rem 1.2rem}.analytics-section h3{font-size:.82rem;font-weight:800;margin:0 0 .85rem;text-transform:uppercase;letter-spacing:.14em;color:var(--muted-foreground)}.stock-list{display:flex;flex-direction:column;gap:0;max-height:460px;overflow-y:auto}.stock-item{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .25rem;border-bottom:1px solid var(--border);transition:background-color .12s}.stock-item:last-child{border-bottom:0}.stock-item:hover{background:var(--faint)}.stock-info{display:flex;flex-direction:column;min-width:0;gap:1px}.stock-symbol{font-weight:800;font-size:.88rem;letter-spacing:-.01em}.stock-name{font-size:.72rem;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38ch;font-weight:500}.stock-metrics{display:flex;align-items:center;gap:.65rem;flex-shrink:0}.stock-amount{font-variant-numeric:tabular-nums;font-weight:700;font-size:.86rem;letter-spacing:-.01em}.stock-exchange{font-size:.62rem;font-weight:800;padding:.15rem .4rem;border-radius:3px;text-transform:uppercase;letter-spacing:.08em;border:1px solid currentColor}.stock-exchange.exchange-nse{color:var(--nse-color)}.stock-exchange.exchange-bse{color:var(--bse-color)}.stock-exchange.positive-change{color:var(--positive)}.stock-exchange.negative-change{color:var(--negative)}.concentration-stats{display:flex;flex-direction:column;gap:0}.stat-item{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}.stat-item:last-child{border-bottom:0}.stat-item .stat-label{font-size:.7rem;font-weight:700}.stat-item .stat-value{font-size:1rem;font-weight:800;letter-spacing:-.02em}.cross-exchange-info{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:.76rem;color:var(--muted-foreground);font-weight:500}.cross-exchange-info strong{color:var(--foreground);font-weight:800}.tab-content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin:0;color:var(--foreground)}.loading{display:flex;align-items:center;justify-content:center;gap:.65rem;padding:2rem;color:var(--muted-foreground);font-size:.9rem}.loading .spinner{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--primary);animation:spin .9s linear infinite}.error{padding:1rem;background:color-mix(in srgb,var(--danger) 10%,transparent);color:var(--danger);border-radius:10px;border:1px solid color-mix(in srgb,var(--danger) 30%,var(--border));font-size:.9rem}@media(max-width:768px){.app-header-inner{padding:.75rem 1rem}.meta-text{display:none}main.app{padding:1rem;gap:1rem}.stat{padding:.85rem .9rem;min-height:84px}.stat-value{font-size:1.3rem}.chart-content{height:360px}.stock-chart-container{height:320px}.controls{grid-template-columns:1fr}.tab-btn{font-size:.82rem;padding:.45rem .7rem}.tab-navigation{width:100%;justify-content:flex-start;flex-wrap:nowrap}}@media(max-width:480px){.brand-text small{display:none}.stat-value{font-size:1.2rem}.stats-grid{grid-template-columns:repeat(2,1fr)}.timeframe-btn{padding:.3rem .5rem;font-size:.76rem}}
-</style>
+.stock-chart-actions{display:inline-flex;align-items:center;gap:.5rem}.stock-tf-buttons{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.stock-tf-btn{background:transparent;color:var(--muted-foreground);border:0;border-right:1px solid var(--border);padding:.35rem .7rem;font-size:.72rem;font-weight:700;letter-spacing:.03em;cursor:pointer;font-family:inherit;transition:background-color .15s,color .15s}.stock-tf-btn:last-child{border-right:0}.stock-tf-btn:hover{color:var(--foreground);background:var(--faint)}.stock-tf-btn.active{background:var(--foreground);color:var(--background)}.stock-tf-reset{background:transparent;border:1px solid var(--border);border-radius:6px;width:30px;height:28px;padding:0;cursor:pointer;color:var(--muted-foreground);font-size:1rem;font-family:inherit;line-height:1;transition:background-color .15s,color .15s,border-color .15s}.stock-tf-reset:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}.stock-amount-stack{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15}.stock-prev{font-size:.7rem;color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}</style>
 </head>
 <body>
     <!-- Loading overlay -->
@@ -157,6 +157,30 @@
 
             <section class="tab-content" id="nse-stocks-tab" role="tabpanel">
                 <h2>NSE Stock Analytics</h2>
+                <div class="stock-search-container panel">
+                    <div class="search-controls">
+                        <input type="text" id="stockSearchInputNse" placeholder="Search NSE stocks by symbol or name…" class="stock-search-input">
+                        <button id="chartStockBtnNse" class="btn chart-stock-btn" type="button" disabled>📈 Chart Selected</button>
+                    </div>
+                    <div id="searchResultsNse" class="search-results"></div>
+                </div>
+                <div id="selectedStockChartNse" class="selected-stock-chart" style="display: none;">
+                    <div class="chart-header">
+                        <h3 id="selectedStockTitleNse">Stock Trend</h3>
+                        <div class="stock-chart-actions">
+                            <div class="stock-tf-buttons" role="group" aria-label="Stock chart timeframe" data-stock-tf="nse">
+                                <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
+                                <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
+                                <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
+                                <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
+                            </div>
+                            <button class="stock-tf-reset" data-stock-reset="nse" type="button" aria-label="Reset zoom">↻</button>
+                            <button id="closeStockChartNse" class="close-btn" type="button" aria-label="Close">✕</button>
+                        </div>
+                    </div>
+                    <div id="stockTimeSeriesChartNse" class="stock-chart-container"></div>
+                </div>
                 <div class="analytics-grid" id="nseAnalyticsGrid">
                     <div class="loading">Loading NSE stock data…</div>
                 </div>
@@ -166,17 +190,27 @@
                 <h2>BSE Stock Analytics</h2>
                 <div class="stock-search-container panel">
                     <div class="search-controls">
-                        <input type="text" id="stockSearchInput" placeholder="Search stocks by symbol or name…" class="stock-search-input">
-                        <button id="chartStockBtn" class="btn chart-stock-btn" type="button" disabled>📈 Chart Selected</button>
+                        <input type="text" id="stockSearchInputBse" placeholder="Search BSE stocks by symbol or name…" class="stock-search-input">
+                        <button id="chartStockBtnBse" class="btn chart-stock-btn" type="button" disabled>📈 Chart Selected</button>
                     </div>
-                    <div id="searchResults" class="search-results"></div>
+                    <div id="searchResultsBse" class="search-results"></div>
                 </div>
-                <div id="selectedStockChart" class="selected-stock-chart" style="display: none;">
+                <div id="selectedStockChartBse" class="selected-stock-chart" style="display: none;">
                     <div class="chart-header">
-                        <h3 id="selectedStockTitle">Stock Trend</h3>
-                        <button id="closeStockChart" class="close-btn" type="button" aria-label="Close">✕</button>
+                        <h3 id="selectedStockTitleBse">Stock Trend</h3>
+                        <div class="stock-chart-actions">
+                            <div class="stock-tf-buttons" role="group" aria-label="Stock chart timeframe" data-stock-tf="bse">
+                                <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
+                                <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
+                                <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
+                                <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
+                            </div>
+                            <button class="stock-tf-reset" data-stock-reset="bse" type="button" aria-label="Reset zoom">↻</button>
+                            <button id="closeStockChartBse" class="close-btn" type="button" aria-label="Close">✕</button>
+                        </div>
                     </div>
-                    <div id="stockTimeSeriesChart" class="stock-chart-container"></div>
+                    <div id="stockTimeSeriesChartBse" class="stock-chart-container"></div>
                 </div>
                 <div class="analytics-grid" id="bseAnalyticsGrid">
                     <div class="loading">Loading BSE stock data…</div>
@@ -199,44 +233,1065 @@
         </main>
     </div>
 
-    <script>(function(){const p="mtf-theme",t=document.body,e=document.getElementById("themeToggle"),s=document.getElementById("themeIconSun"),a=document.getElementById("themeIconMoon"),o=document.getElementById("themeLabel");function n(h){h==="dark"?(t.setAttribute("data-theme","dark"),s.style.display="inline-block",a.style.display="none",o.textContent="Light"):(t.removeAttribute("data-theme"),s.style.display="none",a.style.display="inline-block",o.textContent="Dark"),window.dashboard&&typeof window.dashboard.repaintCharts=="function"&&window.dashboard.repaintCharts()}const i=localStorage.getItem(p),d=window.matchMedia("(prefers-color-scheme: dark)").matches;n(i||(d?"dark":"light")),e.addEventListener("click",()=>{const h=t.getAttribute("data-theme")==="dark"?"light":"dark";localStorage.setItem(p,h),n(h)})})();function fmtINR(p,t={}){const e=Number(p)||0,s=e/100;return Math.abs(s)>=1e3?`\u20B9${(s/1e3).toLocaleString("en-IN",{maximumFractionDigits:2})} K Cr`:Math.abs(s)>=1?`\u20B9${s.toLocaleString("en-IN",{maximumFractionDigits:2})} Cr`:`\u20B9${e.toLocaleString("en-IN",{maximumFractionDigits:2})} L`}function fmtCount(p){return Number(p||0).toLocaleString("en-IN")}function fmtDelta(p,t){if(t==null||t===0)return"";const e=(p-t)/t*100;return`${e>=0?"\u25B2":"\u25BC"} ${Math.abs(e).toFixed(2)}%`}function fmtDate(p){return p?new Date(p).toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"\u2014"}function fmtPctChange(p){if(p==null||isNaN(p))return"\u2014";const t=Math.abs(p);if(t<1e3)return`${p>=0?"+":""}${p.toFixed(1)}%`;const e=t/100+1,s=p>=0?"\xD7":"\xD7\u2212",a=e>=100?Math.round(e).toLocaleString("en-IN"):e.toFixed(1);return`${s}${a}`}class CompressedDataLoader{constructor(){this.baseData=null,this.stockChunks=new Map,this.manifest=null,this.loadedChunks=new Set}async loadManifest(){try{const t=await fetch("compressed_data/manifest.json?_="+Date.now(),{cache:"no-store"});return this.manifest=await t.json(),this.manifest}catch(t){throw console.error("Failed to load manifest:",t),t}}_bust(){const v=this.manifest&&this.manifest.created;return v?"?v="+encodeURIComponent(v):""}async loadCompressedJson(t){const s=await(await fetch(t+this._bust())).blob(),a=new DecompressionStream("gzip"),o=s.stream().pipeThrough(a),i=await(await new Response(o).blob()).text();return JSON.parse(i)}async loadBaseData(){return this.updateLoadingStatus("Loading market overview data\u2026"),this.baseData=await this.loadCompressedJson("compressed_data/stock_analytics_base.json.gz"),this.baseData}async loadStockChunk(t){if(this.loadedChunks.has(t))return this.stockChunks.get(t);this.updateLoadingStatus(`Loading stock data chunk ${t}\u2026`);const e=await this.loadCompressedJson(`compressed_data/stock_data_chunk_${t}.json.gz`);return this.stockChunks.set(t,e),this.loadedChunks.add(t),e}getStockData(t){for(const[,e]of this.stockChunks)if(e.stocks&&e.stocks[t])return this.decompressStockData(t,e.stocks[t]);return null}decompressStockData(t,e){if(!e||!e.fields||!e.data)return[];const s=e.fields,a=[];for(const o of e.data){const n={};s.forEach((d,h)=>{n[d]=o[h]});const i=this.baseData.stock_index[t];i&&(n.symbol=t,n.name=i.name,n.exchange=i.exchange),a.push(n)}return a}async searchStocks(t){if(!this.baseData||!this.baseData.stock_index)return[];const e=[],s=t.toLowerCase();for(const[a,o]of Object.entries(this.baseData.stock_index))(a.toLowerCase().includes(s)||o.name.toLowerCase().includes(s))&&e.push({symbol:a,name:o.name,exchange:o.exchange,latestAmount:o.latest_amount,recordCount:o.record_count,dateRange:o.date_range});return e.sort((a,o)=>o.latestAmount-a.latestAmount).slice(0,20)}updateLoadingStatus(t){const e=document.getElementById("loadingStatus");e&&(e.textContent=t)}}class OptimizedMTFDashboard{constructor(){this.dataLoader=new CompressedDataLoader,this.chart=null,this.stockChart=null,this.data=[],this.currentStartDate=null,this.currentEndDate=null,this.init()}async init(){try{await this.waitForECharts();try{await this.dataLoader.loadManifest()}catch(_){};await Promise.all([this.loadDailyTotalsData(),this.loadCompressedStockData()]),this.hideLoadingOverlay(),document.getElementById("mainContent").style.display="block",this.setupDashboard(),this.setupEventListeners(),this.updateChart()}catch(t){console.error("Failed to initialize:",t),this.showError("Failed to load dashboard data")}}async waitForECharts(){return new Promise(t=>{const e=()=>typeof LightweightCharts<"u"?t():setTimeout(e,100);e()})}async loadDailyTotalsData(){let t=null;const __bust=this.dataLoader._bust();for(const s of["mtf_daily_totals.json","mtf_daily_totals_complete.json"])try{const a=await fetch(s+__bust);if(a.ok){t=await a.json();break}}catch{}if(!t)throw new Error("No daily totals file found");const e=new Map;for(const s of t){const a=s.date;e.has(a)||e.set(a,{date:a});const o=e.get(a),n=(s.exchange||"").toLowerCase();n!=="nse"&&n!=="bse"||(o[`${n}_end_outstanding`]=s.end_outstanding??null,o[`${n}_beginning_outstanding`]=s.beginning_outstanding??null,o[`${n}_exposure_liquidated`]=s.exposure_liquidated??null,o[`${n}_securities_count`]=s.securities_count??0,n==="nse"?o.nse_fresh_exposure=s.fresh_exposure??null:(o.bse_amount_financed=s.amount_financed??null,o.bse_exposure_taken=s.exposure_taken??null))}return this.data=Array.from(e.values()).sort((s,a)=>new Date(s.date)-new Date(a.date)),this.data}async loadCompressedStockData(){try{return await this.dataLoader.loadManifest(),await this.dataLoader.loadBaseData(),this.dataLoader.baseData}catch(t){return console.error("Failed to load stock data:",t),null}}hideLoadingOverlay(){const t=document.getElementById("loadingOverlay");t.classList.add("hidden"),setTimeout(()=>{t.style.display="none"},300)}setupDashboard(){this.setupChart(),this.setupTabNavigation(),this.setupStockSearch(),this.populateLatestSnapshot()}isDark(){return document.body.getAttribute("data-theme")==="dark"}paletteFromCSS(){const t=getComputedStyle(document.body),e=(s,a)=>t.getPropertyValue(s).trim()||a;return{fg:e("--foreground","#0b1220"),fgMuted:e("--muted-foreground","#5b6679"),fgFaint:e("--faint-foreground","#8c97ab"),bg:e("--card","#ffffff"),bgPanel:e("--background","#f7f8fa"),border:e("--border","#e3e8ef"),accent:e("--accent","#e6efff"),primary:e("--primary","#2563eb"),nse:e("--nse-color","#2563eb"),bse:e("--bse-color","#059669"),positive:e("--positive","#059669"),negative:e("--negative","#dc2626")}}chartLayoutOptions(){const t=this.paletteFromCSS();return{layout:{background:{type:"solid",color:"transparent"},textColor:t.fgMuted,fontFamily:"'Inter', system-ui, sans-serif",fontSize:11,attributionLogo:!1},grid:{vertLines:{visible:!1},horzLines:{color:t.border,style:LightweightCharts.LineStyle.Dashed,visible:!0}},crosshair:{mode:LightweightCharts.CrosshairMode.Normal,vertLine:{color:t.fgFaint,width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:t.fg},horzLine:{color:t.fgFaint,width:1,style:LightweightCharts.LineStyle.Dashed,labelBackgroundColor:t.fg}},rightPriceScale:{borderVisible:!1,scaleMargins:{top:.12,bottom:.1}},leftPriceScale:{visible:!1},timeScale:{borderVisible:!1,timeVisible:!1,secondsVisible:!1,rightOffset:8,barSpacing:6,fixLeftEdge:!0,fixRightEdge:!0},handleScroll:{mouseWheel:!0,pressedMouseMove:!0,horzTouchDrag:!0,vertTouchDrag:!1},handleScale:{axisPressedMouseMove:!0,mouseWheel:!0,pinch:!0}}}_buildChart(t,e={}){const s=this.paletteFromCSS(),a=this.chartLayoutOptions(),o=LightweightCharts.createChart(t,{...a,autoSize:!0,rightPriceScale:{...a.rightPriceScale,mode:e.logY?LightweightCharts.PriceScaleMode.Logarithmic:LightweightCharts.PriceScaleMode.Normal}});return o._pal=s,o}setupChart(){const t=document.getElementById("chartDiv");if(typeof LightweightCharts>"u"){t.innerHTML='<div class="error">Failed to load charting library. Please refresh the page.</div>';return}try{t.innerHTML="",this.chart=this._buildChart(t,{logY:!1}),this._chartSeries=[],this._chartLegendEl=this._mountLegend(t),this._wireHoverLegend(this.chart,()=>this._chartSeries,this._chartLegendEl)}catch(e){console.error(e),t.innerHTML='<div class="error">Failed to initialize chart. Please refresh the page.</div>'}}_mountLegend(t){const e=document.createElement("div");return e.className="lwc-legend",e.style.opacity="0",t.appendChild(e),e}_wireHoverLegend(t,e,s){const a=()=>{const n=e();if(!n||!n.length){s.style.opacity="0";return}const d=n.map(h=>h.data[h.data.length-1]).filter(Boolean)[0]?.time;d&&o(d,null)},o=(n,i)=>{const d=e();if(!d.length||!n){s.style.opacity="0";return}let h;typeof n=="string"?h=fmtDate(n):n&&n.year?h=fmtDate(`${n.year}-${String(n.month).padStart(2,"0")}-${String(n.day).padStart(2,"0")}`):h="";let r=`<div class="lwc-legend-meta">${h}</div>`;d.forEach(u=>{const f=typeof n=="string"?n:`${n.year}-${String(n.month).padStart(2,"0")}-${String(n.day).padStart(2,"0")}`,m=this._binarySearchByTime(u.data,f),l=m>=0?u.data[m]:null,c=m>0?u.data[m-1]:null;let g="\u2014",v="";if(l&&(g=u.fmt(l.value),c&&c.value>0)){const _=(l.value-c.value)/c.value*100,y=_>=0?"\u25B2":"\u25BC";v=`<span class="lwc-legend-delta ${_>=0?"up":"down"}">${y} ${Math.abs(_).toFixed(2)}%</span>`}r+=`<div class="lwc-legend-row" style="--legend-color:${u.color}">
-                            <span class="lwc-legend-name">${u.name}</span>
-                            <span class="lwc-legend-value">${g}${v}</span>
-                        </div>`}),s.innerHTML=r,s.style.opacity="1"};t._renderLatest=a,t.subscribeCrosshairMove(n=>{if(!n||!n.time){a();return}o(n.time,n.point)})}_binarySearchByTime(t,e){let s=0,a=t.length-1,o=-1;for(;s<=a;){const n=s+a>>1;if(t[n].time===e)return n;t[n].time<e?(o=n,s=n+1):a=n-1}return o}repaintCharts(){if(this.chart&&this.chart.applyOptions(this.chartLayoutOptions()),this.stockChart&&this.stockChart.applyOptions(this.chartLayoutOptions()),this._chartSeries){const t=this.paletteFromCSS();this._chartSeries.forEach(e=>{const s=e.kind==="NSE"?t.nse:t.bse;e.color=s,e.series.applyOptions(this._lineOptions(s,e.useArea))}),this.chart&&this.chart._renderLatest&&this.chart._renderLatest()}if(this._stockSeries){const t=this.paletteFromCSS();this._stockSeries.forEach(e=>{const s=e.role==="amount"?t.nse:t.bse;e.color=s,e.series.applyOptions(this._lineOptions(s,e.useArea,e.role==="qty"))}),this.stockChart&&this.stockChart._renderLatest&&this.stockChart._renderLatest()}}_lineOptions(t,e,s=!1){const a={color:t,lineWidth:2,lineType:document.getElementById("smoothLines")?.checked?LightweightCharts.LineType.Curved:LightweightCharts.LineType.Simple,lineStyle:s?LightweightCharts.LineStyle.Dashed:LightweightCharts.LineStyle.Solid,priceLineVisible:!1,lastValueVisible:!0,crosshairMarkerVisible:!0,crosshairMarkerRadius:4,crosshairMarkerBorderWidth:2};if(e){const o=this.paletteFromCSS();return{...a,topColor:this._withAlpha(t,this.isDark()?.45:.32),bottomColor:this._withAlpha(t,0),lineColor:t}}return a}setupEventListeners(){document.getElementById("updateChart").addEventListener("click",()=>this.updateChart()),document.getElementById("downloadCSV").addEventListener("click",()=>this.downloadCSV()),document.querySelectorAll(".timeframe-btn").forEach(e=>{e.addEventListener("click",s=>{document.querySelectorAll(".timeframe-btn").forEach(a=>a.classList.remove("active")),s.currentTarget.classList.add("active"),this.setTimeframe(s.currentTarget.dataset.period)})}),["exchangeFilter","metricSelect","chartType"].forEach(e=>{document.getElementById(e).addEventListener("change",()=>this.updateChart())}),["smoothLines","logScale"].forEach(e=>{const s=document.getElementById(e);s&&s.addEventListener("change",()=>this.updateChart())});const t=document.getElementById("chartReset");t&&t.addEventListener("click",()=>{this.chart&&this.chart.timeScale().fitContent()})}async performStockSearch(t){const e=await this.dataLoader.searchStocks(t);this.displaySearchResults(e)}async showStockChart(t){let e=this.dataLoader.getStockData(t.symbol);if(!e){this.dataLoader.updateLoadingStatus(`Loading data for ${t.symbol}\u2026`);for(let s=1;s<=this.dataLoader.manifest.chunks.length&&(await this.dataLoader.loadStockChunk(s),e=this.dataLoader.getStockData(t.symbol),!e);s++);}if(!e||e.length===0){alert("Stock data not found");return}this.displayStockChart(t,e)}displayStockChart(t,e){const s=document.getElementById("stockTimeSeriesChart");this.stockChart&&(this.stockChart.remove(),this.stockChart=null,this._stockLegendEl&&this._stockLegendEl.parentNode&&this._stockLegendEl.parentNode.removeChild(this._stockLegendEl)),s.innerHTML="",document.getElementById("selectedStockChart").style.display="block",document.getElementById("selectedStockTitle").textContent=`${t.name} (${t.symbol})`;const a=this.paletteFromCSS();this.stockChart=this._buildChart(s,{logY:!1}),this.stockChart.applyOptions({leftPriceScale:{visible:!0,borderVisible:!1,scaleMargins:{top:.12,bottom:.1}},localization:{priceFormatter:r=>fmtINR(r),timeFormatter:r=>typeof r=="string"?fmtDate(r):r&&r.year?fmtDate(`${r.year}-${String(r.month).padStart(2,"0")}-${String(r.day).padStart(2,"0")}`):""}});const o=[...e].sort((r,u)=>r.date<u.date?-1:r.date>u.date?1:0),n=this._sanitizeSeries(o.map(r=>({time:r.date,value:r.amount_financed})).filter(r=>r.value!==null&&r.value!==void 0&&r.value>0)),i=this._sanitizeSeries(o.map(r=>({time:r.date,value:r.qty_financed})).filter(r=>r.value!==null&&r.value!==void 0&&r.value>0)),d=this.stockChart.addSeries(LightweightCharts.AreaSeries,{...this._lineOptions(a.nse,!0),priceScaleId:"right"});d.setData(n);const h=this.stockChart.addSeries(LightweightCharts.LineSeries,{...this._lineOptions(a.bse,!1,!0),priceScaleId:"left"});h.setData(i),this.stockChart.priceScale("left").applyOptions({visible:!0,borderVisible:!1,scaleMargins:{top:.12,bottom:.1}}),this._stockSeries=[{name:"Amount Financed",role:"amount",color:a.nse,useArea:!0,series:d,data:n,fmt:fmtINR},{name:"Quantity Financed",role:"qty",color:a.bse,useArea:!1,series:h,data:i,fmt:fmtCount}],this._stockLegendEl=this._mountLegend(s),this._wireHoverLegend(this.stockChart,()=>this._stockSeries,this._stockLegendEl),this.stockChart.timeScale().fitContent(),this.stockChart._renderLatest&&this.stockChart._renderLatest()}displaySearchResults(t){const e=document.getElementById("searchResults");if(t.length===0){e.innerHTML='<div class="search-result-item">No stocks found</div>',e.style.display="block";return}e.innerHTML=t.map(s=>`
-                    <div class="search-result-item" data-symbol="${s.symbol}" data-name="${s.name}" data-exchange="${s.exchange}">
+    <script>
+        /* ============================================================
+         * Theme toggle (light / dark / system)
+         * ========================================================== */
+        (function () {
+            const KEY = 'mtf-theme';
+            const body = document.body;
+            const toggleBtn = document.getElementById('themeToggle');
+            const sunIcon = document.getElementById('themeIconSun');
+            const moonIcon = document.getElementById('themeIconMoon');
+            const label = document.getElementById('themeLabel');
+
+            function apply(theme) {
+                if (theme === 'dark') {
+                    body.setAttribute('data-theme', 'dark');
+                    sunIcon.style.display = 'inline-block';
+                    moonIcon.style.display = 'none';
+                    label.textContent = 'Light';
+                } else {
+                    body.removeAttribute('data-theme');
+                    sunIcon.style.display = 'none';
+                    moonIcon.style.display = 'inline-block';
+                    label.textContent = 'Dark';
+                }
+                if (window.dashboard && typeof window.dashboard.repaintCharts === 'function') {
+                    window.dashboard.repaintCharts();
+                }
+            }
+
+            const stored = localStorage.getItem(KEY);
+            const prefers = window.matchMedia('(prefers-color-scheme: dark)').matches;
+            apply(stored || (prefers ? 'dark' : 'light'));
+
+            toggleBtn.addEventListener('click', () => {
+                const next = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+                localStorage.setItem(KEY, next);
+                apply(next);
+            });
+        })();
+
+        /* ============================================================
+         * Number formatting helpers
+         * ========================================================== */
+        function fmtINR(value, opts = {}) {
+            // Values are stored in lakhs. Convert to crores when ≥ 100 lakhs.
+            const lakhs = Number(value) || 0;
+            const crores = lakhs / 100;
+            if (Math.abs(crores) >= 1000) {
+                return `₹${(crores / 1000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} K Cr`;
+            }
+            if (Math.abs(crores) >= 1) {
+                return `₹${crores.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`;
+            }
+            return `₹${lakhs.toLocaleString('en-IN', { maximumFractionDigits: 2 })} L`;
+        }
+        function fmtCount(value) {
+            return Number(value || 0).toLocaleString('en-IN');
+        }
+        function fmtDelta(curr, prev) {
+            if (prev === undefined || prev === null || prev === 0) return '';
+            const pct = ((curr - prev) / prev) * 100;
+            const sign = pct >= 0 ? '▲' : '▼';
+            return `${sign} ${Math.abs(pct).toFixed(2)}%`;
+        }
+        function fmtDate(ds) {
+            if (!ds) return '—';
+            const d = new Date(ds);
+            return d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
+        }
+        // Display large percentage changes as multipliers — readable for stocks
+        // that grew from near-zero baselines (e.g. 1,583,444% → 15,835×).
+        function fmtPctChange(pct) {
+            if (pct === null || pct === undefined || isNaN(pct)) return '—';
+            const abs = Math.abs(pct);
+            if (abs < 1000) {
+                const sign = pct >= 0 ? '+' : '';
+                return `${sign}${pct.toFixed(1)}%`;
+            }
+            // Treat as a price multiplier: pct/100 + 1
+            const mult = abs / 100 + 1;
+            const sign = pct >= 0 ? '×' : '×−';
+            // Format multiplier as integer or 1 decimal
+            const mStr = mult >= 100 ? Math.round(mult).toLocaleString('en-IN') : mult.toFixed(1);
+            return `${sign}${mStr}`;
+        }
+
+        /* ============================================================
+         * Original dashboard logic (data loading + charts) — preserved
+         * with patched chart tooltips / theme awareness
+         * ========================================================== */
+        class CompressedDataLoader {
+            constructor() {
+                this.baseData = null;
+                this.stockChunks = new Map();
+                this.manifest = null;
+                this.loadedChunks = new Set();
+            }
+
+            async loadManifest() {
+                try {
+                    // Bust browser + CDN cache on the manifest itself so we always
+                    // discover the freshest data-version key on every page load.
+                    const response = await fetch('compressed_data/manifest.json?_=' + Date.now(), { cache: 'no-store' });
+                    this.manifest = await response.json();
+                    return this.manifest;
+                } catch (error) {
+                    console.error('Failed to load manifest:', error);
+                    throw error;
+                }
+            }
+
+            // Cache-bust query string built from manifest.created — unique per deploy.
+            // Every downstream data fetch appends this so a fresh deploy invalidates
+            // the CDN/browser cache for all data URLs simultaneously.
+            _bust() {
+                const v = this.manifest && this.manifest.created;
+                return v ? '?v=' + encodeURIComponent(v) : '';
+            }
+
+            async loadCompressedJson(url) {
+                const response = await fetch(url + this._bust());
+                const blob = await response.blob();
+                const ds = new DecompressionStream('gzip');
+                const decompressedStream = blob.stream().pipeThrough(ds);
+                const decompressedBlob = await new Response(decompressedStream).blob();
+                const text = await decompressedBlob.text();
+                return JSON.parse(text);
+            }
+
+            async loadBaseData() {
+                this.updateLoadingStatus('Loading market overview data…');
+                this.baseData = await this.loadCompressedJson('compressed_data/stock_analytics_base.json.gz');
+                return this.baseData;
+            }
+
+            async loadStockChunk(chunkNumber) {
+                if (this.loadedChunks.has(chunkNumber)) {
+                    return this.stockChunks.get(chunkNumber);
+                }
+                this.updateLoadingStatus(`Loading stock data chunk ${chunkNumber}…`);
+                const chunkData = await this.loadCompressedJson(`compressed_data/stock_data_chunk_${chunkNumber}.json.gz`);
+                this.stockChunks.set(chunkNumber, chunkData);
+                this.loadedChunks.add(chunkNumber);
+                return chunkData;
+            }
+
+            getStockData(symbol) {
+                for (const [, chunkData] of this.stockChunks) {
+                    if (chunkData.stocks && chunkData.stocks[symbol]) {
+                        return this.decompressStockData(symbol, chunkData.stocks[symbol]);
+                    }
+                }
+                return null;
+            }
+
+            decompressStockData(symbol, compressedData) {
+                if (!compressedData || !compressedData.fields || !compressedData.data) return [];
+                const fields = compressedData.fields;
+                const records = [];
+                for (const row of compressedData.data) {
+                    const record = {};
+                    fields.forEach((field, index) => { record[field] = row[index]; });
+                    const stockInfo = this.baseData.stock_index[symbol];
+                    if (stockInfo) {
+                        record.symbol = symbol;
+                        record.name = stockInfo.name;
+                        record.exchange = stockInfo.exchange;
+                    }
+                    records.push(record);
+                }
+                return records;
+            }
+
+            async searchStocks(query) {
+                if (!this.baseData || !this.baseData.stock_index) return [];
+                const results = [];
+                const queryLower = query.toLowerCase();
+                for (const [symbol, info] of Object.entries(this.baseData.stock_index)) {
+                    if (symbol.toLowerCase().includes(queryLower) || info.name.toLowerCase().includes(queryLower)) {
+                        results.push({
+                            symbol, name: info.name, exchange: info.exchange,
+                            latestAmount: info.latest_amount,
+                            recordCount: info.record_count, dateRange: info.date_range
+                        });
+                    }
+                }
+                return results.sort((a, b) => b.latestAmount - a.latestAmount).slice(0, 20);
+            }
+
+            updateLoadingStatus(message) {
+                const statusElement = document.getElementById('loadingStatus');
+                if (statusElement) statusElement.textContent = message;
+            }
+        }
+
+        class OptimizedMTFDashboard {
+            constructor() {
+                this.dataLoader = new CompressedDataLoader();
+                this.chart = null;
+                this.stockChart = null;
+                this.data = [];
+                this.currentStartDate = null;
+                this.currentEndDate = null;
+                this.init();
+            }
+
+            async init() {
+                try {
+                    await this.waitForECharts();
+                    // Load manifest first so its `created` timestamp becomes the
+                    // cache-bust key for every other data fetch. Manifest is tiny
+                    // (~475 B) so this serial extra step costs ~50ms.
+                    try { await this.dataLoader.loadManifest(); } catch (_) { /* fallback: no bust */ }
+                    await Promise.all([
+                        this.loadDailyTotalsData(),
+                        this.loadCompressedStockData()
+                    ]);
+                    this.hideLoadingOverlay();
+                    document.getElementById('mainContent').style.display = 'block';
+                    this.setupDashboard();
+                    this.setupEventListeners();
+                    this.updateChart();
+                } catch (error) {
+                    console.error('Failed to initialize:', error);
+                    this.showError('Failed to load dashboard data');
+                }
+            }
+
+            async waitForECharts() {
+                // Renamed-in-spirit: now waits for TradingView Lightweight Charts.
+                return new Promise((resolve) => {
+                    const check = () => (typeof LightweightCharts !== 'undefined') ? resolve() : setTimeout(check, 100);
+                    check();
+                });
+            }
+
+            async loadDailyTotalsData() {
+                // Try the freshly-extracted complete file first; fall back to the legacy bundle.
+                let raw = null;
+                // Try canonical filename first (what prod ships); fall back to _complete only
+                // if the canonical isn't present (e.g. running from a half-extracted dev tree).
+                const bust = this.dataLoader._bust();
+                for (const url of ['mtf_daily_totals.json', 'mtf_daily_totals_complete.json']) {
+                    try {
+                        const r = await fetch(url + bust);
+                        if (r.ok) { raw = await r.json(); break; }
+                    } catch (_) { /* try next */ }
+                }
+                if (!raw) throw new Error('No daily totals file found');
+
+                // Source is long-format (one row per exchange per day). Pivot to wide
+                // format keyed by date so the chart code can read nse_*/bse_* fields.
+                const byDate = new Map();
+                for (const r of raw) {
+                    const d = r.date;
+                    if (!byDate.has(d)) byDate.set(d, { date: d });
+                    const row = byDate.get(d);
+                    const ex = (r.exchange || '').toLowerCase();
+                    if (ex !== 'nse' && ex !== 'bse') continue;
+                    row[`${ex}_end_outstanding`]      = r.end_outstanding ?? null;
+                    row[`${ex}_beginning_outstanding`] = r.beginning_outstanding ?? null;
+                    row[`${ex}_exposure_liquidated`]  = r.exposure_liquidated ?? null;
+                    row[`${ex}_securities_count`]     = r.securities_count ?? 0;
+                    if (ex === 'nse') {
+                        row.nse_fresh_exposure = r.fresh_exposure ?? null;
+                    } else {
+                        row.bse_amount_financed = r.amount_financed ?? null;
+                        row.bse_exposure_taken  = r.exposure_taken  ?? null;
+                    }
+                }
+                this.data = Array.from(byDate.values())
+                    .sort((a, b) => new Date(a.date) - new Date(b.date));
+                return this.data;
+            }
+
+            async loadCompressedStockData() {
+                try {
+                    await this.dataLoader.loadManifest();
+                    await this.dataLoader.loadBaseData();
+                    return this.dataLoader.baseData;
+                } catch (error) {
+                    console.error('Failed to load stock data:', error);
+                    return null;
+                }
+            }
+
+            hideLoadingOverlay() {
+                const overlay = document.getElementById('loadingOverlay');
+                overlay.classList.add('hidden');
+                setTimeout(() => { overlay.style.display = 'none'; }, 300);
+            }
+
+            setupDashboard() {
+                this.setupChart();
+                this.setupTabNavigation();
+                this.setupStockSearch();
+                this.populateLatestSnapshot();
+            }
+
+            isDark() { return document.body.getAttribute('data-theme') === 'dark'; }
+
+            // Read current resolved CSS values so the chart palette tracks the page.
+            paletteFromCSS() {
+                const css = getComputedStyle(document.body);
+                const v = (n, fb) => (css.getPropertyValue(n).trim() || fb);
+                return {
+                    fg:       v('--foreground',       '#0b1220'),
+                    fgMuted:  v('--muted-foreground', '#5b6679'),
+                    fgFaint:  v('--faint-foreground', '#8c97ab'),
+                    bg:       v('--card',             '#ffffff'),
+                    bgPanel:  v('--background',       '#f7f8fa'),
+                    border:   v('--border',           '#e3e8ef'),
+                    accent:   v('--accent',           '#e6efff'),
+                    primary:  v('--primary',          '#2563eb'),
+                    nse:      v('--nse-color',        '#2563eb'),
+                    bse:      v('--bse-color',        '#059669'),
+                    positive: v('--positive',         '#059669'),
+                    negative: v('--negative',         '#dc2626'),
+                };
+            }
+
+            // Lightweight Charts options object derived from current palette.
+            chartLayoutOptions() {
+                const pal = this.paletteFromCSS();
+                return {
+                    layout: {
+                        background: { type: 'solid', color: 'transparent' },
+                        textColor: pal.fgMuted,
+                        fontFamily: "'Inter', system-ui, sans-serif",
+                        fontSize: 11,
+                        attributionLogo: false,
+                    },
+                    grid: {
+                        vertLines: { visible: false },
+                        horzLines: { color: pal.border, style: LightweightCharts.LineStyle.Dashed, visible: true },
+                    },
+                    crosshair: {
+                        mode: LightweightCharts.CrosshairMode.Normal,
+                        vertLine: { color: pal.fgFaint, width: 1, style: LightweightCharts.LineStyle.Dashed, labelBackgroundColor: pal.fg },
+                        horzLine: { color: pal.fgFaint, width: 1, style: LightweightCharts.LineStyle.Dashed, labelBackgroundColor: pal.fg },
+                    },
+                    rightPriceScale: {
+                        borderVisible: false,
+                        scaleMargins: { top: 0.12, bottom: 0.10 },
+                    },
+                    leftPriceScale: { visible: false },
+                    timeScale: {
+                        borderVisible: false,
+                        timeVisible: false,
+                        secondsVisible: false,
+                        rightOffset: 8,
+                        barSpacing: 6,
+                        fixLeftEdge: true,
+                        fixRightEdge: true,
+                    },
+                    handleScroll: { mouseWheel: true, pressedMouseMove: true, horzTouchDrag: true, vertTouchDrag: false },
+                    handleScale: { axisPressedMouseMove: true, mouseWheel: true, pinch: true },
+                };
+            }
+
+            // Reusable wiring: build a chart, attach a hover legend, return both.
+            _buildChart(container, opts = {}) {
+                const pal = this.paletteFromCSS();
+                const layout = this.chartLayoutOptions();
+                const chart = LightweightCharts.createChart(container, {
+                    ...layout,
+                    autoSize: true,
+                    rightPriceScale: { ...layout.rightPriceScale, mode: opts.logY ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal },
+                });
+                chart._pal = pal;
+                return chart;
+            }
+
+            setupChart() {
+                const chartDiv = document.getElementById('chartDiv');
+                if (typeof LightweightCharts === 'undefined') {
+                    chartDiv.innerHTML = '<div class="error">Failed to load charting library. Please refresh the page.</div>';
+                    return;
+                }
+                try {
+                    chartDiv.innerHTML = ''; // remove the loading placeholder
+                    this.chart = this._buildChart(chartDiv, { logY: false });
+                    this._chartSeries = []; // [{name, color, series, data}]
+                    this._chartLegendEl = this._mountLegend(chartDiv);
+                    this._wireHoverLegend(this.chart, () => this._chartSeries, this._chartLegendEl);
+                } catch (error) {
+                    console.error(error);
+                    chartDiv.innerHTML = '<div class="error">Failed to initialize chart. Please refresh the page.</div>';
+                }
+            }
+
+            _mountLegend(container) {
+                const el = document.createElement('div');
+                el.className = 'lwc-legend';
+                el.style.opacity = '0';
+                container.appendChild(el);
+                return el;
+            }
+
+            _wireHoverLegend(chart, getSeries, legendEl) {
+                const renderLatest = () => {
+                    const list = getSeries();
+                    if (!list || !list.length) { legendEl.style.opacity = '0'; return; }
+                    // Use last data point of first series as default
+                    const last = list.map(s => s.data[s.data.length - 1]).filter(Boolean);
+                    const time = last[0]?.time;
+                    if (time) renderForTime(time, null);
+                };
+                const renderForTime = (time, point) => {
+                    const list = getSeries();
+                    if (!list.length || !time) { legendEl.style.opacity = '0'; return; }
+                    let metaLabel;
+                    if (typeof time === 'string') metaLabel = fmtDate(time);
+                    else if (time && time.year) metaLabel = fmtDate(`${time.year}-${String(time.month).padStart(2,'0')}-${String(time.day).padStart(2,'0')}`);
+                    else metaLabel = '';
+                    let html = `<div class="lwc-legend-meta">${metaLabel}</div>`;
+                    list.forEach(s => {
+                        // find matching point
+                        const t = (typeof time === 'string') ? time
+                            : `${time.year}-${String(time.month).padStart(2,'0')}-${String(time.day).padStart(2,'0')}`;
+                        const idx = this._binarySearchByTime(s.data, t);
+                        const cur = idx >= 0 ? s.data[idx] : null;
+                        const prev = idx > 0 ? s.data[idx - 1] : null;
+                        let val = '—';
+                        let delta = '';
+                        if (cur) {
+                            val = s.fmt(cur.value);
+                            if (prev && prev.value > 0) {
+                                const pct = ((cur.value - prev.value) / prev.value) * 100;
+                                const arrow = pct >= 0 ? '▲' : '▼';
+                                const cls = pct >= 0 ? 'up' : 'down';
+                                delta = `<span class="lwc-legend-delta ${cls}">${arrow} ${Math.abs(pct).toFixed(2)}%</span>`;
+                            }
+                        }
+                        html += `<div class="lwc-legend-row" style="--legend-color:${s.color}">
+                            <span class="lwc-legend-name">${s.name}</span>
+                            <span class="lwc-legend-value">${val}${delta}</span>
+                        </div>`;
+                    });
+                    legendEl.innerHTML = html;
+                    legendEl.style.opacity = '1';
+                };
+                chart._renderLatest = renderLatest;
+                chart.subscribeCrosshairMove((param) => {
+                    if (!param || !param.time) { renderLatest(); return; }
+                    renderForTime(param.time, param.point);
+                });
+            }
+
+            // Binary search a sorted-by-time array of {time:'YYYY-MM-DD', value}.
+            _binarySearchByTime(arr, t) {
+                let lo = 0, hi = arr.length - 1, best = -1;
+                while (lo <= hi) {
+                    const mid = (lo + hi) >> 1;
+                    if (arr[mid].time === t) return mid;
+                    if (arr[mid].time < t) { best = mid; lo = mid + 1; }
+                    else hi = mid - 1;
+                }
+                return best;
+            }
+
+            // Re-apply theme to existing charts when light/dark is toggled.
+            repaintCharts() {
+                if (this.chart) this.chart.applyOptions(this.chartLayoutOptions());
+                if (this.stockChart) this.stockChart.applyOptions(this.chartLayoutOptions());
+                // Re-color series & legend (palette may have changed).
+                if (this._chartSeries) {
+                    const pal = this.paletteFromCSS();
+                    this._chartSeries.forEach(s => {
+                        const color = s.kind === 'NSE' ? pal.nse : pal.bse;
+                        s.color = color;
+                        s.series.applyOptions(this._lineOptions(color, s.useArea));
+                    });
+                    if (this.chart && this.chart._renderLatest) this.chart._renderLatest();
+                }
+                if (this._stockSeries) {
+                    const pal = this.paletteFromCSS();
+                    this._stockSeries.forEach(s => {
+                        const color = s.role === 'amount' ? pal.nse : pal.bse;
+                        s.color = color;
+                        s.series.applyOptions(this._lineOptions(color, s.useArea, s.role === 'qty'));
+                    });
+                    if (this.stockChart && this.stockChart._renderLatest) this.stockChart._renderLatest();
+                }
+            }
+
+            _lineOptions(color, useArea, dashed=false) {
+                const opts = {
+                    color, lineWidth: 2,
+                    lineType: document.getElementById('smoothLines')?.checked ? LightweightCharts.LineType.Curved : LightweightCharts.LineType.Simple,
+                    lineStyle: dashed ? LightweightCharts.LineStyle.Dashed : LightweightCharts.LineStyle.Solid,
+                    priceLineVisible: false,
+                    lastValueVisible: true,
+                    crosshairMarkerVisible: true,
+                    crosshairMarkerRadius: 4,
+                    crosshairMarkerBorderWidth: 2,
+                };
+                if (useArea) {
+                    const pal = this.paletteFromCSS();
+                    return {
+                        ...opts,
+                        topColor: this._withAlpha(color, this.isDark() ? 0.45 : 0.32),
+                        bottomColor: this._withAlpha(color, 0),
+                        lineColor: color,
+                    };
+                }
+                return opts;
+            }
+
+            setupEventListeners() {
+                document.getElementById('updateChart').addEventListener('click', () => this.updateChart());
+                document.getElementById('downloadCSV').addEventListener('click', () => this.downloadCSV());
+
+                // Overview chart timeframe (1M/3M/6M/1Y/ALL) — scoped to the Overview
+                // panel so it doesn't collide with the Market Changes filter pills
+                // that also use .timeframe-btn for styling.
+                document.querySelectorAll('#overview-tab .timeframe-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('#overview-tab .timeframe-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this.setTimeframe(e.currentTarget.dataset.period);
+                    });
+                });
+
+                // Per-stock-chart timeframe buttons (NSE + BSE), scoped by [data-stock-tf].
+                document.querySelectorAll('.stock-tf-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const group = e.currentTarget.closest('.stock-tf-buttons');
+                        if (!group) return;
+                        group.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this._applyStockTimeframe(group.dataset.stockTf, e.currentTarget.dataset.stockPeriod);
+                    });
+                });
+
+                // Per-stock-chart reset zoom.
+                document.querySelectorAll('.stock-tf-reset').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const exchange = e.currentTarget.dataset.stockReset;
+                        const chart = this.stockCharts && this.stockCharts[exchange];
+                        if (chart) chart.timeScale().fitContent();
+                        // Sync ALL pill back to active.
+                        const grp = document.querySelector(`.stock-tf-buttons[data-stock-tf="${exchange}"]`);
+                        if (grp) {
+                            grp.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
+                            const all = grp.querySelector('.stock-tf-btn[data-stock-period="ALL"]');
+                            if (all) all.classList.add('active');
+                        }
+                    });
+                });
+
+                ['exchangeFilter', 'metricSelect', 'chartType'].forEach(id => {
+                    document.getElementById(id).addEventListener('change', () => this.updateChart());
+                });
+
+                ['smoothLines', 'logScale'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.addEventListener('change', () => this.updateChart());
+                });
+
+                const resetBtn = document.getElementById('chartReset');
+                if (resetBtn) resetBtn.addEventListener('click', () => {
+                    if (this.chart) this.chart.timeScale().fitContent();
+                });
+            }
+
+            // Zoom the stock chart to the chosen window without re-filtering the
+            // dataset — the full time series stays loaded so the user can scroll
+            // back to any range freely.
+            _applyStockTimeframe(exchange, period) {
+                const chart = this.stockCharts && this.stockCharts[exchange];
+                const data  = this._stockChartFullData && this._stockChartFullData[exchange];
+                if (!chart || !data || data.length === 0) return;
+                if (period === 'ALL') { chart.timeScale().fitContent(); return; }
+                const months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12 }[period];
+                if (!months) return;
+                const lastTime = data[data.length - 1].time;
+                const lastD  = new Date(lastTime);
+                const startD = new Date(lastD);
+                startD.setMonth(startD.getMonth() - months);
+                if (startD < new Date(data[0].time)) {
+                    // Less than `months` of data available — fall back to full fit.
+                    chart.timeScale().fitContent();
+                    return;
+                }
+                chart.timeScale().setVisibleRange({
+                    from: startD.toISOString().slice(0, 10),
+                    to:   lastTime,
+                });
+            }
+
+            // NSE and BSE tabs share the same search/chart flow but render into
+            // their own DOM subtrees (suffixed IDs *Nse / *Bse). All per-exchange
+            // state lives on `this.stockCharts[exchange]`, `this._stockChartFullData[exchange]`,
+            // etc. so the two tabs never trample each other.
+            _exSfx(exchange) { return exchange.charAt(0).toUpperCase() + exchange.slice(1); }
+
+            async performStockSearch(query, exchange) {
+                const results = await this.dataLoader.searchStocks(query);
+                const filtered = results.filter(s => (s.exchange || '').toUpperCase() === exchange.toUpperCase());
+                this.displaySearchResults(filtered, exchange);
+            }
+
+            async showStockChart(selectedStock, exchange) {
+                let stockData = this.dataLoader.getStockData(selectedStock.symbol);
+                if (!stockData) {
+                    this.dataLoader.updateLoadingStatus(`Loading data for ${selectedStock.symbol}…`);
+                    for (let i = 1; i <= this.dataLoader.manifest.chunks.length; i++) {
+                        await this.dataLoader.loadStockChunk(i);
+                        stockData = this.dataLoader.getStockData(selectedStock.symbol);
+                        if (stockData) break;
+                    }
+                }
+                if (!stockData || stockData.length === 0) { alert('Stock data not found'); return; }
+                this.displayStockChart(selectedStock, stockData, exchange);
+            }
+
+            displayStockChart(selectedStock, stockData, exchange) {
+                const sfx = this._exSfx(exchange);
+                const chartContainer = document.getElementById(`stockTimeSeriesChart${sfx}`);
+
+                this.stockCharts            = this.stockCharts            || {};
+                this._stockChartFullData    = this._stockChartFullData    || {};
+                this._stockSeriesByExchange = this._stockSeriesByExchange || {};
+                this._stockLegendByExchange = this._stockLegendByExchange || {};
+
+                if (this.stockCharts[exchange]) {
+                    this.stockCharts[exchange].remove();
+                    this.stockCharts[exchange] = null;
+                    const oldLegend = this._stockLegendByExchange[exchange];
+                    if (oldLegend && oldLegend.parentNode) oldLegend.parentNode.removeChild(oldLegend);
+                }
+                chartContainer.innerHTML = '';
+
+                document.getElementById(`selectedStockChart${sfx}`).style.display = 'block';
+                document.getElementById(`selectedStockTitle${sfx}`).textContent = `${selectedStock.name} (${selectedStock.symbol})`;
+
+                const pal = this.paletteFromCSS();
+                const chart = this._buildChart(chartContainer, { logY: false });
+                chart.applyOptions({
+                    leftPriceScale: { visible: true, borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.10 } },
+                    localization: {
+                        priceFormatter: (v) => fmtINR(v),
+                        timeFormatter: (t) => {
+                            if (typeof t === 'string') return fmtDate(t);
+                            if (t && t.year) return fmtDate(`${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')}`);
+                            return '';
+                        }
+                    }
+                });
+                this.stockCharts[exchange] = chart;
+
+                // Sort + filter + sanitize stock data. The full series stays in
+                // memory; timeframe pills only change the visible range.
+                const sorted = [...stockData].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
+                const amounts = this._sanitizeSeries(sorted
+                    .map(r => ({ time: r.date, value: r.amount_financed }))
+                    .filter(p => p.value !== null && p.value !== undefined && p.value > 0));
+                const quantities = this._sanitizeSeries(sorted
+                    .map(r => ({ time: r.date, value: r.qty_financed }))
+                    .filter(p => p.value !== null && p.value !== undefined && p.value > 0));
+
+                const amountSeries = chart.addSeries(LightweightCharts.AreaSeries, {
+                    ...this._lineOptions(pal.nse, true),
+                    priceScaleId: 'right',
+                });
+                amountSeries.setData(amounts);
+                const qtySeries = chart.addSeries(LightweightCharts.LineSeries, {
+                    ...this._lineOptions(pal.bse, false, true),
+                    priceScaleId: 'left',
+                });
+                qtySeries.setData(quantities);
+                chart.priceScale('left').applyOptions({
+                    visible: true, borderVisible: false,
+                    scaleMargins: { top: 0.12, bottom: 0.10 },
+                });
+
+                this._stockSeriesByExchange[exchange] = [
+                    { name: 'Amount Financed', role: 'amount', color: pal.nse, useArea: true, series: amountSeries, data: amounts, fmt: fmtINR },
+                    { name: 'Quantity Financed', role: 'qty', color: pal.bse, useArea: false, series: qtySeries, data: quantities, fmt: fmtCount },
+                ];
+                this._stockLegendByExchange[exchange] = this._mountLegend(chartContainer);
+                this._wireHoverLegend(chart, () => this._stockSeriesByExchange[exchange], this._stockLegendByExchange[exchange]);
+
+                this._stockChartFullData[exchange] = amounts;
+
+                // Reset timeframe pills to ALL whenever a new stock is loaded.
+                const grp = document.querySelector(`.stock-tf-buttons[data-stock-tf="${exchange}"]`);
+                if (grp) {
+                    grp.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
+                    const all = grp.querySelector('.stock-tf-btn[data-stock-period="ALL"]');
+                    if (all) all.classList.add('active');
+                }
+
+                chart.timeScale().fitContent();
+                if (chart._renderLatest) chart._renderLatest();
+            }
+
+            displaySearchResults(results, exchange) {
+                const sfx = this._exSfx(exchange);
+                const searchResultsDiv = document.getElementById(`searchResults${sfx}`);
+                if (results.length === 0) {
+                    searchResultsDiv.innerHTML = `<div class="search-result-item">No ${exchange.toUpperCase()} stocks found</div>`;
+                    searchResultsDiv.style.display = 'block';
+                    return;
+                }
+                searchResultsDiv.innerHTML = results.map(stock => `
+                    <div class="search-result-item" data-symbol="${stock.symbol}" data-name="${stock.name}" data-exchange="${stock.exchange}">
                         <div class="stock-info">
-                            <div class="stock-symbol">${s.symbol}</div>
-                            <div class="stock-name">${s.name}</div>
+                            <div class="stock-symbol">${stock.symbol}</div>
+                            <div class="stock-name">${stock.name}</div>
                         </div>
                         <div class="stock-metrics">
-                            <div class="stock-amount">${fmtINR(s.latestAmount)}</div>
-                            <div class="stock-exchange exchange-${s.exchange?.toLowerCase()}">${s.exchange}</div>
+                            <div class="stock-amount">${fmtINR(stock.latestAmount)}</div>
+                            <div class="stock-exchange exchange-${stock.exchange?.toLowerCase()}">${stock.exchange}</div>
                         </div>
                     </div>
-                `).join(""),document.querySelectorAll(".search-result-item").forEach(s=>{s.addEventListener("click",()=>{document.querySelectorAll(".search-result-item").forEach(o=>o.classList.remove("selected")),s.classList.add("selected");const a=document.getElementById("chartStockBtn");a.disabled=!1,this.selectedStock={symbol:s.dataset.symbol,name:s.dataset.name,exchange:s.dataset.exchange},a.onclick=()=>this.showStockChart(this.selectedStock)})}),e.style.display="block"}setupTabNavigation(){document.querySelectorAll(".tab-btn").forEach(t=>{t.addEventListener("click",()=>{document.querySelectorAll(".tab-btn").forEach(e=>e.classList.remove("active")),document.querySelectorAll(".tab-content").forEach(e=>e.classList.remove("active")),t.classList.add("active"),document.getElementById(`${t.dataset.tab}-tab`).classList.add("active"),this.loadTabData(t.dataset.tab),t.dataset.tab==="overview"&&this.chart&&setTimeout(()=>this.chart.resize(),50)})})}setupStockSearch(){const t=document.getElementById("stockSearchInput"),e=document.getElementById("closeStockChart");t.addEventListener("input",s=>{const a=s.target.value.trim();a.length>2?this.performStockSearch(a):document.getElementById("searchResults").style.display="none"}),e.addEventListener("click",()=>{document.getElementById("selectedStockChart").style.display="none",this.stockChart&&(this.stockChart.remove(),this.stockChart=null)})}populateLatestSnapshot(){const t=document.getElementById("statusBar"),e=this.data?.length||0,s=this.dataLoader.baseData?Object.keys(this.dataLoader.baseData.stock_index||{}).length:0;if(e>0&&s>0?(t.innerHTML=`<span class="live-dot" aria-hidden="true"></span> ${e.toLocaleString("en-IN")} daily records \xB7 ${s.toLocaleString("en-IN")} stocks indexed`,t.dataset.status="ok"):e>0?(t.innerHTML=`<span class="live-dot" aria-hidden="true"></span> Daily totals loaded \xB7 ${e.toLocaleString("en-IN")} NSE & BSE records`,t.dataset.status="ok"):(t.textContent="\u26A0\uFE0F Failed to load data \u2014 please ensure data files are available.",t.dataset.status="error"),e>0){const a=this.data[this.data.length-1].date;document.getElementById("lastUpdatedDate").textContent=`As of ${fmtDate(a)}`}document.getElementById("chartTitle").textContent="MTF Daily Totals \u2014 Market Overview",this.populateStatsGridFromDailyData()}populateStatsGridFromDailyData(){if(!this.data||this.data.length===0)return;const t=document.getElementById("statsContainer"),e=this.data[this.data.length-1],s=this.data.length>1?this.data[this.data.length-2]:null,a=(e.nse_end_outstanding||0)+(e.bse_end_outstanding||0),o=s?(s.nse_end_outstanding||0)+(s.bse_end_outstanding||0):null,n=(d,h,r,u,f)=>`
-                    <div class="stat" data-exchange="${u||""}">
-                        ${u?'<span class="stat-accent" aria-hidden="true"></span>':""}
-                        <div class="stat-label">${d}</div>
-                        <div class="stat-value">${h}</div>
-                        ${r?`<div class="stat-sub">${r}</div>`:""}
-                        ${f?`<div class="stat-change ${f.cls}">${f.text}</div>`:""}
+                `).join('');
+                // Scope selection state to THIS results pane so clicks in one tab
+                // don't toggle classes in the other tab's pane.
+                searchResultsDiv.querySelectorAll('.search-result-item').forEach(item => {
+                    item.addEventListener('click', () => {
+                        searchResultsDiv.querySelectorAll('.search-result-item').forEach(i => i.classList.remove('selected'));
+                        item.classList.add('selected');
+                        const chartBtn = document.getElementById(`chartStockBtn${sfx}`);
+                        chartBtn.disabled = false;
+                        this._selectedStocks = this._selectedStocks || {};
+                        this._selectedStocks[exchange] = { symbol: item.dataset.symbol, name: item.dataset.name, exchange: item.dataset.exchange };
+                        chartBtn.onclick = () => this.showStockChart(this._selectedStocks[exchange], exchange);
+                    });
+                });
+                searchResultsDiv.style.display = 'block';
+            }
+
+            setupTabNavigation() {
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                        btn.classList.add('active');
+                        document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
+                        this.loadTabData(btn.dataset.tab);
+                        // Resize chart in case it was hidden when first rendered
+                        if (btn.dataset.tab === 'overview' && this.chart) {
+                            setTimeout(() => this.chart.resize(), 50);
+                        }
+                    });
+                });
+            }
+
+            setupStockSearch() {
+                ['nse', 'bse'].forEach(exchange => this._wireStockSearch(exchange));
+            }
+
+            _wireStockSearch(exchange) {
+                const sfx = this._exSfx(exchange);
+                const searchInput = document.getElementById(`stockSearchInput${sfx}`);
+                const closeBtn    = document.getElementById(`closeStockChart${sfx}`);
+                const resultsDiv  = document.getElementById(`searchResults${sfx}`);
+                if (!searchInput || !closeBtn) return;
+                searchInput.addEventListener('input', (e) => {
+                    const query = e.target.value.trim();
+                    if (query.length > 2) this.performStockSearch(query, exchange);
+                    else if (resultsDiv) resultsDiv.style.display = 'none';
+                });
+                closeBtn.addEventListener('click', () => {
+                    document.getElementById(`selectedStockChart${sfx}`).style.display = 'none';
+                    if (this.stockCharts && this.stockCharts[exchange]) {
+                        this.stockCharts[exchange].remove();
+                        this.stockCharts[exchange] = null;
+                    }
+                });
+            }
+
+            populateLatestSnapshot() {
+                const statusBar = document.getElementById('statusBar');
+                const dailyRecords = this.data?.length || 0;
+                const stocksIndexed = this.dataLoader.baseData ? Object.keys(this.dataLoader.baseData.stock_index || {}).length : 0;
+                if (dailyRecords > 0 && stocksIndexed > 0) {
+                    statusBar.innerHTML = `<span class="live-dot" aria-hidden="true"></span> ${dailyRecords.toLocaleString('en-IN')} daily records · ${stocksIndexed.toLocaleString('en-IN')} stocks indexed`;
+                    statusBar.dataset.status = 'ok';
+                } else if (dailyRecords > 0) {
+                    statusBar.innerHTML = `<span class="live-dot" aria-hidden="true"></span> Daily totals loaded · ${dailyRecords.toLocaleString('en-IN')} NSE & BSE records`;
+                    statusBar.dataset.status = 'ok';
+                } else {
+                    statusBar.textContent = '⚠️ Failed to load data — please ensure data files are available.';
+                    statusBar.dataset.status = 'error';
+                }
+
+                // Last updated date in header
+                if (dailyRecords > 0) {
+                    const latestDate = this.data[this.data.length - 1].date;
+                    document.getElementById('lastUpdatedDate').textContent = `As of ${fmtDate(latestDate)}`;
+                }
+
+                document.getElementById('chartTitle').textContent = 'MTF Daily Totals — Market Overview';
+                this.populateStatsGridFromDailyData();
+            }
+
+            populateStatsGridFromDailyData() {
+                if (!this.data || this.data.length === 0) return;
+
+                const statsContainer = document.getElementById('statsContainer');
+                const latest = this.data[this.data.length - 1];
+                const previous = this.data.length > 1 ? this.data[this.data.length - 2] : null;
+
+                const totalEnd = (latest.nse_end_outstanding || 0) + (latest.bse_end_outstanding || 0);
+                const prevTotalEnd = previous ? ((previous.nse_end_outstanding || 0) + (previous.bse_end_outstanding || 0)) : null;
+
+                const card = (label, value, sub, exchange, change) => `
+                    <div class="stat" data-exchange="${exchange || ''}">
+                        ${exchange ? '<span class="stat-accent" aria-hidden="true"></span>' : ''}
+                        <div class="stat-label">${label}</div>
+                        <div class="stat-value">${value}</div>
+                        ${sub ? `<div class="stat-sub">${sub}</div>` : ''}
+                        ${change ? `<div class="stat-change ${change.cls}">${change.text}</div>` : ''}
                     </div>
-                `,i=(d,h)=>d>=h?"":"negative";t.innerHTML=[n("Total Outstanding",fmtINR(a),`${fmtDate(e.date)} \xB7 NSE + BSE`,"TOTAL",o?{text:`${fmtDelta(a,o)} vs prev day`,cls:i(a,o)}:null),n("NSE Outstanding",fmtINR(e.nse_end_outstanding),`${fmtCount(e.nse_securities_count)} securities`,"NSE",s?{text:fmtDelta(e.nse_end_outstanding,s.nse_end_outstanding),cls:i(e.nse_end_outstanding,s.nse_end_outstanding)}:null),n("BSE Outstanding",fmtINR(e.bse_end_outstanding),`${fmtCount(e.bse_securities_count)} securities`,"BSE",s?{text:fmtDelta(e.bse_end_outstanding,s.bse_end_outstanding),cls:i(e.bse_end_outstanding,s.bse_end_outstanding)}:null),n("Fresh Exposure (NSE)",fmtINR(e.nse_fresh_exposure),"Net new positions today","NSE"),n("Liquidated (NSE)",fmtINR(e.nse_exposure_liquidated),"Positions exited today","NSE"),n("Securities Total",fmtCount((e.nse_securities_count||0)+(e.bse_securities_count||0)),`NSE ${fmtCount(e.nse_securities_count)} \xB7 BSE ${fmtCount(e.bse_securities_count)}`,"TOTAL")].join("")}loadTabData(t){const e=this.dataLoader.baseData;if(!e||!e.latest_snapshot)return;const s=e.latest_snapshot;switch(t){case"nse-stocks":this.populateNSEStocks(s.nse_stocks);break;case"bse-stocks":this.populateBSEStocks(s.bse_stocks);break;case"cross-exchange":{let a=s.cross_exchange_stocks;(!a||!a.length)&&(a=this.computeCrossExchange()),this.populateCrossExchange(a);break}case"sudden-changes":{this.populateSuddenChanges([]),this.computeRecentChanges().then(a=>this.populateSuddenChanges(a)).catch(a=>{console.error("Failed to compute recent changes:",a),this.populateSuddenChanges(s.sudden_changes||[])});break}}}async computeRecentChanges(){const t=this.dataLoader.manifest?.chunks?.length||0;for(let u=1;u<=t;u++)await this.dataLoader.loadStockChunk(u);const e=this.dataLoader.baseData?.stock_index||{},s=864e5,a=30,o=30,n=5;let i=0;for(const[,u]of this.dataLoader.stockChunks){const f=u.stocks||{};for(const m of Object.values(f)){if(!m||!m.data||m.data.length<2)continue;const l=m.fields.indexOf("date");if(l<0)continue;const c=Date.parse(m.data[m.data.length-1][l]);Number.isFinite(c)&&c>i&&(i=c)}}const d=i-a*s,h=[];for(const[,u]of this.dataLoader.stockChunks){const f=u.stocks||{};for(const[m,l]of Object.entries(f)){if(!l||!l.fields||!l.data)continue;const c=l.fields,g=c.indexOf("date"),v=c.indexOf("amount_financed");if(g<0||v<0)continue;const _=l.data;if(_.length<2)continue;const y=_[_.length-1],S=Date.parse(y[g]);if(!Number.isFinite(S)||S<d)continue;const $=S-o*s;let L=null,w=n*s+1;for(let C=_.length-2;C>=0;C--){const E=Date.parse(_[C][g]);if(!Number.isFinite(E))continue;const D=Math.abs(E-$);if(D<w&&(w=D,L=_[C]),E<$-n*s)break}if(!L)continue;const k=Number(y[v]),b=Number(L[v]);if(!isFinite(k)||!isFinite(b)||b<=0||k<=0)continue;const x=(k-b)/b*100;if(k<100&&b<100||Math.abs(x)<5)continue;const M=e[m]||{};h.push({symbol:m,name:M.name||m,exchange:M.exchange||"",amount_financed:k,previous_amount:b,change_percent:x,from_date:L[g],to_date:y[g]})}}h.sort((u,f)=>Math.abs(f.change_percent)-Math.abs(u.change_percent));const r=h.slice(0,50);return r._anchor=i?new Date(i).toISOString().slice(0,10):null,r._cutoff=d?new Date(d).toISOString().slice(0,10):null,r}computeCrossExchange(){const t=this.dataLoader.baseData?.stock_index;if(!t)return[];const e=n=>n?String(n).toUpperCase().replace(/[^A-Z0-9 ]+/g," ").replace(/\b(LIMITED|LTD|LIMITE|LIMI|PVT|PRIVATE|CORPORATION|CORP|CO|COMPANY|INC|INCORPORATED|INDIA)\b/g," ").replace(/\s+/g," ").trim():"",s=new Map,a=new Map;for(const[n,i]of Object.entries(t)){const d=e(i.name);if(!d)continue;const h=i.exchange==="NSE"?s:a,r=h.get(d);(!r||(i.latest_amount||0)>(r.info.latest_amount||0))&&h.set(d,{symbol:n,info:i})}const o=[];for(const[n,i]of s){const d=a.get(n);if(!d)continue;const h=i.info.latest_amount||0,r=d.info.latest_amount||0;o.push({symbol:i.symbol,name:i.info.name||d.info.name||n,nse_data:{symbol:i.symbol,name:i.info.name,amount_financed:h,record_count:i.info.record_count},bse_data:{symbol:d.symbol,name:d.info.name,amount_financed:r,record_count:d.info.record_count},total_funding:h+r})}return o.sort((n,i)=>i.total_funding-n.total_funding),o.slice(0,50)}_activeMarketSummary(t){const e=t.toLowerCase();if(this.data&&this.data.length){const s=this.data[this.data.length-1];return{total_outstanding:s[`${e}_end_outstanding`]||0,securities_count:s[`${e}_securities_count`]||0,date:s.date}}return null}_topShareAgainstActive(t,e,s,a){return!t||!t.length||!s?null:t.filter(i=>!a||i.date===a).slice(0,e).reduce((i,d)=>i+(d.amount_financed||0),0)/s*100}populateNSEStocks(t){if(!t)return;const e=document.getElementById("nseAnalyticsGrid"),s=this._activeMarketSummary("NSE"),a=s?s.total_outstanding:t.concentration_analysis?.total_funding||0,o=this._topShareAgainstActive(t.top_funded,10,a,s?.date)??(t.concentration_analysis?.top_10_share||0),n=this._topShareAgainstActive(t.top_funded,50,a,s?.date)??(t.concentration_analysis?.top_50_share||0);t.__totalDisplay=a,t.__top10Display=o,t.__top50Display=n,e.innerHTML=`
+                `;
+
+                const deltaCls = (a, b) => (a >= b ? '' : 'negative');
+
+                statsContainer.innerHTML = [
+                    card('Total Outstanding', fmtINR(totalEnd),
+                         `${fmtDate(latest.date)} · NSE + BSE`,
+                         'TOTAL',
+                         prevTotalEnd ? { text: `${fmtDelta(totalEnd, prevTotalEnd)} vs prev day`, cls: deltaCls(totalEnd, prevTotalEnd) } : null),
+                    card('NSE Outstanding', fmtINR(latest.nse_end_outstanding),
+                         `${fmtCount(latest.nse_securities_count)} securities`,
+                         'NSE',
+                         previous ? { text: fmtDelta(latest.nse_end_outstanding, previous.nse_end_outstanding), cls: deltaCls(latest.nse_end_outstanding, previous.nse_end_outstanding) } : null),
+                    card('BSE Outstanding', fmtINR(latest.bse_end_outstanding),
+                         `${fmtCount(latest.bse_securities_count)} securities`,
+                         'BSE',
+                         previous ? { text: fmtDelta(latest.bse_end_outstanding, previous.bse_end_outstanding), cls: deltaCls(latest.bse_end_outstanding, previous.bse_end_outstanding) } : null),
+                    card('Fresh Exposure (NSE)', fmtINR(latest.nse_fresh_exposure),
+                         'Net new positions today', 'NSE'),
+                    card('Liquidated (NSE)', fmtINR(latest.nse_exposure_liquidated),
+                         'Positions exited today', 'NSE'),
+                    card('Securities Total', fmtCount((latest.nse_securities_count || 0) + (latest.bse_securities_count || 0)),
+                         `NSE ${fmtCount(latest.nse_securities_count)} · BSE ${fmtCount(latest.bse_securities_count)}`, 'TOTAL')
+                ].join('');
+            }
+
+            loadTabData(tabName) {
+                const baseData = this.dataLoader.baseData;
+                if (!baseData || !baseData.latest_snapshot) return;
+                const snapshot = baseData.latest_snapshot;
+                switch (tabName) {
+                    case 'nse-stocks': this.populateNSEStocks(snapshot.nse_stocks); break;
+                    case 'bse-stocks': this.populateBSEStocks(snapshot.bse_stocks); break;
+                    case 'cross-exchange': {
+                        let ce = snapshot.cross_exchange_stocks;
+                        if (!ce || !ce.length) ce = this.computeCrossExchange();
+                        this.populateCrossExchange(ce);
+                        break;
+                    }
+                    case 'sudden-changes': {
+                        // Compute fresh from the per-stock chunks: most-recent record
+                        // vs the previous record (typically ~1 month earlier).
+                        // The precomputed snapshot list compares first-ever vs latest
+                        // and produces unhelpful 10-year multipliers.
+                        this.populateSuddenChanges([]);  // immediate "loading" state
+                        this.computeRecentChanges()
+                            .then(rows => this.populateSuddenChanges(rows))
+                            .catch(err => {
+                                console.error('Failed to compute recent changes:', err);
+                                this.populateSuddenChanges(snapshot.sudden_changes || []);
+                            });
+                        break;
+                    }
+                }
+            }
+
+            // Build a "last 30 days" change list from the loaded stock chunks.
+            //
+            // The per-stock data is daily, so the trailing-pair comparison would be
+            // a 1-day move (noisy). Instead, anchor at the freshest available date
+            // and compare each stock's most-recent record to its record from ~30
+            // days earlier (±5 day tolerance). Skip stocks whose recent record is
+            // outside the rolling 30-day window (i.e. stale stocks).
+            async computeRecentChanges() {
+                const total = this.dataLoader.manifest?.chunks?.length || 0;
+                for (let i = 1; i <= total; i++) {
+                    await this.dataLoader.loadStockChunk(i);
+                }
+                const idx = this.dataLoader.baseData?.stock_index || {};
+                const dayMs = 86400000;
+                const WINDOW_DAYS = 30;
+                const TARGET_LOOKBACK_DAYS = 30;
+                const TOLERANCE_DAYS = 5;
+
+                // Pass 1: find the freshest to_date across all stocks (the anchor).
+                let anchorTs = 0;
+                for (const [, chunk] of this.dataLoader.stockChunks) {
+                    const stocks = chunk.stocks || {};
+                    for (const packed of Object.values(stocks)) {
+                        if (!packed || !packed.data || packed.data.length < 2) continue;
+                        const di = packed.fields.indexOf('date');
+                        if (di < 0) continue;
+                        const t = Date.parse(packed.data[packed.data.length - 1][di]);
+                        if (Number.isFinite(t) && t > anchorTs) anchorTs = t;
+                    }
+                }
+                const cutoffTs = anchorTs - WINDOW_DAYS * dayMs;
+
+                // Pass 2: build the change list.
+                const rows = [];
+                for (const [, chunk] of this.dataLoader.stockChunks) {
+                    const stocks = chunk.stocks || {};
+                    for (const [symbol, packed] of Object.entries(stocks)) {
+                        if (!packed || !packed.fields || !packed.data) continue;
+                        const fields = packed.fields;
+                        const di = fields.indexOf('date');
+                        const ai = fields.indexOf('amount_financed');
+                        if (di < 0 || ai < 0) continue;
+                        const data = packed.data;
+                        if (data.length < 2) continue;
+
+                        const last = data[data.length - 1];
+                        const lastTs = Date.parse(last[di]);
+                        if (!Number.isFinite(lastTs)) continue;
+                        // Stock must be active inside the rolling 30-day window.
+                        if (lastTs < cutoffTs) continue;
+
+                        // Find the record closest to (lastTs - TARGET_LOOKBACK_DAYS),
+                        // within ±TOLERANCE_DAYS. If no such record exists, skip.
+                        const targetTs = lastTs - TARGET_LOOKBACK_DAYS * dayMs;
+                        let prev = null;
+                        let bestDelta = TOLERANCE_DAYS * dayMs + 1;
+                        for (let j = data.length - 2; j >= 0; j--) {
+                            const ts = Date.parse(data[j][di]);
+                            if (!Number.isFinite(ts)) continue;
+                            const delta = Math.abs(ts - targetTs);
+                            if (delta < bestDelta) { bestDelta = delta; prev = data[j]; }
+                            // Walked too far back — stop searching.
+                            if (ts < targetTs - TOLERANCE_DAYS * dayMs) break;
+                        }
+                        if (!prev) continue;
+
+                        const cur = Number(last[ai]);
+                        const old = Number(prev[ai]);
+                        if (!isFinite(cur) || !isFinite(old) || old <= 0 || cur <= 0) continue;
+                        const change_percent = ((cur - old) / old) * 100;
+                        if (cur < 100 && old < 100) continue;
+                        if (Math.abs(change_percent) < 5) continue;
+
+                        const info = idx[symbol] || {};
+                        rows.push({
+                            symbol,
+                            name: info.name || symbol,
+                            exchange: info.exchange || '',
+                            amount_financed: cur,
+                            previous_amount: old,
+                            change_percent,
+                            from_date: prev[di],
+                            to_date: last[di],
+                        });
+                    }
+                }
+                rows.sort((a, b) => Math.abs(b.change_percent) - Math.abs(a.change_percent));
+                const out = rows.slice(0, 50);
+                out._anchor = anchorTs ? new Date(anchorTs).toISOString().slice(0, 10) : null;
+                out._cutoff = cutoffTs ? new Date(cutoffTs).toISOString().slice(0, 10) : null;
+                return out;
+            }
+
+            // Cross-exchange list isn't pre-computed in the snapshot for this dataset.
+            // Build it from stock_index by joining NSE & BSE entries on normalized company name.
+            computeCrossExchange() {
+                const idx = this.dataLoader.baseData?.stock_index;
+                if (!idx) return [];
+                const norm = (name) => {
+                    if (!name) return '';
+                    return String(name).toUpperCase()
+                        .replace(/[^A-Z0-9 ]+/g, ' ')
+                        .replace(/\b(LIMITED|LTD|LIMITE|LIMI|PVT|PRIVATE|CORPORATION|CORP|CO|COMPANY|INC|INCORPORATED|INDIA)\b/g, ' ')
+                        .replace(/\s+/g, ' ').trim();
+                };
+                const nseMap = new Map();   // normName -> {symbol, info}
+                const bseMap = new Map();
+                for (const [symbol, info] of Object.entries(idx)) {
+                    const n = norm(info.name);
+                    if (!n) continue;
+                    const target = info.exchange === 'NSE' ? nseMap : bseMap;
+                    const cur = target.get(n);
+                    if (!cur || (info.latest_amount || 0) > (cur.info.latest_amount || 0)) {
+                        target.set(n, { symbol, info });
+                    }
+                }
+                const out = [];
+                for (const [name, n] of nseMap) {
+                    const b = bseMap.get(name);
+                    if (!b) continue;
+                    const nseAmt = n.info.latest_amount || 0;
+                    const bseAmt = b.info.latest_amount || 0;
+                    out.push({
+                        symbol: n.symbol,
+                        name: n.info.name || b.info.name || name,
+                        nse_data: { symbol: n.symbol, name: n.info.name, amount_financed: nseAmt, record_count: n.info.record_count },
+                        bse_data: { symbol: b.symbol, name: b.info.name, amount_financed: bseAmt, record_count: b.info.record_count },
+                        total_funding: nseAmt + bseAmt,
+                    });
+                }
+                out.sort((a, b) => b.total_funding - a.total_funding);
+                return out.slice(0, 50);
+            }
+
+            // Returns the active-day total outstanding (in lakhs) for an exchange
+            // from the loaded daily-totals, plus the per-day securities count.
+            // Falls back to the snapshot's concentration_analysis if daily totals aren't available.
+            _activeMarketSummary(exchange) {
+                const ex = exchange.toLowerCase();
+                if (this.data && this.data.length) {
+                    const last = this.data[this.data.length - 1];
+                    return {
+                        total_outstanding: last[`${ex}_end_outstanding`] || 0,
+                        securities_count: last[`${ex}_securities_count`] || 0,
+                        date: last.date,
+                    };
+                }
+                return null;
+            }
+
+            // Concentration share against the active-day denominator.
+            _topShareAgainstActive(topFunded, n, denominator, latestDate) {
+                if (!topFunded || !topFunded.length || !denominator) return null;
+                const onLatest = topFunded.filter(s => !latestDate || s.date === latestDate);
+                const sum = onLatest.slice(0, n).reduce((a, s) => a + (s.amount_financed || 0), 0);
+                return (sum / denominator) * 100;
+            }
+
+            populateNSEStocks(nseData) {
+                if (!nseData) return;
+                const grid = document.getElementById('nseAnalyticsGrid');
+                const active = this._activeMarketSummary('NSE');
+                const totalOutstanding = active ? active.total_outstanding : (nseData.concentration_analysis?.total_funding || 0);
+                const top10 = this._topShareAgainstActive(nseData.top_funded, 10, totalOutstanding, active?.date)
+                              ?? (nseData.concentration_analysis?.top_10_share || 0);
+                const top50 = this._topShareAgainstActive(nseData.top_funded, 50, totalOutstanding, active?.date)
+                              ?? (nseData.concentration_analysis?.top_50_share || 0);
+                nseData.__totalDisplay = totalOutstanding;
+                nseData.__top10Display = top10;
+                nseData.__top50Display = top50;
+                grid.innerHTML = `
                     <div class="analytics-section">
                         <h3>Top Funded Stocks</h3>
                         <div class="stock-list">
-                            ${(t.top_funded||[]).slice(0,20).map(i=>`
+                            ${(nseData.top_funded || []).slice(0, 20).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${i.symbol}</div>
-                                        <div class="stock-name">${i.name}</div>
+                                        <div class="stock-symbol">${stock.symbol}</div>
+                                        <div class="stock-name">${stock.name}</div>
                                     </div>
                                     <div class="stock-metrics">
-                                        <div class="stock-amount">${fmtINR(i.amount_financed)}</div>
+                                        <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
                                         <div class="stock-exchange exchange-nse">NSE</div>
                                     </div>
                                 </div>
-                            `).join("")}
+                            `).join('')}
                         </div>
                     </div>
                     <div class="analytics-section">
@@ -244,51 +1299,66 @@
                         <div class="concentration-stats">
                             <div class="stat-item">
                                 <span class="stat-label">Total Outstanding</span>
-                                <span class="stat-value">${fmtINR(t.__totalDisplay)}</span>
+                                <span class="stat-value">${fmtINR(nseData.__totalDisplay)}</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Top 10 Share</span>
-                                <span class="stat-value">${t.__top10Display.toFixed(1)}%</span>
+                                <span class="stat-value">${nseData.__top10Display.toFixed(1)}%</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Top 50 Share</span>
-                                <span class="stat-value">${t.__top50Display.toFixed(1)}%</span>
+                                <span class="stat-value">${nseData.__top50Display.toFixed(1)}%</span>
                             </div>
                         </div>
                     </div>
                     <div class="analytics-section">
                         <h3>Volume Leaders</h3>
                         <div class="stock-list">
-                            ${(t.volume_breakers||[]).slice(0,15).map(i=>`
+                            ${(nseData.volume_breakers || []).slice(0, 15).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${i.symbol}</div>
-                                        <div class="stock-name">${i.name}</div>
+                                        <div class="stock-symbol">${stock.symbol}</div>
+                                        <div class="stock-name">${stock.name}</div>
                                     </div>
                                     <div class="stock-metrics">
-                                        <div class="stock-amount">${fmtCount(i.qty_financed)}</div>
+                                        <div class="stock-amount">${fmtCount(stock.qty_financed)}</div>
                                         <div class="stock-exchange exchange-nse">QTY</div>
                                     </div>
                                 </div>
-                            `).join("")}
+                            `).join('')}
                         </div>
                     </div>
-                `}populateBSEStocks(t){if(!t)return;const e=document.getElementById("bseAnalyticsGrid"),s=this._activeMarketSummary("BSE"),a=s?s.total_outstanding:t.concentration_analysis?.total_funding||0,o=this._topShareAgainstActive(t.top_funded,10,a,s?.date)??(t.concentration_analysis?.top_10_share||0),n=this._topShareAgainstActive(t.top_funded,50,a,s?.date)??(t.concentration_analysis?.top_50_share||0);t.__totalDisplay=a,t.__top10Display=o,t.__top50Display=n,e.innerHTML=`
+                `;
+            }
+
+            populateBSEStocks(bseData) {
+                if (!bseData) return;
+                const grid = document.getElementById('bseAnalyticsGrid');
+                const active = this._activeMarketSummary('BSE');
+                const totalOutstanding = active ? active.total_outstanding : (bseData.concentration_analysis?.total_funding || 0);
+                const top10 = this._topShareAgainstActive(bseData.top_funded, 10, totalOutstanding, active?.date)
+                              ?? (bseData.concentration_analysis?.top_10_share || 0);
+                const top50 = this._topShareAgainstActive(bseData.top_funded, 50, totalOutstanding, active?.date)
+                              ?? (bseData.concentration_analysis?.top_50_share || 0);
+                bseData.__totalDisplay = totalOutstanding;
+                bseData.__top10Display = top10;
+                bseData.__top50Display = top50;
+                grid.innerHTML = `
                     <div class="analytics-section">
                         <h3>Top Funded Stocks</h3>
                         <div class="stock-list">
-                            ${(t.top_funded||[]).slice(0,20).map(i=>`
+                            ${(bseData.top_funded || []).slice(0, 20).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${i.symbol}</div>
-                                        <div class="stock-name">${i.name}</div>
+                                        <div class="stock-symbol">${stock.symbol}</div>
+                                        <div class="stock-name">${stock.name}</div>
                                     </div>
                                     <div class="stock-metrics">
-                                        <div class="stock-amount">${fmtINR(i.amount_financed)}</div>
+                                        <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
                                         <div class="stock-exchange exchange-bse">BSE</div>
                                     </div>
                                 </div>
-                            `).join("")}
+                            `).join('')}
                         </div>
                     </div>
                     <div class="analytics-section">
@@ -296,89 +1366,369 @@
                         <div class="concentration-stats">
                             <div class="stat-item">
                                 <span class="stat-label">Total Outstanding</span>
-                                <span class="stat-value">${fmtINR(t.__totalDisplay)}</span>
+                                <span class="stat-value">${fmtINR(bseData.__totalDisplay)}</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Top 10 Share</span>
-                                <span class="stat-value">${t.__top10Display.toFixed(1)}%</span>
+                                <span class="stat-value">${bseData.__top10Display.toFixed(1)}%</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Top 50 Share</span>
-                                <span class="stat-value">${t.__top50Display.toFixed(1)}%</span>
+                                <span class="stat-value">${bseData.__top50Display.toFixed(1)}%</span>
                             </div>
                         </div>
                     </div>
                     <div class="analytics-section">
                         <h3>Volume Leaders</h3>
                         <div class="stock-list">
-                            ${(t.volume_breakers||[]).slice(0,15).map(i=>`
+                            ${(bseData.volume_breakers || []).slice(0, 15).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${i.symbol}</div>
-                                        <div class="stock-name">${i.name}</div>
+                                        <div class="stock-symbol">${stock.symbol}</div>
+                                        <div class="stock-name">${stock.name}</div>
                                     </div>
                                     <div class="stock-metrics">
-                                        <div class="stock-amount">${fmtCount(i.qty_financed)}</div>
+                                        <div class="stock-amount">${fmtCount(stock.qty_financed)}</div>
                                         <div class="stock-exchange exchange-bse">QTY</div>
                                     </div>
                                 </div>
-                            `).join("")}
+                            `).join('')}
                         </div>
                     </div>
-                `}populateCrossExchange(t){if(!t)return;const e=document.getElementById("crossExchangeGrid");e.innerHTML=`
+                `;
+            }
+
+            populateCrossExchange(crossExchangeData) {
+                if (!crossExchangeData) return;
+                const grid = document.getElementById('crossExchangeGrid');
+                grid.innerHTML = `
                     <div class="analytics-section" style="grid-column: 1 / -1;">
                         <h3>Cross-Exchange Trading</h3>
                         <div class="stock-list">
-                            ${t.slice(0,50).map(s=>`
+                            ${crossExchangeData.slice(0, 50).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${s.symbol}</div>
-                                        <div class="stock-name">${s.name}</div>
+                                        <div class="stock-symbol">${stock.symbol}</div>
+                                        <div class="stock-name">${stock.name}</div>
                                     </div>
                                     <div class="cross-exchange-info">
-                                        <div>NSE: ${fmtINR(s.nse_data?.amount_financed||0)}</div>
-                                        <div>BSE: ${fmtINR(s.bse_data?.amount_financed||0)}</div>
-                                        <div><strong>Total: ${fmtINR(s.total_funding||0)}</strong></div>
+                                        <div>NSE: ${fmtINR(stock.nse_data?.amount_financed || 0)}</div>
+                                        <div>BSE: ${fmtINR(stock.bse_data?.amount_financed || 0)}</div>
+                                        <div><strong>Total: ${fmtINR(stock.total_funding || 0)}</strong></div>
                                     </div>
                                 </div>
-                            `).join("")}
+                            `).join('')}
                         </div>
                     </div>
-                `}populateSuddenChanges(t){const e=document.getElementById("marketChangesGrid");if(!t||!t.length){e.innerHTML=`
+                `;
+            }
+
+            populateSuddenChanges(suddenChanges) {
+                const grid = document.getElementById('marketChangesGrid');
+                if (!suddenChanges || !suddenChanges.length) {
+                    grid.innerHTML = `
                         <div class="analytics-section" style="grid-column: 1 / -1;">
                             <h3>Recent Market Changes</h3>
-                            <div class="loading"><div class="spinner"></div> Computing month-over-month changes\u2026</div>
+                            <div class="loading"><div class="spinner"></div> Computing month-over-month changes…</div>
                         </div>
-                    `;return}this._suddenChangesAll=t,this._suddenChangesFilter||(this._suddenChangesFilter="all");const s=this._suddenChangesFilter,a=s==="all"?t:t.filter(l=>(l.exchange||"").toUpperCase()===s),o=t._anchor,n=t._cutoff,d=new Date().toISOString().slice(0,10),r=o?Math.round((Date.parse(d)-Date.parse(o))/864e5):0;let u="";if(o&&n){const l=`${fmtDate(n)} \u2192 ${fmtDate(o)}`,c=r>60?`<span style="color:var(--warning); margin-left:.5rem">\xB7 stock-level data is ${r} days stale</span>`:"";u=`Last 30-day window \xB7 ${l}${c}`}const f={all:t.length,NSE:0,BSE:0};for(const l of t){const c=(l.exchange||"").toUpperCase();(c==="NSE"||c==="BSE")&&f[c]++}const m=`
+                    `;
+                    return;
+                }
+                // Cache the full set so toggle filtering can re-render without recomputing.
+                this._suddenChangesAll = suddenChanges;
+                if (!this._suddenChangesFilter) this._suddenChangesFilter = 'all';
+                const filter = this._suddenChangesFilter;
+                const filtered = filter === 'all' ? suddenChanges
+                              : suddenChanges.filter(s => (s.exchange || '').toUpperCase() === filter);
+                // Each row is a ~1-month change inside a rolling 30-day window
+                // anchored at the freshest available stock-level date.
+                const anchor = suddenChanges._anchor;
+                const cutoff = suddenChanges._cutoff;
+                const today = new Date(); const todayStr = today.toISOString().slice(0,10);
+                const dayMs = 86400000;
+                const stalenessDays = anchor ? Math.round((Date.parse(todayStr) - Date.parse(anchor)) / dayMs) : 0;
+                let subtitle = '';
+                if (anchor && cutoff) {
+                    const range = `${fmtDate(cutoff)} → ${fmtDate(anchor)}`;
+                    const stale = stalenessDays > 60
+                        ? `<span style="color:var(--warning); margin-left:.5rem">· stock-level data is ${stalenessDays} days stale</span>`
+                        : '';
+                    subtitle = `Last 30-day window · ${range}${stale}`;
+                }
+                // Pre-compute counts per exchange for toggle labels.
+                const counts = { all: suddenChanges.length, NSE: 0, BSE: 0 };
+                for (const s of suddenChanges) {
+                    const ex = (s.exchange || '').toUpperCase();
+                    if (ex === 'NSE' || ex === 'BSE') counts[ex]++;
+                }
+                const toggleHTML = `
                     <div class="timeframe-buttons" role="group" aria-label="Exchange filter" style="margin-bottom: .85rem">
-                        <button class="timeframe-btn ${s==="all"?"active":""}" data-mc-filter="all" type="button">All \xB7 ${f.all}</button>
-                        <button class="timeframe-btn ${s==="NSE"?"active":""}" data-mc-filter="NSE" type="button">NSE \xB7 ${f.NSE}</button>
-                        <button class="timeframe-btn ${s==="BSE"?"active":""}" data-mc-filter="BSE" type="button">BSE \xB7 ${f.BSE}</button>
-                    </div>`;e.innerHTML=`
+                        <button class="timeframe-btn ${filter==='all' ? 'active' : ''}" data-mc-filter="all" type="button">All · ${counts.all}</button>
+                        <button class="timeframe-btn ${filter==='NSE' ? 'active' : ''}" data-mc-filter="NSE" type="button">NSE · ${counts.NSE}</button>
+                        <button class="timeframe-btn ${filter==='BSE' ? 'active' : ''}" data-mc-filter="BSE" type="button">BSE · ${counts.BSE}</button>
+                    </div>`;
+
+                grid.innerHTML = `
                     <div class="analytics-section" style="grid-column: 1 / -1;">
                         <h3>Recent Market Changes</h3>
-                        ${u?`<div class="stat-sub" style="margin: -.5rem 0 .65rem">${u}</div>`:""}
-                        ${m}
+                        ${subtitle ? `<div class="stat-sub" style="margin: -.5rem 0 .65rem">${subtitle}</div>` : ''}
+                        ${toggleHTML}
                         <div class="stock-list">
-                            ${a.slice(0,50).map(l=>{const c=/^\d+(\.\d+)?$/.test(String(l.symbol||"")),g=c&&l.name?l.name:l.symbol,v=c&&l.name?l.symbol:l.name,_=l.from_date&&l.to_date?`${fmtDate(l.from_date)} \u2192 ${fmtDate(l.to_date)}`:"",y=(l.exchange||"").toUpperCase(),S=y==="NSE"?"exchange-nse":y==="BSE"?"exchange-bse":"";return`
+                            ${filtered.slice(0, 50).map(stock => {
+                                // BSE per-stock keys are numeric scrip codes (e.g. "590096.0").
+                                // Prefer the readable name as the headline for those, with the
+                                // scrip code shown smaller below.
+                                const scripCodeLike = /^\d+(\.\d+)?$/.test(String(stock.symbol || ''));
+                                const headline = scripCodeLike && stock.name ? stock.name : stock.symbol;
+                                const subline = scripCodeLike && stock.name ? stock.symbol : stock.name;
+                                const window = (stock.from_date && stock.to_date)
+                                    ? `${fmtDate(stock.from_date)} → ${fmtDate(stock.to_date)}`
+                                    : '';
+                                const ex = (stock.exchange || '').toUpperCase();
+                                const exClass = ex === 'NSE' ? 'exchange-nse' : (ex === 'BSE' ? 'exchange-bse' : '');
+                                return `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${g}</div>
-                                        <div class="stock-name">${v}${_?` \xB7 ${_}`:""}</div>
+                                        <div class="stock-symbol">${headline}</div>
+                                        <div class="stock-name">${subline}${window ? ` · ${window}` : ''}</div>
                                     </div>
                                     <div class="stock-metrics">
-                                        ${y?`<div class="stock-exchange ${S}">${y}</div>`:""}
-                                        <div class="stock-amount">${fmtINR(l.amount_financed)}</div>
-                                        <div class="stock-exchange ${l.change_percent>0?"positive-change":"negative-change"}" title="${l.previous_amount!=null?"Previous: "+fmtINR(l.previous_amount)+" \xB7 ":""}${l.change_percent?.toFixed(1)}%">
-                                            ${fmtPctChange(l.change_percent)}
+                                        ${ex ? `<div class="stock-exchange ${exClass}">${ex}</div>` : ''}
+                                        <div class="stock-amount-stack">
+                                            <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
+                                            ${stock.previous_amount != null ? `<div class="stock-prev">from ${fmtINR(stock.previous_amount)}</div>` : ''}
+                                        </div>
+                                        <div class="stock-exchange ${stock.change_percent > 0 ? 'positive-change' : 'negative-change'}">
+                                            ${fmtPctChange(stock.change_percent)}
                                         </div>
                                     </div>
-                                </div>`}).join("")}
-                            ${a.length===0?'<div class="loading">No stocks match this filter.</div>':""}
+                                </div>`;
+                            }).join('')}
+                            ${filtered.length === 0 ? '<div class="loading">No stocks match this filter.</div>' : ''}
                         </div>
                     </div>
-                `,e.querySelectorAll("[data-mc-filter]").forEach(l=>{l.addEventListener("click",()=>{this._suddenChangesFilter=l.dataset.mcFilter,this.populateSuddenChanges(this._suddenChangesAll)})})}updateChart(){if(!this.chart||!this.data||this.data.length===0)return;const t=document.getElementById("exchangeFilter").value,e=document.getElementById("metricSelect").value,s=document.getElementById("chartType").value,a=document.getElementById("logScale")?.checked||!1,o=e==="securities_count",n=c=>c==null?"\u2014":o?fmtCount(c):fmtINR(c);this.chart.priceScale("right").applyOptions({mode:a?LightweightCharts.PriceScaleMode.Logarithmic:LightweightCharts.PriceScaleMode.Normal}),this.chart.applyOptions({localization:{priceFormatter:c=>o?fmtCount(c):fmtINR(c),timeFormatter:c=>typeof c=="string"?fmtDate(c):c&&c.year?fmtDate(`${c.year}-${String(c.month).padStart(2,"0")}-${String(c.day).padStart(2,"0")}`):""}});let i=this.data;if(this.currentStartDate&&this.currentEndDate){const c=this.currentStartDate,g=this.currentEndDate;i=this.data.filter(v=>{const _=new Date(v.date);return _>=c&&_<=g})}const d=this.paletteFromCSS(),h=s==="area",r=c=>{const g=i.map(v=>({time:v.date,value:this.getMetricValue(v,e,c)})).filter(v=>v.value!==null&&v.value!==void 0&&v.value>0);return this._sanitizeSeries(g)},u=t==="both"||t==="NSE",f=t==="both"||t==="BSE";(this._chartSeries||[]).forEach(c=>this.chart.removeSeries(c.series)),this._chartSeries=[];const m=h?LightweightCharts.AreaSeries:LightweightCharts.LineSeries,l=(c,g,v)=>{const _=r(c);if(!_.length)return;const y=this.chart.addSeries(m,this._lineOptions(g,h));y.setData(_);const S=o?fmtCount:fmtINR;this._chartSeries.push({name:v,kind:c,color:g,useArea:h,series:y,data:_,fmt:S})};u&&l("NSE",d.nse,`NSE ${this.getMetricLabel(e)}`),f&&l("BSE",d.bse,`BSE ${this.getMetricLabel(e)}`),document.getElementById("chartTitle").textContent=`${this.getMetricLabel(e)} \xB7 ${t==="both"?"NSE & BSE":t}`,this.currentStartDate&&this.currentEndDate&&i.length?this.chart.timeScale().setVisibleRange({from:i[0].date,to:i[i.length-1].date}):this.chart.timeScale().fitContent(),this.chart._renderLatest&&this.chart._renderLatest()}_sanitizeSeries(t){if(!t||t.length<3)return t;let e=t.filter(a=>a.value>0);const s=4;for(let a=0;a<3;a++){const o=[];let n=0;for(let i=0;i<e.length;i++){const d=e[i].value,h=Math.max(0,i-s),r=Math.min(e.length-1,i+s),u=[];for(let g=h;g<=r;g++)g!==i&&u.push(e[g].value);if(u.length<2){o.push(e[i]);continue}u.sort((g,v)=>g-v);const f=u[u.length>>1],m=i>0?e[i-1].value:null,l=i<e.length-1?e[i+1].value:null,c=m!=null&&l!=null?Math.min(m,l):m??l;if(f>=100&&d<.4*f){n++;continue}if(c>=100&&d<.5*c){n++;continue}o.push(e[i])}if(e=o,!n)break}return e}_withAlpha(t,e){if(!t)return`rgba(0,0,0,${e})`;if(t=t.trim(),t.startsWith("#")){let s=t.slice(1);s.length===3&&(s=s.split("").map(i=>i+i).join(""));const a=parseInt(s.slice(0,2),16),o=parseInt(s.slice(2,4),16),n=parseInt(s.slice(4,6),16);return`rgba(${a},${o},${n},${e})`}return t.startsWith("rgb(")?t.replace("rgb(","rgba(").replace(")",`,${e})`):t}getMetricValue(t,e,s){const a=s.toLowerCase();switch(e){case"end_outstanding":return t[`${a}_end_outstanding`]||0;case"securities_count":return t[`${a}_securities_count`]||0;case"fresh_exposure":return s==="NSE"&&t.nse_fresh_exposure||0;case"exposure_liquidated":return t[`${a}_exposure_liquidated`]||0;case"exposure_taken":return s==="BSE"&&t.bse_exposure_taken||0;case"amount_financed":return s==="BSE"&&t.bse_amount_financed||0;default:return 0}}getMetricLabel(t){switch(t){case"end_outstanding":return"End Outstanding";case"securities_count":return"Securities Count";case"fresh_exposure":return"Fresh Exposure";case"exposure_liquidated":return"Exposure Liquidated";case"exposure_taken":return"Exposure Taken";case"amount_financed":return"Amount Financed";default:return t}}setTimeframe(t){const e=this.data&&this.data.length?new Date(this.data[this.data.length-1].date):new Date,s=new Date(e);switch(t){case"1M":s.setMonth(e.getMonth()-1);break;case"3M":s.setMonth(e.getMonth()-3);break;case"6M":s.setMonth(e.getMonth()-6);break;case"1Y":s.setFullYear(e.getFullYear()-1);break;default:this.currentStartDate=null,this.currentEndDate=null,this.updateChart();return}this.currentStartDate=s,this.currentEndDate=e,this.updateChart()}downloadCSV(){if(!this.data||this.data.length===0){alert("No data available");return}const t=Object.keys(this.data[0]),e=[t.join(","),...this.data.map(n=>t.map(i=>{const d=n[i];return typeof d=="string"&&d.includes(",")?`"${d}"`:d}).join(","))].join(`
-`),s=new Blob([e],{type:"text/csv"}),a=URL.createObjectURL(s),o=document.createElement("a");o.href=a,o.download="mtf_daily_totals.csv",document.body.appendChild(o),o.click(),document.body.removeChild(o),URL.revokeObjectURL(a)}showError(t){document.getElementById("mainContent").innerHTML=`<main class="app"><div class="error">${t}</div></main>`,document.getElementById("mainContent").style.display="block",this.hideLoadingOverlay()}}document.addEventListener("DOMContentLoaded",()=>{window.dashboard=new OptimizedMTFDashboard});
-</script>
+                `;
+                // Wire up the toggle buttons (re-rendered on every filter change).
+                grid.querySelectorAll('[data-mc-filter]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        this._suddenChangesFilter = btn.dataset.mcFilter;
+                        this.populateSuddenChanges(this._suddenChangesAll);
+                    });
+                });
+            }
+
+            updateChart() {
+                if (!this.chart || !this.data || this.data.length === 0) return;
+
+                const exchangeFilter = document.getElementById('exchangeFilter').value;
+                const metricSelect   = document.getElementById('metricSelect').value;
+                const chartType      = document.getElementById('chartType').value;
+                const logScale       = document.getElementById('logScale')?.checked || false;
+                const isCount        = metricSelect === 'securities_count';
+                const fmtVal         = (v) => (v === null || v === undefined) ? '—' : (isCount ? fmtCount(v) : fmtINR(v));
+
+                // Update price scale mode (linear/log) — log helps when NSE is much larger than BSE.
+                this.chart.priceScale('right').applyOptions({
+                    mode: logScale ? LightweightCharts.PriceScaleMode.Logarithmic : LightweightCharts.PriceScaleMode.Normal,
+                });
+
+                // Custom tick formatter (₹ K Cr / ₹ Cr / ₹ L or count)
+                this.chart.applyOptions({
+                    localization: {
+                        priceFormatter: (v) => isCount ? fmtCount(v) : fmtINR(v),
+                        timeFormatter: (t) => {
+                            if (typeof t === 'string') return fmtDate(t);
+                            if (t && t.year) return fmtDate(`${t.year}-${String(t.month).padStart(2,'0')}-${String(t.day).padStart(2,'0')}`);
+                            return '';
+                        }
+                    }
+                });
+
+                // Pivot filtered data into LWC-format series points.
+                let filtered = this.data;
+                if (this.currentStartDate && this.currentEndDate) {
+                    const lo = this.currentStartDate, hi = this.currentEndDate;
+                    filtered = this.data.filter(d => {
+                        const t = new Date(d.date);
+                        return t >= lo && t <= hi;
+                    });
+                }
+
+                const pal = this.paletteFromCSS();
+                const useArea = (chartType === 'area');
+
+                const buildPoints = (ex) => {
+                    const raw = filtered
+                        .map(d => ({ time: d.date, value: this.getMetricValue(d, metricSelect, ex) }))
+                        .filter(p => p.value !== null && p.value !== undefined && p.value > 0);
+                    return this._sanitizeSeries(raw);
+                };
+
+                const wantNSE = (exchangeFilter === 'both' || exchangeFilter === 'NSE');
+                const wantBSE = (exchangeFilter === 'both' || exchangeFilter === 'BSE');
+
+                // Tear down previous series.
+                (this._chartSeries || []).forEach(s => this.chart.removeSeries(s.series));
+                this._chartSeries = [];
+
+                const SeriesType = useArea ? LightweightCharts.AreaSeries : LightweightCharts.LineSeries;
+
+                const addOne = (kind, color, label) => {
+                    const data = buildPoints(kind);
+                    if (!data.length) return;
+                    const series = this.chart.addSeries(SeriesType, this._lineOptions(color, useArea));
+                    series.setData(data);
+                    const fmt = isCount ? fmtCount : fmtINR;
+                    this._chartSeries.push({ name: label, kind, color, useArea, series, data, fmt });
+                };
+
+                if (wantNSE) addOne('NSE', pal.nse, `NSE ${this.getMetricLabel(metricSelect)}`);
+                if (wantBSE) addOne('BSE', pal.bse, `BSE ${this.getMetricLabel(metricSelect)}`);
+
+                // Title
+                document.getElementById('chartTitle').textContent =
+                    `${this.getMetricLabel(metricSelect)} · ${exchangeFilter === 'both' ? 'NSE & BSE' : exchangeFilter}`;
+
+                // Apply timeframe to time scale
+                if (this.currentStartDate && this.currentEndDate && filtered.length) {
+                    this.chart.timeScale().setVisibleRange({
+                        from: filtered[0].date, to: filtered[filtered.length - 1].date
+                    });
+                } else {
+                    this.chart.timeScale().fitContent();
+                }
+
+                if (this.chart._renderLatest) this.chart._renderLatest();
+            }
+
+            // Drop "abrupt drop" outliers — single-day dips flanked by sane values.
+            // Two-pass:
+            //   1) Drop any non-positive point.
+            //   2) Drop any point that is < 50% of the *minimum* of its immediate
+            //      neighbours OR < 40% of the median of an 8-day window.
+            // The first rule catches transient single-day dips that recover in either
+            // direction (parsing errors); the second adds a safety net for clustered
+            // glitches. Real regime changes (a step-down that doesn't recover) survive.
+            _sanitizeSeries(points) {
+                if (!points || points.length < 3) return points;
+                // Pass 1: positivity
+                let cur = points.filter(p => p.value > 0);
+                // Pass 2: median + neighbour-min filter, iterated to convergence (max 3 passes).
+                const win = 4;
+                for (let pass = 0; pass < 3; pass++) {
+                    const out = [];
+                    let removed = 0;
+                    for (let i = 0; i < cur.length; i++) {
+                        const v = cur[i].value;
+                        // Median of up to 8 neighbours (excluding self).
+                        const lo = Math.max(0, i - win), hi = Math.min(cur.length - 1, i + win);
+                        const ns = [];
+                        for (let j = lo; j <= hi; j++) if (j !== i) ns.push(cur[j].value);
+                        if (ns.length < 2) { out.push(cur[i]); continue; }
+                        ns.sort((a, b) => a - b);
+                        const median = ns[ns.length >> 1];
+
+                        // Min of immediate neighbours (or whichever exists).
+                        const prev = i > 0 ? cur[i - 1].value : null;
+                        const next = i < cur.length - 1 ? cur[i + 1].value : null;
+                        const minN = (prev != null && next != null) ? Math.min(prev, next)
+                                   : (prev != null ? prev : next);
+
+                        // Filter if implausibly small compared to surroundings.
+                        if (median >= 100 && v < 0.4 * median) { removed++; continue; }
+                        if (minN  >= 100 && v < 0.5 * minN)    { removed++; continue; }
+
+                        out.push(cur[i]);
+                    }
+                    cur = out;
+                    if (!removed) break;
+                }
+                return cur;
+            }
+
+            // Apply alpha to a hex (or rgb/rgba/css var) colour string.
+            _withAlpha(c, a) {
+                if (!c) return `rgba(0,0,0,${a})`;
+                c = c.trim();
+                if (c.startsWith('#')) {
+                    let hex = c.slice(1);
+                    if (hex.length === 3) hex = hex.split('').map(x => x + x).join('');
+                    const r = parseInt(hex.slice(0,2),16), g = parseInt(hex.slice(2,4),16), b = parseInt(hex.slice(4,6),16);
+                    return `rgba(${r},${g},${b},${a})`;
+                }
+                if (c.startsWith('rgb(')) return c.replace('rgb(', 'rgba(').replace(')', `,${a})`);
+                return c;
+            }
+
+            getMetricValue(dataPoint, metric, exchange) {
+                const prefix = exchange.toLowerCase();
+                switch (metric) {
+                    case 'end_outstanding': return dataPoint[`${prefix}_end_outstanding`] || 0;
+                    case 'securities_count': return dataPoint[`${prefix}_securities_count`] || 0;
+                    case 'fresh_exposure': return exchange === 'NSE' ? (dataPoint.nse_fresh_exposure || 0) : 0;
+                    case 'exposure_liquidated': return dataPoint[`${prefix}_exposure_liquidated`] || 0;
+                    case 'exposure_taken': return exchange === 'BSE' ? (dataPoint.bse_exposure_taken || 0) : 0;
+                    case 'amount_financed': return exchange === 'BSE' ? (dataPoint.bse_amount_financed || 0) : 0;
+                    default: return 0;
+                }
+            }
+
+            getMetricLabel(metric) {
+                switch (metric) {
+                    case 'end_outstanding': return 'End Outstanding';
+                    case 'securities_count': return 'Securities Count';
+                    case 'fresh_exposure': return 'Fresh Exposure';
+                    case 'exposure_liquidated': return 'Exposure Liquidated';
+                    case 'exposure_taken': return 'Exposure Taken';
+                    case 'amount_financed': return 'Amount Financed';
+                    default: return metric;
+                }
+            }
+
+            setTimeframe(period) {
+                const ref = this.data && this.data.length ? new Date(this.data[this.data.length - 1].date) : new Date();
+                const startDate = new Date(ref);
+                switch (period) {
+                    case '1M': startDate.setMonth(ref.getMonth() - 1); break;
+                    case '3M': startDate.setMonth(ref.getMonth() - 3); break;
+                    case '6M': startDate.setMonth(ref.getMonth() - 6); break;
+                    case '1Y': startDate.setFullYear(ref.getFullYear() - 1); break;
+                    default:
+                        this.currentStartDate = null; this.currentEndDate = null;
+                        this.updateChart(); return;
+                }
+                this.currentStartDate = startDate; this.currentEndDate = ref;
+                this.updateChart();
+            }
+
+            downloadCSV() {
+                if (!this.data || this.data.length === 0) { alert('No data available'); return; }
+                const headers = Object.keys(this.data[0]);
+                const csvContent = [
+                    headers.join(','),
+                    ...this.data.map(row => headers.map(h => {
+                        const v = row[h];
+                        return typeof v === 'string' && v.includes(',') ? `"${v}"` : v;
+                    }).join(','))
+                ].join('\n');
+                const blob = new Blob([csvContent], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'mtf_daily_totals.csv';
+                document.body.appendChild(a); a.click(); document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            }
+
+            showError(message) {
+                document.getElementById('mainContent').innerHTML = `<main class="app"><div class="error">${message}</div></main>`;
+                document.getElementById('mainContent').style.display = 'block';
+                this.hideLoadingOverlay();
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            window.dashboard = new OptimizedMTFDashboard();
+        });
+    </script>
 </body>
 </html>

@@ -452,6 +452,38 @@
         }
         .close-btn:hover { color: var(--foreground); }
 
+        /* Per-stock-chart actions cluster (timeframe + reset + close) */
+        .stock-chart-actions { display: inline-flex; align-items: center; gap: .5rem; }
+        .stock-tf-buttons {
+            display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden;
+        }
+        .stock-tf-btn {
+            background: transparent; color: var(--muted-foreground);
+            border: 0; border-right: 1px solid var(--border);
+            padding: .35rem .7rem; font-size: .72rem; font-weight: 700; letter-spacing: .03em;
+            cursor: pointer; font-family: inherit;
+            transition: background-color .15s, color .15s;
+        }
+        .stock-tf-btn:last-child { border-right: 0; }
+        .stock-tf-btn:hover { color: var(--foreground); background: var(--faint); }
+        .stock-tf-btn.active { background: var(--foreground); color: var(--background); }
+        .stock-tf-reset {
+            background: transparent; border: 1px solid var(--border); border-radius: 6px;
+            width: 30px; height: 28px; padding: 0; cursor: pointer;
+            color: var(--muted-foreground); font-size: 1rem; font-family: inherit; line-height: 1;
+            transition: background-color .15s, color .15s, border-color .15s;
+        }
+        .stock-tf-reset:hover { color: var(--foreground); border-color: var(--input); background: var(--faint); }
+
+        /* Stacked current + previous value in stock-metrics rows (Market Changes) */
+        .stock-amount-stack {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 1px; line-height: 1.15;
+        }
+        .stock-prev {
+            font-size: .7rem; color: var(--muted-foreground);
+            font-variant-numeric: tabular-nums; font-weight: 500; white-space: nowrap;
+        }
+
         /* ====== Stock list / analytics ====== */
         .analytics-grid {
             display: grid;
@@ -677,6 +709,30 @@
 
             <section class="tab-content" id="nse-stocks-tab" role="tabpanel">
                 <h2>NSE Stock Analytics</h2>
+                <div class="stock-search-container panel">
+                    <div class="search-controls">
+                        <input type="text" id="stockSearchInputNse" placeholder="Search NSE stocks by symbol or name…" class="stock-search-input">
+                        <button id="chartStockBtnNse" class="btn chart-stock-btn" type="button" disabled>📈 Chart Selected</button>
+                    </div>
+                    <div id="searchResultsNse" class="search-results"></div>
+                </div>
+                <div id="selectedStockChartNse" class="selected-stock-chart" style="display: none;">
+                    <div class="chart-header">
+                        <h3 id="selectedStockTitleNse">Stock Trend</h3>
+                        <div class="stock-chart-actions">
+                            <div class="stock-tf-buttons" role="group" aria-label="Stock chart timeframe" data-stock-tf="nse">
+                                <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
+                                <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
+                                <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
+                                <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
+                            </div>
+                            <button class="stock-tf-reset" data-stock-reset="nse" type="button" aria-label="Reset zoom">↻</button>
+                            <button id="closeStockChartNse" class="close-btn" type="button" aria-label="Close">✕</button>
+                        </div>
+                    </div>
+                    <div id="stockTimeSeriesChartNse" class="stock-chart-container"></div>
+                </div>
                 <div class="analytics-grid" id="nseAnalyticsGrid">
                     <div class="loading">Loading NSE stock data…</div>
                 </div>
@@ -686,17 +742,27 @@
                 <h2>BSE Stock Analytics</h2>
                 <div class="stock-search-container panel">
                     <div class="search-controls">
-                        <input type="text" id="stockSearchInput" placeholder="Search stocks by symbol or name…" class="stock-search-input">
-                        <button id="chartStockBtn" class="btn chart-stock-btn" type="button" disabled>📈 Chart Selected</button>
+                        <input type="text" id="stockSearchInputBse" placeholder="Search BSE stocks by symbol or name…" class="stock-search-input">
+                        <button id="chartStockBtnBse" class="btn chart-stock-btn" type="button" disabled>📈 Chart Selected</button>
                     </div>
-                    <div id="searchResults" class="search-results"></div>
+                    <div id="searchResultsBse" class="search-results"></div>
                 </div>
-                <div id="selectedStockChart" class="selected-stock-chart" style="display: none;">
+                <div id="selectedStockChartBse" class="selected-stock-chart" style="display: none;">
                     <div class="chart-header">
-                        <h3 id="selectedStockTitle">Stock Trend</h3>
-                        <button id="closeStockChart" class="close-btn" type="button" aria-label="Close">✕</button>
+                        <h3 id="selectedStockTitleBse">Stock Trend</h3>
+                        <div class="stock-chart-actions">
+                            <div class="stock-tf-buttons" role="group" aria-label="Stock chart timeframe" data-stock-tf="bse">
+                                <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
+                                <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
+                                <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
+                                <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
+                            </div>
+                            <button class="stock-tf-reset" data-stock-reset="bse" type="button" aria-label="Reset zoom">↻</button>
+                            <button id="closeStockChartBse" class="close-btn" type="button" aria-label="Close">✕</button>
+                        </div>
                     </div>
-                    <div id="stockTimeSeriesChart" class="stock-chart-container"></div>
+                    <div id="stockTimeSeriesChartBse" class="stock-chart-container"></div>
                 </div>
                 <div class="analytics-grid" id="bseAnalyticsGrid">
                     <div class="loading">Loading BSE stock data…</div>
@@ -1232,11 +1298,41 @@
                 document.getElementById('updateChart').addEventListener('click', () => this.updateChart());
                 document.getElementById('downloadCSV').addEventListener('click', () => this.downloadCSV());
 
-                document.querySelectorAll('.timeframe-btn').forEach(btn => {
+                // Overview chart timeframe (1M/3M/6M/1Y/ALL) — scoped to the Overview
+                // panel so it doesn't collide with the Market Changes filter pills
+                // that also use .timeframe-btn for styling.
+                document.querySelectorAll('#overview-tab .timeframe-btn').forEach(btn => {
                     btn.addEventListener('click', (e) => {
-                        document.querySelectorAll('.timeframe-btn').forEach(b => b.classList.remove('active'));
+                        document.querySelectorAll('#overview-tab .timeframe-btn').forEach(b => b.classList.remove('active'));
                         e.currentTarget.classList.add('active');
                         this.setTimeframe(e.currentTarget.dataset.period);
+                    });
+                });
+
+                // Per-stock-chart timeframe buttons (NSE + BSE), scoped by [data-stock-tf].
+                document.querySelectorAll('.stock-tf-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const group = e.currentTarget.closest('.stock-tf-buttons');
+                        if (!group) return;
+                        group.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
+                        e.currentTarget.classList.add('active');
+                        this._applyStockTimeframe(group.dataset.stockTf, e.currentTarget.dataset.stockPeriod);
+                    });
+                });
+
+                // Per-stock-chart reset zoom.
+                document.querySelectorAll('.stock-tf-reset').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const exchange = e.currentTarget.dataset.stockReset;
+                        const chart = this.stockCharts && this.stockCharts[exchange];
+                        if (chart) chart.timeScale().fitContent();
+                        // Sync ALL pill back to active.
+                        const grp = document.querySelector(`.stock-tf-buttons[data-stock-tf="${exchange}"]`);
+                        if (grp) {
+                            grp.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
+                            const all = grp.querySelector('.stock-tf-btn[data-stock-period="ALL"]');
+                            if (all) all.classList.add('active');
+                        }
                     });
                 });
 
@@ -1255,12 +1351,44 @@
                 });
             }
 
-            async performStockSearch(query) {
-                const results = await this.dataLoader.searchStocks(query);
-                this.displaySearchResults(results);
+            // Zoom the stock chart to the chosen window without re-filtering the
+            // dataset — the full time series stays loaded so the user can scroll
+            // back to any range freely.
+            _applyStockTimeframe(exchange, period) {
+                const chart = this.stockCharts && this.stockCharts[exchange];
+                const data  = this._stockChartFullData && this._stockChartFullData[exchange];
+                if (!chart || !data || data.length === 0) return;
+                if (period === 'ALL') { chart.timeScale().fitContent(); return; }
+                const months = { '1M': 1, '3M': 3, '6M': 6, '1Y': 12 }[period];
+                if (!months) return;
+                const lastTime = data[data.length - 1].time;
+                const lastD  = new Date(lastTime);
+                const startD = new Date(lastD);
+                startD.setMonth(startD.getMonth() - months);
+                if (startD < new Date(data[0].time)) {
+                    // Less than `months` of data available — fall back to full fit.
+                    chart.timeScale().fitContent();
+                    return;
+                }
+                chart.timeScale().setVisibleRange({
+                    from: startD.toISOString().slice(0, 10),
+                    to:   lastTime,
+                });
             }
 
-            async showStockChart(selectedStock) {
+            // NSE and BSE tabs share the same search/chart flow but render into
+            // their own DOM subtrees (suffixed IDs *Nse / *Bse). All per-exchange
+            // state lives on `this.stockCharts[exchange]`, `this._stockChartFullData[exchange]`,
+            // etc. so the two tabs never trample each other.
+            _exSfx(exchange) { return exchange.charAt(0).toUpperCase() + exchange.slice(1); }
+
+            async performStockSearch(query, exchange) {
+                const results = await this.dataLoader.searchStocks(query);
+                const filtered = results.filter(s => (s.exchange || '').toUpperCase() === exchange.toUpperCase());
+                this.displaySearchResults(filtered, exchange);
+            }
+
+            async showStockChart(selectedStock, exchange) {
                 let stockData = this.dataLoader.getStockData(selectedStock.symbol);
                 if (!stockData) {
                     this.dataLoader.updateLoadingStatus(`Loading data for ${selectedStock.symbol}…`);
@@ -1271,26 +1399,32 @@
                     }
                 }
                 if (!stockData || stockData.length === 0) { alert('Stock data not found'); return; }
-                this.displayStockChart(selectedStock, stockData);
+                this.displayStockChart(selectedStock, stockData, exchange);
             }
 
-            displayStockChart(selectedStock, stockData) {
-                const chartContainer = document.getElementById('stockTimeSeriesChart');
-                if (this.stockChart) {
-                    this.stockChart.remove();
-                    this.stockChart = null;
-                    if (this._stockLegendEl && this._stockLegendEl.parentNode) {
-                        this._stockLegendEl.parentNode.removeChild(this._stockLegendEl);
-                    }
+            displayStockChart(selectedStock, stockData, exchange) {
+                const sfx = this._exSfx(exchange);
+                const chartContainer = document.getElementById(`stockTimeSeriesChart${sfx}`);
+
+                this.stockCharts            = this.stockCharts            || {};
+                this._stockChartFullData    = this._stockChartFullData    || {};
+                this._stockSeriesByExchange = this._stockSeriesByExchange || {};
+                this._stockLegendByExchange = this._stockLegendByExchange || {};
+
+                if (this.stockCharts[exchange]) {
+                    this.stockCharts[exchange].remove();
+                    this.stockCharts[exchange] = null;
+                    const oldLegend = this._stockLegendByExchange[exchange];
+                    if (oldLegend && oldLegend.parentNode) oldLegend.parentNode.removeChild(oldLegend);
                 }
                 chartContainer.innerHTML = '';
 
-                document.getElementById('selectedStockChart').style.display = 'block';
-                document.getElementById('selectedStockTitle').textContent = `${selectedStock.name} (${selectedStock.symbol})`;
+                document.getElementById(`selectedStockChart${sfx}`).style.display = 'block';
+                document.getElementById(`selectedStockTitle${sfx}`).textContent = `${selectedStock.name} (${selectedStock.symbol})`;
 
                 const pal = this.paletteFromCSS();
-                this.stockChart = this._buildChart(chartContainer, { logY: false });
-                this.stockChart.applyOptions({
+                const chart = this._buildChart(chartContainer, { logY: false });
+                chart.applyOptions({
                     leftPriceScale: { visible: true, borderVisible: false, scaleMargins: { top: 0.12, bottom: 0.10 } },
                     localization: {
                         priceFormatter: (v) => fmtINR(v),
@@ -1301,8 +1435,10 @@
                         }
                     }
                 });
+                this.stockCharts[exchange] = chart;
 
-                // Sort + filter + sanitize stock data
+                // Sort + filter + sanitize stock data. The full series stays in
+                // memory; timeframe pills only change the visible range.
                 const sorted = [...stockData].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : 0));
                 const amounts = this._sanitizeSeries(sorted
                     .map(r => ({ time: r.date, value: r.amount_financed }))
@@ -1311,39 +1447,47 @@
                     .map(r => ({ time: r.date, value: r.qty_financed }))
                     .filter(p => p.value !== null && p.value !== undefined && p.value > 0));
 
-                const amountSeries = this.stockChart.addSeries(LightweightCharts.AreaSeries, {
+                const amountSeries = chart.addSeries(LightweightCharts.AreaSeries, {
                     ...this._lineOptions(pal.nse, true),
                     priceScaleId: 'right',
                 });
                 amountSeries.setData(amounts);
-
-                const qtySeries = this.stockChart.addSeries(LightweightCharts.LineSeries, {
+                const qtySeries = chart.addSeries(LightweightCharts.LineSeries, {
                     ...this._lineOptions(pal.bse, false, true),
                     priceScaleId: 'left',
                 });
                 qtySeries.setData(quantities);
-
-                this.stockChart.priceScale('left').applyOptions({
+                chart.priceScale('left').applyOptions({
                     visible: true, borderVisible: false,
                     scaleMargins: { top: 0.12, bottom: 0.10 },
                 });
 
-                this._stockSeries = [
+                this._stockSeriesByExchange[exchange] = [
                     { name: 'Amount Financed', role: 'amount', color: pal.nse, useArea: true, series: amountSeries, data: amounts, fmt: fmtINR },
                     { name: 'Quantity Financed', role: 'qty', color: pal.bse, useArea: false, series: qtySeries, data: quantities, fmt: fmtCount },
                 ];
+                this._stockLegendByExchange[exchange] = this._mountLegend(chartContainer);
+                this._wireHoverLegend(chart, () => this._stockSeriesByExchange[exchange], this._stockLegendByExchange[exchange]);
 
-                this._stockLegendEl = this._mountLegend(chartContainer);
-                this._wireHoverLegend(this.stockChart, () => this._stockSeries, this._stockLegendEl);
+                this._stockChartFullData[exchange] = amounts;
 
-                this.stockChart.timeScale().fitContent();
-                if (this.stockChart._renderLatest) this.stockChart._renderLatest();
+                // Reset timeframe pills to ALL whenever a new stock is loaded.
+                const grp = document.querySelector(`.stock-tf-buttons[data-stock-tf="${exchange}"]`);
+                if (grp) {
+                    grp.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
+                    const all = grp.querySelector('.stock-tf-btn[data-stock-period="ALL"]');
+                    if (all) all.classList.add('active');
+                }
+
+                chart.timeScale().fitContent();
+                if (chart._renderLatest) chart._renderLatest();
             }
 
-            displaySearchResults(results) {
-                const searchResultsDiv = document.getElementById('searchResults');
+            displaySearchResults(results, exchange) {
+                const sfx = this._exSfx(exchange);
+                const searchResultsDiv = document.getElementById(`searchResults${sfx}`);
                 if (results.length === 0) {
-                    searchResultsDiv.innerHTML = '<div class="search-result-item">No stocks found</div>';
+                    searchResultsDiv.innerHTML = `<div class="search-result-item">No ${exchange.toUpperCase()} stocks found</div>`;
                     searchResultsDiv.style.display = 'block';
                     return;
                 }
@@ -1359,14 +1503,17 @@
                         </div>
                     </div>
                 `).join('');
-                document.querySelectorAll('.search-result-item').forEach(item => {
+                // Scope selection state to THIS results pane so clicks in one tab
+                // don't toggle classes in the other tab's pane.
+                searchResultsDiv.querySelectorAll('.search-result-item').forEach(item => {
                     item.addEventListener('click', () => {
-                        document.querySelectorAll('.search-result-item').forEach(i => i.classList.remove('selected'));
+                        searchResultsDiv.querySelectorAll('.search-result-item').forEach(i => i.classList.remove('selected'));
                         item.classList.add('selected');
-                        const chartBtn = document.getElementById('chartStockBtn');
+                        const chartBtn = document.getElementById(`chartStockBtn${sfx}`);
                         chartBtn.disabled = false;
-                        this.selectedStock = { symbol: item.dataset.symbol, name: item.dataset.name, exchange: item.dataset.exchange };
-                        chartBtn.onclick = () => this.showStockChart(this.selectedStock);
+                        this._selectedStocks = this._selectedStocks || {};
+                        this._selectedStocks[exchange] = { symbol: item.dataset.symbol, name: item.dataset.name, exchange: item.dataset.exchange };
+                        chartBtn.onclick = () => this.showStockChart(this._selectedStocks[exchange], exchange);
                     });
                 });
                 searchResultsDiv.style.display = 'block';
@@ -1389,16 +1536,26 @@
             }
 
             setupStockSearch() {
-                const searchInput = document.getElementById('stockSearchInput');
-                const closeBtn = document.getElementById('closeStockChart');
+                ['nse', 'bse'].forEach(exchange => this._wireStockSearch(exchange));
+            }
+
+            _wireStockSearch(exchange) {
+                const sfx = this._exSfx(exchange);
+                const searchInput = document.getElementById(`stockSearchInput${sfx}`);
+                const closeBtn    = document.getElementById(`closeStockChart${sfx}`);
+                const resultsDiv  = document.getElementById(`searchResults${sfx}`);
+                if (!searchInput || !closeBtn) return;
                 searchInput.addEventListener('input', (e) => {
                     const query = e.target.value.trim();
-                    if (query.length > 2) this.performStockSearch(query);
-                    else document.getElementById('searchResults').style.display = 'none';
+                    if (query.length > 2) this.performStockSearch(query, exchange);
+                    else if (resultsDiv) resultsDiv.style.display = 'none';
                 });
                 closeBtn.addEventListener('click', () => {
-                    document.getElementById('selectedStockChart').style.display = 'none';
-                    if (this.stockChart) { this.stockChart.remove(); this.stockChart = null; }
+                    document.getElementById(`selectedStockChart${sfx}`).style.display = 'none';
+                    if (this.stockCharts && this.stockCharts[exchange]) {
+                        this.stockCharts[exchange].remove();
+                        this.stockCharts[exchange] = null;
+                    }
                 });
             }
 
@@ -1889,8 +2046,11 @@
                                     </div>
                                     <div class="stock-metrics">
                                         ${ex ? `<div class="stock-exchange ${exClass}">${ex}</div>` : ''}
-                                        <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
-                                        <div class="stock-exchange ${stock.change_percent > 0 ? 'positive-change' : 'negative-change'}" title="${stock.previous_amount != null ? 'Previous: ' + fmtINR(stock.previous_amount) + ' · ' : ''}${stock.change_percent?.toFixed(1)}%">
+                                        <div class="stock-amount-stack">
+                                            <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
+                                            ${stock.previous_amount != null ? `<div class="stock-prev">from ${fmtINR(stock.previous_amount)}</div>` : ''}
+                                        </div>
+                                        <div class="stock-exchange ${stock.change_percent > 0 ? 'positive-change' : 'negative-change'}">
                                             ${fmtPctChange(stock.change_percent)}
                                         </div>
                                     </div>
