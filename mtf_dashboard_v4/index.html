@@ -1036,11 +1036,35 @@
                 if (!this.data || this.data.length === 0) return;
 
                 const statsContainer = document.getElementById('statsContainer');
-                const latest = this.data[this.data.length - 1];
-                const previous = this.data.length > 1 ? this.data[this.data.length - 2] : null;
 
-                const totalEnd = (latest.nse_end_outstanding || 0) + (latest.bse_end_outstanding || 0);
-                const prevTotalEnd = previous ? ((previous.nse_end_outstanding || 0) + (previous.bse_end_outstanding || 0)) : null;
+                // NSE and BSE publish on slightly different schedules (e.g. BSE
+                // released 12-May while NSE hadn't yet). Fall back to each
+                // exchange's most-recent non-null row instead of indexing the
+                // global latest row — otherwise the "behind" exchange renders
+                // as ₹0 on the day the other one publishes first.
+                const findLatest = (key, skip) => {
+                    for (let i = this.data.length - 1; i >= 0; i--) {
+                        const r = this.data[i];
+                        if (r === skip) continue;
+                        if (r[key] != null) return r;
+                    }
+                    return null;
+                };
+                const nseLatest = findLatest('nse_end_outstanding') || {};
+                const bseLatest = findLatest('bse_end_outstanding') || {};
+                const nsePrev   = findLatest('nse_end_outstanding', nseLatest);
+                const bsePrev   = findLatest('bse_end_outstanding', bseLatest);
+
+                const totalEnd = (nseLatest.nse_end_outstanding || 0) + (bseLatest.bse_end_outstanding || 0);
+                const prevTotalEnd = (nsePrev && bsePrev)
+                    ? ((nsePrev.nse_end_outstanding || 0) + (bsePrev.bse_end_outstanding || 0))
+                    : null;
+
+                // "As of" date for the combined card: show the freshest of the
+                // two if they match, otherwise show both per-exchange dates.
+                const combinedAsOf = (nseLatest.date && bseLatest.date && nseLatest.date !== bseLatest.date)
+                    ? `NSE ${fmtDate(nseLatest.date)} · BSE ${fmtDate(bseLatest.date)}`
+                    : `${fmtDate(nseLatest.date || bseLatest.date)} · NSE + BSE`;
 
                 const card = (label, value, sub, exchange, change) => `
                     <div class="stat" data-exchange="${exchange || ''}">
@@ -1056,23 +1080,23 @@
 
                 statsContainer.innerHTML = [
                     card('Total Outstanding', fmtINR(totalEnd),
-                         `${fmtDate(latest.date)} · NSE + BSE`,
+                         combinedAsOf,
                          'TOTAL',
                          prevTotalEnd ? { text: `${fmtDelta(totalEnd, prevTotalEnd)} vs prev day`, cls: deltaCls(totalEnd, prevTotalEnd) } : null),
-                    card('NSE Outstanding', fmtINR(latest.nse_end_outstanding),
-                         `${fmtCount(latest.nse_securities_count)} securities`,
+                    card('NSE Outstanding', fmtINR(nseLatest.nse_end_outstanding),
+                         `${fmtDate(nseLatest.date)} · ${fmtCount(nseLatest.nse_securities_count)} securities`,
                          'NSE',
-                         previous ? { text: fmtDelta(latest.nse_end_outstanding, previous.nse_end_outstanding), cls: deltaCls(latest.nse_end_outstanding, previous.nse_end_outstanding) } : null),
-                    card('BSE Outstanding', fmtINR(latest.bse_end_outstanding),
-                         `${fmtCount(latest.bse_securities_count)} securities`,
+                         nsePrev ? { text: fmtDelta(nseLatest.nse_end_outstanding, nsePrev.nse_end_outstanding), cls: deltaCls(nseLatest.nse_end_outstanding, nsePrev.nse_end_outstanding) } : null),
+                    card('BSE Outstanding', fmtINR(bseLatest.bse_end_outstanding),
+                         `${fmtDate(bseLatest.date)} · ${fmtCount(bseLatest.bse_securities_count)} securities`,
                          'BSE',
-                         previous ? { text: fmtDelta(latest.bse_end_outstanding, previous.bse_end_outstanding), cls: deltaCls(latest.bse_end_outstanding, previous.bse_end_outstanding) } : null),
-                    card('Fresh Exposure (NSE)', fmtINR(latest.nse_fresh_exposure),
-                         'Net new positions today', 'NSE'),
-                    card('Liquidated (NSE)', fmtINR(latest.nse_exposure_liquidated),
-                         'Positions exited today', 'NSE'),
-                    card('Securities Total', fmtCount((latest.nse_securities_count || 0) + (latest.bse_securities_count || 0)),
-                         `NSE ${fmtCount(latest.nse_securities_count)} · BSE ${fmtCount(latest.bse_securities_count)}`, 'TOTAL')
+                         bsePrev ? { text: fmtDelta(bseLatest.bse_end_outstanding, bsePrev.bse_end_outstanding), cls: deltaCls(bseLatest.bse_end_outstanding, bsePrev.bse_end_outstanding) } : null),
+                    card('Fresh Exposure (NSE)', fmtINR(nseLatest.nse_fresh_exposure),
+                         `Net new positions · ${fmtDate(nseLatest.date)}`, 'NSE'),
+                    card('Liquidated (NSE)', fmtINR(nseLatest.nse_exposure_liquidated),
+                         `Positions exited · ${fmtDate(nseLatest.date)}`, 'NSE'),
+                    card('Securities Total', fmtCount((nseLatest.nse_securities_count || 0) + (bseLatest.bse_securities_count || 0)),
+                         `NSE ${fmtCount(nseLatest.nse_securities_count)} · BSE ${fmtCount(bseLatest.bse_securities_count)}`, 'TOTAL')
                 ].join('');
             }
 
