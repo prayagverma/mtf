@@ -1095,8 +1095,23 @@
                          `Net new positions · ${fmtDate(nseLatest.date)}`, 'NSE'),
                     card('Liquidated (NSE)', fmtINR(nseLatest.nse_exposure_liquidated),
                          `Positions exited · ${fmtDate(nseLatest.date)}`, 'NSE'),
-                    card('Securities Total', fmtCount((nseLatest.nse_securities_count || 0) + (bseLatest.bse_securities_count || 0)),
-                         `NSE ${fmtCount(nseLatest.nse_securities_count)} · BSE ${fmtCount(bseLatest.bse_securities_count)}`, 'TOTAL')
+                    (() => {
+                        // Prefer the pipeline-computed unique count when it's
+                        // available (excludes the ~50 dual-listed stocks
+                        // counted on both exchanges); fall back to the naive
+                        // sum if an older base file is in flight.
+                        const act = this.dataLoader.baseData
+                                  && this.dataLoader.baseData.latest_snapshot
+                                  && this.dataLoader.baseData.latest_snapshot.active_securities;
+                        const nseN = (act && act.nse_count) ?? nseLatest.nse_securities_count ?? 0;
+                        const bseN = (act && act.bse_count) ?? bseLatest.bse_securities_count ?? 0;
+                        const dual = act ? act.dual_listed : null;
+                        const uniq = act ? act.unique : (nseN + bseN);
+                        const sub  = (dual != null)
+                            ? `NSE ${fmtCount(nseN)} · BSE ${fmtCount(bseN)} · ${dual} dual-listed`
+                            : `NSE ${fmtCount(nseN)} · BSE ${fmtCount(bseN)}`;
+                        return card('Securities Total', fmtCount(uniq), sub, 'TOTAL');
+                    })(),
                 ].join('');
             }
 

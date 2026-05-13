@@ -44,7 +44,8 @@ class StockDataCompressor:
                 'bse_stocks': self.stock_data.get('bse_stocks'),
                 'combined_stocks': self.stock_data.get('combined_stocks'),
                 'sudden_changes': self.stock_data.get('sudden_changes'),
-                'cross_exchange_stocks': self.stock_data.get('cross_exchange_stocks')
+                'cross_exchange_stocks': self.stock_data.get('cross_exchange_stocks'),
+                'active_securities': self.stock_data.get('active_securities'),
             },
             'stock_index': {},  # Quick lookup index
             'compressed_daily_data': {}  # Compressed time-series

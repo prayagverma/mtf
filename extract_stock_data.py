@@ -431,7 +431,41 @@ class StockMTFExtractor:
             sudden_changes, key=lambda x: abs(x[3]), reverse=True
         )[:50]
         
-        # Cross-exchange analysis
+        # Unique securities active on each exchange's latest reporting day.
+        # The Overview "Securities Total" card uses this to avoid double-counting
+        # dual-listed stocks (HDFCBANK, INFY, TCS, …) which appear on both NSE
+        # and BSE.
+        latest_date_nse = max(
+            (r['date'] for recs in self.stock_data.values()
+             for r in recs if r.get('exchange') == 'NSE'),
+            default=None,
+        )
+        latest_date_bse = max(
+            (r['date'] for recs in self.stock_data.values()
+             for r in recs if r.get('exchange') == 'BSE'),
+            default=None,
+        )
+        active_nse_symbols = {
+            sym for sym, recs in self.stock_data.items()
+            if any(r.get('exchange') == 'NSE' and r['date'] == latest_date_nse for r in recs)
+        }
+        active_bse_symbols = {
+            sym for sym, recs in self.stock_data.items()
+            if any(r.get('exchange') == 'BSE' and r['date'] == latest_date_bse for r in recs)
+        }
+        dual_active_symbols = active_nse_symbols & active_bse_symbols
+        analytics['latest_snapshot']['active_securities'] = {
+            'nse_count':   len(active_nse_symbols),
+            'bse_count':   len(active_bse_symbols),
+            'dual_listed': len(dual_active_symbols),
+            'unique':      len(active_nse_symbols | active_bse_symbols),
+            'as_of_nse':   latest_date_nse,
+            'as_of_bse':   latest_date_bse,
+        }
+
+        # Cross-exchange analysis (full-history set intersection — separate
+        # from the latest-day "dual_active" above. The dashboard uses this
+        # list for the Cross-Exchange tab's deep-dive.)
         nse_symbols = set(latest_data_nse.keys())
         bse_symbols = set(latest_data_bse.keys())
         cross_exchange_symbols = nse_symbols.intersection(bse_symbols)
@@ -538,6 +572,7 @@ class StockMTFExtractor:
                 for symbol, latest, prev, change_pct in analytics['latest_snapshot']['sudden_changes']
             ],
             'cross_exchange_stocks': analytics['latest_snapshot']['cross_exchange_stocks'],
+            'active_securities': analytics['latest_snapshot']['active_securities'],
             'extraction_date': datetime.now().isoformat(),
             'total_stock_records': sum(len(records) for records in self.stock_data.values())
         }
