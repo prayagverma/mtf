@@ -1089,114 +1089,13 @@
                         this.populateCrossExchange(ce);
                         break;
                     }
-                    case 'sudden-changes': {
-                        // Compute fresh from the per-stock chunks: most-recent record
-                        // vs the previous record (typically ~1 month earlier).
-                        // The precomputed snapshot list compares first-ever vs latest
-                        // and produces unhelpful 10-year multipliers.
-                        this.populateSuddenChanges([]);  // immediate "loading" state
-                        this.computeRecentChanges()
-                            .then(rows => this.populateSuddenChanges(rows))
-                            .catch(err => {
-                                console.error('Failed to compute recent changes:', err);
-                                this.populateSuddenChanges(snapshot.sudden_changes || []);
-                            });
+                    case 'sudden-changes':
+                        // The rolling-30-day list is precomputed by extract_stock_data.py
+                        // and shipped inside latest_snapshot. Just render it — no chunk
+                        // load needed (this used to pull ~40 MB on every tab open).
+                        this.populateSuddenChanges(snapshot.sudden_changes || []);
                         break;
-                    }
                 }
-            }
-
-            // Build a "last 30 days" change list from the loaded stock chunks.
-            //
-            // The per-stock data is daily, so the trailing-pair comparison would be
-            // a 1-day move (noisy). Instead, anchor at the freshest available date
-            // and compare each stock's most-recent record to its record from ~30
-            // days earlier (±5 day tolerance). Skip stocks whose recent record is
-            // outside the rolling 30-day window (i.e. stale stocks).
-            async computeRecentChanges() {
-                const total = this.dataLoader.manifest?.chunks?.length || 0;
-                for (let i = 1; i <= total; i++) {
-                    await this.dataLoader.loadStockChunk(i);
-                }
-                const idx = this.dataLoader.baseData?.stock_index || {};
-                const dayMs = 86400000;
-                const WINDOW_DAYS = 30;
-                const TARGET_LOOKBACK_DAYS = 30;
-                const TOLERANCE_DAYS = 5;
-
-                // Pass 1: find the freshest to_date across all stocks (the anchor).
-                let anchorTs = 0;
-                for (const [, chunk] of this.dataLoader.stockChunks) {
-                    const stocks = chunk.stocks || {};
-                    for (const packed of Object.values(stocks)) {
-                        if (!packed || !packed.data || packed.data.length < 2) continue;
-                        const di = packed.fields.indexOf('date');
-                        if (di < 0) continue;
-                        const t = Date.parse(packed.data[packed.data.length - 1][di]);
-                        if (Number.isFinite(t) && t > anchorTs) anchorTs = t;
-                    }
-                }
-                const cutoffTs = anchorTs - WINDOW_DAYS * dayMs;
-
-                // Pass 2: build the change list.
-                const rows = [];
-                for (const [, chunk] of this.dataLoader.stockChunks) {
-                    const stocks = chunk.stocks || {};
-                    for (const [symbol, packed] of Object.entries(stocks)) {
-                        if (!packed || !packed.fields || !packed.data) continue;
-                        const fields = packed.fields;
-                        const di = fields.indexOf('date');
-                        const ai = fields.indexOf('amount_financed');
-                        if (di < 0 || ai < 0) continue;
-                        const data = packed.data;
-                        if (data.length < 2) continue;
-
-                        const last = data[data.length - 1];
-                        const lastTs = Date.parse(last[di]);
-                        if (!Number.isFinite(lastTs)) continue;
-                        // Stock must be active inside the rolling 30-day window.
-                        if (lastTs < cutoffTs) continue;
-
-                        // Find the record closest to (lastTs - TARGET_LOOKBACK_DAYS),
-                        // within ±TOLERANCE_DAYS. If no such record exists, skip.
-                        const targetTs = lastTs - TARGET_LOOKBACK_DAYS * dayMs;
-                        let prev = null;
-                        let bestDelta = TOLERANCE_DAYS * dayMs + 1;
-                        for (let j = data.length - 2; j >= 0; j--) {
-                            const ts = Date.parse(data[j][di]);
-                            if (!Number.isFinite(ts)) continue;
-                            const delta = Math.abs(ts - targetTs);
-                            if (delta < bestDelta) { bestDelta = delta; prev = data[j]; }
-                            // Walked too far back — stop searching.
-                            if (ts < targetTs - TOLERANCE_DAYS * dayMs) break;
-                        }
-                        if (!prev) continue;
-
-                        const cur = Number(last[ai]);
-                        const old = Number(prev[ai]);
-                        if (!isFinite(cur) || !isFinite(old) || old <= 0 || cur <= 0) continue;
-                        const change_percent = ((cur - old) / old) * 100;
-                        if (cur < 100 && old < 100) continue;
-                        if (Math.abs(change_percent) < 5) continue;
-
-                        const info = idx[symbol] || {};
-                        rows.push({
-                            symbol,
-                            name: info.name || symbol,
-                            exchange: info.exchange || '',
-                            amount_financed: cur,
-                            previous_amount: old,
-                            change_percent,
-                            from_date: prev[di],
-                            to_date: last[di],
-                        });
-                    }
-                }
-                rows.sort((a, b) => Math.abs(b.change_percent) - Math.abs(a.change_percent));
-                const out = rows.slice(0, 50);
-                out._anchor = anchorTs ? new Date(anchorTs).toISOString().slice(0, 10) : null;
-                out._cutoff = cutoffTs ? new Date(cutoffTs).toISOString().slice(0, 10) : null;
-                return out;
             }
 
             // Cross-exchange list isn't pre-computed in the snapshot for this dataset.

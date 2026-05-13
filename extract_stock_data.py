@@ -9,7 +9,7 @@ import re
 import pandas as pd
 import zipfile
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from collections import defaultdict
 
@@ -359,24 +359,77 @@ class StockMTFExtractor:
                                                                                   key=lambda x: x[1]['qty_financed'], 
                                                                                   reverse=True)[:50]
         
-        # Calculate sudden changes (compare with previous days)
-        sudden_changes = []
+        # Rolling 30-day "biggest movers" list.
+        #
+        # The naïve last-vs-previous comparison (1-day move) is noisy and the
+        # dashboard previously worked around it by re-computing this list
+        # client-side from the per-stock chunks (~40 MB load per tab open).
+        # Producing the list here means the client just reads it out of the
+        # base snapshot and skips the chunk fetch entirely.
+        #
+        # Algorithm mirrors the JS computeRecentChanges that this replaces:
+        #   - anchor = freshest "to_date" across all stocks
+        #   - for each stock: pick the record nearest to (last_date - 30d),
+        #     ±5d tolerance
+        #   - drop stale stocks (last_date outside the 30d window),
+        #     dust (cur AND old both < ₹100 lakh), small moves (|%| < 5)
+        #   - sort by abs(change_percent), top 50
+        WINDOW_DAYS = 30
+        TARGET_LOOKBACK_DAYS = 30
+        TOLERANCE_DAYS = 5
+        MIN_AMOUNT = 100
+        MIN_ABS_PCT = 5
+
+        def _parse(d):
+            return datetime.strptime(d, '%Y-%m-%d')
+
+        # Pass 1: anchor = max latest date across all stocks.
+        anchor = None
+        sorted_by_symbol = {}
         for symbol, records in self.stock_data.items():
-            if len(records) >= 2:
-                sorted_records = sorted(records, key=lambda x: datetime.strptime(x['date'], '%Y-%m-%d'))
-                latest = sorted_records[-1]
-                previous = sorted_records[-2]
-                
-                if previous.get('amount_financed', 0) > 0:
-                    change_pct = ((latest.get('amount_financed', 0) - previous.get('amount_financed', 0)) / 
-                                previous.get('amount_financed', 1)) * 100
-                    
-                    if abs(change_pct) > 50:  # More than 50% change
-                        sudden_changes.append((symbol, latest, change_pct))
-        
-        analytics['latest_snapshot']['sudden_changes'] = sorted(sudden_changes, 
-                                                               key=lambda x: abs(x[2]), 
-                                                               reverse=True)[:50]
+            if len(records) < 2:
+                continue
+            sr = sorted(records, key=lambda r: _parse(r['date']))
+            sorted_by_symbol[symbol] = sr
+            last_dt = _parse(sr[-1]['date'])
+            if anchor is None or last_dt > anchor:
+                anchor = last_dt
+        cutoff = (anchor - timedelta(days=WINDOW_DAYS)) if anchor else None
+
+        # Pass 2: collect (symbol, latest, prev, pct).
+        sudden_changes = []
+        tol = timedelta(days=TOLERANCE_DAYS)
+        for symbol, sr in sorted_by_symbol.items():
+            latest = sr[-1]
+            last_dt = _parse(latest['date'])
+            if cutoff and last_dt < cutoff:
+                continue  # stale — last update outside the 30-day window
+            target = last_dt - timedelta(days=TARGET_LOOKBACK_DAYS)
+            prev = None
+            best = tol + timedelta(days=1)
+            for r in reversed(sr[:-1]):
+                dt = _parse(r['date'])
+                delta = abs(dt - target)
+                if delta < best:
+                    best, prev = delta, r
+                if dt < target - tol:
+                    break  # walked too far back
+            if not prev or best > tol:
+                continue
+            cur = float(latest.get('amount_financed', 0) or 0)
+            old = float(prev.get('amount_financed', 0) or 0)
+            if cur <= 0 or old <= 0:
+                continue
+            if cur < MIN_AMOUNT and old < MIN_AMOUNT:
+                continue
+            change_pct = ((cur - old) / old) * 100
+            if abs(change_pct) < MIN_ABS_PCT:
+                continue
+            sudden_changes.append((symbol, latest, prev, change_pct))
+
+        analytics['latest_snapshot']['sudden_changes'] = sorted(
+            sudden_changes, key=lambda x: abs(x[3]), reverse=True
+        )[:50]
         
         # Cross-exchange analysis
         nse_symbols = set(latest_data_nse.keys())
@@ -473,14 +526,16 @@ class StockMTFExtractor:
             },
             'sudden_changes': [
                 {
-                    'symbol': symbol,
-                    'name': data.get('name', symbol),
-                    'exchange': data['exchange'],
-                    'amount_financed': data['amount_financed'],
-                    'change_percent': change_pct,
-                    'date': data['date']
+                    'symbol':          symbol,
+                    'name':            latest.get('name', symbol),
+                    'exchange':        latest['exchange'],
+                    'amount_financed': latest['amount_financed'],
+                    'previous_amount': prev['amount_financed'],
+                    'change_percent':  change_pct,
+                    'from_date':       prev['date'],
+                    'to_date':         latest['date'],
                 }
-                for symbol, data, change_pct in analytics['latest_snapshot']['sudden_changes']
+                for symbol, latest, prev, change_pct in analytics['latest_snapshot']['sudden_changes']
             ],
             'cross_exchange_stocks': analytics['latest_snapshot']['cross_exchange_stocks'],
             'extraction_date': datetime.now().isoformat(),
