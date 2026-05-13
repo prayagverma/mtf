@@ -32624,5 +32624,14 @@
     "exposure_liquidated": 139.8,
     "end_outstanding": 4358.91,
     "securities_count": 1747
+  },
+  {
+    "date": "2026-05-12",
+    "exchange": "NSE",
+    "beginning_outstanding": 121800.36,
+    "fresh_exposure": 5825.86,
+    "exposure_liquidated": 5101.17,
+    "end_outstanding": 122525.05,
+    "securities_count": 2138
   }
 ]
