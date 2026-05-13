@@ -16,6 +16,11 @@
 stock_analytics.json
 stock_analytics_compressed.json.gz
 
+# --- NSE equity master cache (symbol → ISIN) ----
+# Re-fetched every pipeline run from nsearchives.nseindia.com; checked-in
+# version would go stale and confuse readers.
+mtf_reports/NSE/_equity_master.csv
+
 # --- Compressed stock chunks (~38 MB / refresh) ----
 # Rebuilt fresh in CI every cron run and uploaded directly to Cloudflare Pages
 # via `wrangler pages deploy` (no git push needed). Keeping them out of git

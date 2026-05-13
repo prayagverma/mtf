@@ -4,6 +4,8 @@ Stock-Level MTF Data Extraction Script
 Extracts individual stock data from BSE and NSE MTF files to enable stock-level analytics
 """
 
+import csv as _csv
+import io
 import os
 import re
 import pandas as pd
@@ -16,14 +18,64 @@ from collections import defaultdict
 # Drop dates earlier than this — the daily-totals files were trimmed to the same cutoff.
 MIN_DATE = datetime(2017, 6, 22)
 
+# NSE's equity master (symbol -> ISIN). The MTF daily reports don't carry
+# ISIN for NSE stocks, but BSE reports do — so we enrich NSE records with
+# ISIN at extract time to enable cross-exchange dedup by a stable key.
+NSE_EQUITY_MASTER_URL = 'https://nsearchives.nseindia.com/content/equities/EQUITY_L.csv'
+NSE_EQUITY_MASTER_CACHE = 'mtf_reports/NSE/_equity_master.csv'
+
 # Set up logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
+
+
+def _load_nse_symbol_to_isin():
+    """Return {SYMBOL: ISIN}. Try a fresh fetch; fall back to the cached file
+    so a one-off NSE outage doesn't break the run."""
+    try:
+        import requests
+        resp = requests.get(
+            NSE_EQUITY_MASTER_URL,
+            headers={'User-Agent': 'Mozilla/5.0 (mtf.trading pipeline)'},
+            timeout=30,
+        )
+        resp.raise_for_status()
+        body = resp.text
+        os.makedirs(os.path.dirname(NSE_EQUITY_MASTER_CACHE), exist_ok=True)
+        with open(NSE_EQUITY_MASTER_CACHE, 'w', encoding='utf-8') as f:
+            f.write(body)
+        logger.info('Fetched fresh NSE equity master (%d bytes)', len(body))
+    except Exception as e:
+        logger.warning('NSE equity master fetch failed (%s); using cache.', e)
+        try:
+            with open(NSE_EQUITY_MASTER_CACHE, encoding='utf-8') as f:
+                body = f.read()
+        except FileNotFoundError:
+            logger.error('No NSE equity master available — dedup will fall back to symbol keys.')
+            return {}
+    m = {}
+    reader = _csv.reader(io.StringIO(body))
+    header = next(reader, None) or []
+    sym_idx  = next((i for i, c in enumerate(header) if c.strip().upper() == 'SYMBOL'), 0)
+    isin_idx = next((i for i, c in enumerate(header) if 'ISIN' in c.strip().upper()), -1)
+    if isin_idx < 0:
+        logger.error('NSE master missing ISIN column.')
+        return {}
+    for row in reader:
+        if len(row) > max(sym_idx, isin_idx):
+            sym = row[sym_idx].strip()
+            isin = row[isin_idx].strip()
+            if sym and isin:
+                m[sym] = isin
+    logger.info('NSE symbol→ISIN map: %d entries', len(m))
+    return m
+
 
 class StockMTFExtractor:
     def __init__(self):
         self.stock_data = defaultdict(list)  # {stock_symbol: [daily_records]}
         self.exchange_summary = {'NSE': {}, 'BSE': {}}
+        self.nse_isin_map = _load_nse_symbol_to_isin()
         
     def extract_nse_stocks(self, filepath, date):
         """Extract individual stock data from NSE MTF file"""
@@ -61,6 +113,9 @@ class StockMTFExtractor:
                                 'exchange': 'NSE',
                                 'symbol': symbol,
                                 'name': name,
+                                # ISIN from the NSE equity master, blank if the
+                                # symbol isn't listed (ETFs, fresh listings).
+                                'isin': self.nse_isin_map.get(symbol, ''),
                                 'qty_financed': qty_financed,
                                 'amount_financed': amount_financed,
                                 'avg_price': amount_financed / qty_financed if qty_financed > 0 else 0
@@ -434,7 +489,19 @@ class StockMTFExtractor:
         # Unique securities active on each exchange's latest reporting day.
         # The Overview "Securities Total" card uses this to avoid double-counting
         # dual-listed stocks (HDFCBANK, INFY, TCS, …) which appear on both NSE
-        # and BSE.
+        # and BSE under different exchange-local symbols.
+        #
+        # Dedup key: ISIN (International Securities Identification Number) is
+        # the same string on both exchanges for a given security, so it's the
+        # right key. BSE reports carry ISIN natively; NSE reports don't, so
+        # extract_nse_stocks enriches each NSE record via the NSE equity master.
+        # If a record lacks an ISIN (rare — fresh listings, ETFs), fall back to
+        # a prefixed symbol so it still gets counted exactly once.
+        def _key(r):
+            isin = (r.get('isin') or '').strip()
+            if isin: return isin
+            return f"{r.get('exchange','?')}:{r.get('symbol','')}"
+
         latest_date_nse = max(
             (r['date'] for recs in self.stock_data.values()
              for r in recs if r.get('exchange') == 'NSE'),
@@ -445,22 +512,23 @@ class StockMTFExtractor:
              for r in recs if r.get('exchange') == 'BSE'),
             default=None,
         )
-        active_nse_symbols = {
-            sym for sym, recs in self.stock_data.items()
-            if any(r.get('exchange') == 'NSE' and r['date'] == latest_date_nse for r in recs)
+        active_nse_keys = {
+            _key(r) for recs in self.stock_data.values() for r in recs
+            if r.get('exchange') == 'NSE' and r['date'] == latest_date_nse
         }
-        active_bse_symbols = {
-            sym for sym, recs in self.stock_data.items()
-            if any(r.get('exchange') == 'BSE' and r['date'] == latest_date_bse for r in recs)
+        active_bse_keys = {
+            _key(r) for recs in self.stock_data.values() for r in recs
+            if r.get('exchange') == 'BSE' and r['date'] == latest_date_bse
         }
-        dual_active_symbols = active_nse_symbols & active_bse_symbols
+        dual_active_keys = active_nse_keys & active_bse_keys
         analytics['latest_snapshot']['active_securities'] = {
-            'nse_count':   len(active_nse_symbols),
-            'bse_count':   len(active_bse_symbols),
-            'dual_listed': len(dual_active_symbols),
-            'unique':      len(active_nse_symbols | active_bse_symbols),
+            'nse_count':   len(active_nse_keys),
+            'bse_count':   len(active_bse_keys),
+            'dual_listed': len(dual_active_keys),
+            'unique':      len(active_nse_keys | active_bse_keys),
             'as_of_nse':   latest_date_nse,
             'as_of_bse':   latest_date_bse,
+            'dedup_key':   'ISIN (with exchange:symbol fallback)',
         }
 
         # Cross-exchange analysis (full-history set intersection — separate
