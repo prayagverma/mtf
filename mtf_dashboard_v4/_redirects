@@ -1,6 +1,17 @@
+# Vanity 301s.
 /dashboard       /             301
 /analytics       /             301
 /index.htm       /             301
+
+# Per-tab linkable URLs. The `200` status makes Cloudflare REWRITE
+# (browser URL stays as e.g. /nse-stocks) rather than 301 redirect.
+# Destination MUST be "/" not "/index.html" — Cloudflare Pages
+# interprets literal "/index.html" as a redirect target and emits
+# a 308 to /, which defeats the rewrite. With "/" as the destination
+# Cloudflare serves the root (which auto-resolves to index.html)
+# while keeping the original path in the address bar.
+# Static files (sitemap.xml, /compressed_data/*, etc.) are served by
+# Cloudflare BEFORE _redirects matches, so these rules don't shadow them.
 /overview        /             200
 /nse-stocks      /             200
 /bse-stocks      /             200
