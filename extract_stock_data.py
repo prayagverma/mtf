@@ -161,7 +161,15 @@ class StockMTFExtractor:
                 # Use the BSE scrip name as the key — short ticker-like form
                 # (e.g. "TATAMOT", "ABB"). This matches the new CSV "Symbol" column
                 # so legacy + new records merge into the same time series per stock.
-                name = str(row['scripname']).strip()
+                #
+                # BSE flags certain trading days (ex-dividend, ex-bonus, ex-rights,
+                # special segment, etc.) with a trailing '*' on the scripname —
+                # e.g. "INFY*" instead of "INFY" — but the scrip code is the same
+                # security. Strip the marker so both notations collapse into one
+                # time series per stock (63 BSE stocks affected, 3,539 row-day
+                # occurrences across the archive).
+                raw_name = str(row['scripname']).strip()
+                name = raw_name.rstrip('*').strip()
                 key = name.upper()
                 qty_financed = float(row.get('Financed by Members QUANTITY_FINANCED', 0))
                 amount_financed = float(row.get('Financed by Members AMOUNT_FINANCED', 0))
