@@ -450,56 +450,73 @@ class StockMTFExtractor:
                 anchor = last_dt
         cutoff = (anchor - timedelta(days=WINDOW_DAYS)) if anchor else None
 
-        # Pass 2: for each stock, find the biggest swing inside the window.
+        # Pass 2: for each (stock, exchange) pair, find the biggest swing
+        # inside the window.
+        #
+        # Dual-listed stocks (TCS, HDFCBANK, INFY, etc.) collide on `symbol`
+        # because NSE uses the ticker and BSE-legacy uses the same uppercase
+        # scrip name. Their NSE and BSE MTF books have totally different
+        # magnitudes (TCS NSE ~ ₹1,250 Cr vs TCS BSE ~ ₹35 Cr), so scanning
+        # the merged series produces bogus "swings" pairing an NSE day with
+        # a BSE day (e.g. ₹25 Cr -> ₹1.3K Cr "+5000%" nonsense). Split by
+        # exchange and scan each series independently. A stock that's a real
+        # mover on BOTH exchanges legitimately appears twice in the output,
+        # with distinct exchange badges.
         sudden_changes = []
         for symbol, sr in sorted_by_symbol.items():
             # Records inside the trailing 30-day window, with amount > 0.
             # Zero-amount rows are "no trading" snapshots rather than legitimate
-            # data points and would otherwise produce ∞%-style false positives
-            # (e.g. mutual funds going from ₹0 to ₹1000 lakh = "+11,712,300%").
-            in_window = [
+            # data points and would otherwise produce ∞%-style false positives.
+            in_window_all = [
                 r for r in sr
                 if (cutoff is None or _parse(r['date']) >= cutoff)
                 and float(r.get('amount_financed', 0) or 0) > 0
             ]
-            if len(in_window) < 2:
+            if len(in_window_all) < 2:
                 continue
 
-            first = in_window[0]
-            run_min_val = run_max_val = float(first['amount_financed'])
-            run_min_rec = run_max_rec = first
+            by_ex = defaultdict(list)
+            for r in in_window_all:
+                by_ex[r.get('exchange') or '?'].append(r)
 
-            best_pct  = 0.0
-            best_from = best_to = None
-            for r in in_window[1:]:
-                cur = float(r['amount_financed'])
-                # Increase: cur vs the lowest value seen earlier in the window.
-                up = (cur - run_min_val) / run_min_val * 100
-                if abs(up) > abs(best_pct):
-                    best_pct, best_from, best_to = up, run_min_rec, r
-                # Decrease: cur vs the highest value seen earlier in the window.
-                down = (cur - run_max_val) / run_max_val * 100
-                if abs(down) > abs(best_pct):
-                    best_pct, best_from, best_to = down, run_max_rec, r
-                # Update running extrema AFTER comparison so swings always go
-                # forward in time (from_date < to_date).
-                if cur < run_min_val:
-                    run_min_val, run_min_rec = cur, r
-                if cur > run_max_val:
-                    run_max_val, run_max_rec = cur, r
+            for ex_name, in_window in by_ex.items():
+                if len(in_window) < 2:
+                    continue
+                first = in_window[0]
+                run_min_val = run_max_val = float(first['amount_financed'])
+                run_min_rec = run_max_rec = first
 
-            if best_from is None or best_to is None:
-                continue
-            from_val = float(best_from['amount_financed'])
-            to_val   = float(best_to['amount_financed'])
-            # Require the START of the swing to be substantial. This drops the
-            # "stock appeared from dust" false positives without dropping real
-            # spike-downs (where the high was substantial but the low isn't).
-            if from_val < MIN_AMOUNT:
-                continue
-            if abs(best_pct) < MIN_ABS_PCT:
-                continue
-            sudden_changes.append((symbol, best_to, best_from, best_pct))
+                best_pct  = 0.0
+                best_from = best_to = None
+                for r in in_window[1:]:
+                    cur = float(r['amount_financed'])
+                    # Increase: cur vs the lowest value seen earlier.
+                    up = (cur - run_min_val) / run_min_val * 100
+                    if abs(up) > abs(best_pct):
+                        best_pct, best_from, best_to = up, run_min_rec, r
+                    # Decrease: cur vs the highest value seen earlier.
+                    down = (cur - run_max_val) / run_max_val * 100
+                    if abs(down) > abs(best_pct):
+                        best_pct, best_from, best_to = down, run_max_rec, r
+                    # Update running extrema AFTER comparison so swings always
+                    # go forward in time (from_date < to_date).
+                    if cur < run_min_val:
+                        run_min_val, run_min_rec = cur, r
+                    if cur > run_max_val:
+                        run_max_val, run_max_rec = cur, r
+
+                if best_from is None or best_to is None:
+                    continue
+                from_val = float(best_from['amount_financed'])
+                to_val   = float(best_to['amount_financed'])
+                # Require the START of the swing to be substantial. Drops the
+                # "stock appeared from dust" false positives without dropping
+                # real spike-downs.
+                if from_val < MIN_AMOUNT:
+                    continue
+                if abs(best_pct) < MIN_ABS_PCT:
+                    continue
+                sudden_changes.append((symbol, best_to, best_from, best_pct))
 
         # Sort: most-recent to_date first, tie-break by abs(change_percent).
         # Lexicographic ISO-8601 date comparison gives chronological order.
