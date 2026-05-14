@@ -428,6 +428,34 @@
             }
         }
 
+        // Per-tab URL routing: each tab has its own shareable path.
+        // Cloudflare Pages rewrites the five tab paths to /index.html (see
+        // _redirects), and the JS reads location.pathname on boot to activate
+        // the right tab. Internal data-tab "sudden-changes" maps to the
+        // friendlier "/market-changes" slug.
+        const TAB_PATHS = {
+            'overview':       '/',
+            'nse-stocks':     '/nse-stocks',
+            'bse-stocks':     '/bse-stocks',
+            'cross-exchange': '/cross-exchange',
+            'sudden-changes': '/market-changes',
+        };
+        const PATH_TO_TAB = {
+            '/':                'overview',
+            '/overview':        'overview',
+            '/nse-stocks':      'nse-stocks',
+            '/bse-stocks':      'bse-stocks',
+            '/cross-exchange':  'cross-exchange',
+            '/market-changes':  'sudden-changes',
+        };
+        const TAB_TITLES = {
+            'overview':       'MTF Analytics · NSE & BSE Margin Trading',
+            'nse-stocks':     'NSE Stocks · MTF Analytics',
+            'bse-stocks':     'BSE Stocks · MTF Analytics',
+            'cross-exchange': 'Cross-Exchange · MTF Analytics',
+            'sudden-changes': 'Market Changes · MTF Analytics',
+        };
+
         class OptimizedMTFDashboard {
             constructor() {
                 this.dataLoader = new CompressedDataLoader();
@@ -450,11 +478,15 @@
                         this.loadDailyTotalsData(),
                         this.loadCompressedStockData()
                     ]);
-                    this.hideLoadingOverlay();
-                    document.getElementById('mainContent').style.display = 'block';
+                    // Wire tabs + activate the URL-selected tab BEFORE the
+                    // overlay hides. A direct hit on /nse-stocks would otherwise
+                    // briefly show the hardcoded-active Overview tab between
+                    // the overlay vanishing and setupDashboard() running.
                     this.setupDashboard();
                     this.setupEventListeners();
                     this.updateChart();
+                    this.hideLoadingOverlay();
+                    document.getElementById('mainContent').style.display = 'block';
                 } catch (error) {
                     console.error('Failed to initialize:', error);
                     this.showError('Failed to load dashboard data');
@@ -986,20 +1018,46 @@
                 searchResultsDiv.style.display = 'block';
             }
 
+            // Activate a tab in the UI + update the URL/title/canonical so the
+            // tab is shareable. Called from tab-button clicks, popstate (back/
+            // forward), and once at startup to honour the URL the user landed on.
+            _switchToTab(tab, { pushState = true } = {}) {
+                if (!TAB_PATHS[tab]) tab = 'overview';
+                document.querySelectorAll('.tab-btn').forEach(b =>
+                    b.classList.toggle('active', b.dataset.tab === tab));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                const target = document.getElementById(`${tab}-tab`);
+                if (target) target.classList.add('active');
+                this.loadTabData(tab);
+
+                const path = TAB_PATHS[tab];
+                document.title = TAB_TITLES[tab] || TAB_TITLES.overview;
+                const can = document.querySelector('link[rel="canonical"]');
+                if (can) can.href = `https://mtf.trading${path}`;
+                const ogUrl = document.querySelector('meta[property="og:url"]');
+                if (ogUrl) ogUrl.setAttribute('content', `https://mtf.trading${path}`);
+                if (pushState && location.pathname !== path) {
+                    history.pushState({ tab }, '', path);
+                }
+
+                // Resize chart in case it was hidden when first rendered
+                if (tab === 'overview' && this.chart) {
+                    setTimeout(() => this.chart.resize(), 50);
+                }
+            }
+
             setupTabNavigation() {
                 document.querySelectorAll('.tab-btn').forEach(btn => {
-                    btn.addEventListener('click', () => {
-                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-                        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-                        btn.classList.add('active');
-                        document.getElementById(`${btn.dataset.tab}-tab`).classList.add('active');
-                        this.loadTabData(btn.dataset.tab);
-                        // Resize chart in case it was hidden when first rendered
-                        if (btn.dataset.tab === 'overview' && this.chart) {
-                            setTimeout(() => this.chart.resize(), 50);
-                        }
-                    });
+                    btn.addEventListener('click', () => this._switchToTab(btn.dataset.tab));
                 });
+                window.addEventListener('popstate', () => {
+                    const tab = PATH_TO_TAB[location.pathname] || 'overview';
+                    this._switchToTab(tab, { pushState: false });
+                });
+                // Activate whichever tab the URL says — replaces the hardcoded
+                // class="active" on #overview-tab when entry path isn't '/'.
+                const initial = PATH_TO_TAB[location.pathname] || 'overview';
+                this._switchToTab(initial, { pushState: false });
             }
 
             setupStockSearch() {

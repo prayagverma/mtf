@@ -4,3 +4,12 @@
 /dashboard       /             301
 /analytics       /             301
 /index.htm       /             301
+
+# Per-tab linkable URLs. Status 200 = rewrite (serve index.html WITHOUT
+# changing the browser address). The dashboard JS reads location.pathname
+# at boot and activates the corresponding tab.
+/overview        /index.html   200
+/nse-stocks      /index.html   200
+/bse-stocks      /index.html   200
+/cross-exchange  /index.html   200
+/market-changes  /index.html   200
