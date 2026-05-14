@@ -182,10 +182,19 @@ class StockDataCompressor:
                 },
                 'stocks': current_chunk['stocks']
             })
-        
+
         # Update base chunk with total chunks info
         base_chunk['chunk_info']['total_chunks'] = len(chunks) + 1
-        
+
+        # Annotate each stock_index entry with the chunk it lives in. This
+        # lets the dashboard fetch exactly one ~8 MB chunk when the user
+        # opens a stock detail chart, instead of sequentially fetching
+        # chunks 1..N until the symbol is found (worst case 5x slower).
+        for i, ck in enumerate(chunks, 1):
+            for symbol in (ck.get('stocks') or {}).keys():
+                if symbol in base_chunk['stock_index']:
+                    base_chunk['stock_index'][symbol]['chunk_number'] = i
+
         return base_chunk, chunks
     
     def save_compressed_files(self, optimized_data, output_dir='compressed_data'):

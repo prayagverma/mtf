@@ -840,10 +840,29 @@
                 let stockData = this.dataLoader.getStockData(selectedStock.symbol);
                 if (!stockData) {
                     this.dataLoader.updateLoadingStatus(`Loading data for ${selectedStock.symbol}…`);
-                    for (let i = 1; i <= this.dataLoader.manifest.chunks.length; i++) {
-                        await this.dataLoader.loadStockChunk(i);
+                    // Fast path: stock_index entries now carry chunk_number, so
+                    // we know exactly which chunk to fetch — no sequential
+                    // probe through chunks 1..N (which used to download up to
+                    // ~40 MB worst-case for a stock in the last chunk).
+                    const info = this.dataLoader.baseData
+                              && this.dataLoader.baseData.stock_index
+                              && this.dataLoader.baseData.stock_index[selectedStock.symbol];
+                    const directChunk = info && info.chunk_number;
+                    if (directChunk) {
+                        await this.dataLoader.loadStockChunk(directChunk);
                         stockData = this.dataLoader.getStockData(selectedStock.symbol);
-                        if (stockData) break;
+                    }
+                    // Fallback path for older base files without chunk_number:
+                    // fetch all chunks in PARALLEL (was sequential — gave the
+                    // perception of "chart not loading" when the symbol sat in
+                    // chunk 4 or 5).
+                    if (!stockData) {
+                        const total = this.dataLoader.manifest?.chunks?.length || 0;
+                        await Promise.all(
+                            Array.from({ length: total }, (_, k) =>
+                                this.dataLoader.loadStockChunk(k + 1)),
+                        );
+                        stockData = this.dataLoader.getStockData(selectedStock.symbol);
                     }
                 }
                 if (!stockData || stockData.length === 0) { alert('Stock data not found'); return; }
