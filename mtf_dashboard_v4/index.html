@@ -410,12 +410,25 @@
                 if (!this.baseData || !this.baseData.stock_index) return [];
                 const results = [];
                 const queryLower = query.toLowerCase();
-                for (const [symbol, info] of Object.entries(this.baseData.stock_index)) {
-                    if (symbol.toLowerCase().includes(queryLower) || info.name.toLowerCase().includes(queryLower)) {
+                // Dual-listed tickers (INFY, TCS, ...) appear in the index
+                // twice — once keyed "INFY" (NSE) and once "BSE:INFY". Both
+                // entries carry the same display `info.symbol` ("INFY") so
+                // the user sees a clean ticker; the dict key is used only
+                // for chunk lookup.
+                for (const [key, info] of Object.entries(this.baseData.stock_index)) {
+                    const display = info.symbol || key;
+                    if (display.toLowerCase().includes(queryLower)
+                        || key.toLowerCase().includes(queryLower)
+                        || (info.name || '').toLowerCase().includes(queryLower)) {
                         results.push({
-                            symbol, name: info.name, exchange: info.exchange,
+                            key,                             // chunk lookup
+                            symbol: display,                 // UI display
+                            name: info.name,
+                            exchange: info.exchange,
                             latestAmount: info.latest_amount,
-                            recordCount: info.record_count, dateRange: info.date_range
+                            recordCount: info.record_count,
+                            dateRange: info.date_range,
+                            chunk_number: info.chunk_number,
                         });
                     }
                 }
@@ -869,32 +882,33 @@
             }
 
             async showStockChart(selectedStock, exchange) {
-                let stockData = this.dataLoader.getStockData(selectedStock.symbol);
+                // Lookup key may differ from display symbol for dual-listed
+                // stocks (e.g. display "INFY" on the BSE tab maps to chunk
+                // key "BSE:INFY"). selectedStock.key is set by searchStocks;
+                // older code paths / older base files fall back to .symbol.
+                const lookupKey = selectedStock.key || selectedStock.symbol;
+                let stockData = this.dataLoader.getStockData(lookupKey);
                 if (!stockData) {
                     this.dataLoader.updateLoadingStatus(`Loading data for ${selectedStock.symbol}…`);
-                    // Fast path: stock_index entries now carry chunk_number, so
+                    // Fast path: stock_index entries carry chunk_number, so
                     // we know exactly which chunk to fetch — no sequential
-                    // probe through chunks 1..N (which used to download up to
-                    // ~40 MB worst-case for a stock in the last chunk).
+                    // probe through chunks 1..N.
                     const info = this.dataLoader.baseData
                               && this.dataLoader.baseData.stock_index
-                              && this.dataLoader.baseData.stock_index[selectedStock.symbol];
+                              && this.dataLoader.baseData.stock_index[lookupKey];
                     const directChunk = info && info.chunk_number;
                     if (directChunk) {
                         await this.dataLoader.loadStockChunk(directChunk);
-                        stockData = this.dataLoader.getStockData(selectedStock.symbol);
+                        stockData = this.dataLoader.getStockData(lookupKey);
                     }
-                    // Fallback path for older base files without chunk_number:
-                    // fetch all chunks in PARALLEL (was sequential — gave the
-                    // perception of "chart not loading" when the symbol sat in
-                    // chunk 4 or 5).
+                    // Fallback path: fetch all chunks in PARALLEL.
                     if (!stockData) {
                         const total = this.dataLoader.manifest?.chunks?.length || 0;
                         await Promise.all(
                             Array.from({ length: total }, (_, k) =>
                                 this.dataLoader.loadStockChunk(k + 1)),
                         );
-                        stockData = this.dataLoader.getStockData(selectedStock.symbol);
+                        stockData = this.dataLoader.getStockData(lookupKey);
                     }
                 }
                 if (!stockData || stockData.length === 0) { alert('Stock data not found'); return; }
@@ -991,7 +1005,7 @@
                     return;
                 }
                 searchResultsDiv.innerHTML = results.map(stock => `
-                    <div class="search-result-item" data-symbol="${stock.symbol}" data-name="${stock.name}" data-exchange="${stock.exchange}">
+                    <div class="search-result-item" data-key="${stock.key || stock.symbol}" data-symbol="${stock.symbol}" data-name="${stock.name}" data-exchange="${stock.exchange}">
                         <div class="stock-info">
                             <div class="stock-symbol">${stock.symbol}</div>
                             <div class="stock-name">${stock.name}</div>
@@ -1011,7 +1025,12 @@
                         const chartBtn = document.getElementById(`chartStockBtn${sfx}`);
                         chartBtn.disabled = false;
                         this._selectedStocks = this._selectedStocks || {};
-                        this._selectedStocks[exchange] = { symbol: item.dataset.symbol, name: item.dataset.name, exchange: item.dataset.exchange };
+                        this._selectedStocks[exchange] = {
+                            key: item.dataset.key,            // chunk lookup key (may differ from display symbol for dual-listed)
+                            symbol: item.dataset.symbol,
+                            name: item.dataset.name,
+                            exchange: item.dataset.exchange,
+                        };
                         chartBtn.onclick = () => this.showStockChart(this._selectedStocks[exchange], exchange);
                     });
                 });

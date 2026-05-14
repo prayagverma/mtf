@@ -57,26 +57,55 @@ class StockDataCompressor:
         for symbol, records in daily_data.items():
             if not records or len(records) == 0:
                 continue
-                
-            # Create stock index entry
-            first_record = records[0]
-            last_record = records[-1]
-            
-            optimized_data['stock_index'][symbol] = {
-                'name': last_record.get('name', symbol),
-                'exchange': last_record.get('exchange', 'BSE'),
-                'record_count': len(records),
-                'date_range': {
-                    'start': first_record.get('date'),
-                    'end': last_record.get('date')
-                },
-                'latest_amount': last_record.get('amount_financed', 0)
-            }
-            
-            # Compress time-series data
-            compressed_records = self.compress_time_series(records)
-            optimized_data['compressed_daily_data'][symbol] = compressed_records
-            
+
+            # Partition by exchange. Dual-listed tickers (INFY, TCS, HDFCBANK,
+            # …) end up here with both NSE and BSE records sharing the symbol
+            # bucket because BSE's `scripname.upper()` matches NSE's ticker.
+            # Splitting them produces two clean stock_index entries (one per
+            # exchange) so each is independently searchable and chartable.
+            by_ex = defaultdict(list)
+            for r in records:
+                by_ex[r.get('exchange') or '?'].append(r)
+            dual = len(by_ex) > 1
+
+            for ex, ex_records in by_ex.items():
+                # Within one exchange, collapse same-date duplicate rows
+                # (some NSE files include a leading "<symbol>,Name,0,0.00"
+                # placeholder before the real data row). Keep the entry with
+                # the higher amount_financed; ties keep the latest seen.
+                by_date = {}
+                for r in ex_records:
+                    d = r.get('date')
+                    if not d:
+                        continue
+                    cur = by_date.get(d)
+                    if (cur is None
+                            or float(r.get('amount_financed', 0) or 0)
+                                > float(cur.get('amount_financed', 0) or 0)):
+                        by_date[d] = r
+                ex_records = sorted(by_date.values(), key=lambda r: r['date'])
+                if not ex_records:
+                    continue
+
+                first_record = ex_records[0]
+                last_record  = ex_records[-1]
+                # Compound key only when both exchanges have records for this
+                # symbol — keeps the 99% of single-exchange entries unchanged.
+                chunk_key = f"{ex}:{symbol}" if dual else symbol
+
+                optimized_data['stock_index'][chunk_key] = {
+                    'symbol':       symbol,                # display ticker (no prefix)
+                    'name':         last_record.get('name', symbol),
+                    'exchange':     ex,
+                    'record_count': len(ex_records),
+                    'date_range': {
+                        'start': first_record.get('date'),
+                        'end':   last_record.get('date'),
+                    },
+                    'latest_amount': last_record.get('amount_financed', 0),
+                }
+                optimized_data['compressed_daily_data'][chunk_key] = self.compress_time_series(ex_records)
+
         return optimized_data
     
     def compress_time_series(self, records):
