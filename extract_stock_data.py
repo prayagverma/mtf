@@ -501,9 +501,13 @@ class StockMTFExtractor:
                 continue
             sudden_changes.append((symbol, best_to, best_from, best_pct))
 
+        # Sort: most-recent to_date first, tie-break by abs(change_percent).
+        # Lexicographic ISO-8601 date comparison gives chronological order.
         analytics['latest_snapshot']['sudden_changes'] = sorted(
-            sudden_changes, key=lambda x: abs(x[3]), reverse=True
-        )[:50]
+            sudden_changes,
+            key=lambda x: (x[1]['date'], abs(x[3])),
+            reverse=True,
+        )[:200]
         
         # Unique securities active on each exchange's latest reporting day.
         # The Overview "Securities Total" card uses this to avoid double-counting

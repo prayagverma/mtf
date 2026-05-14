@@ -1255,20 +1255,84 @@
                 return out.slice(0, 50);
             }
 
-            // Returns the active-day total outstanding (in lakhs) for an exchange
-            // from the loaded daily-totals, plus the per-day securities count.
-            // Falls back to the snapshot's concentration_analysis if daily totals aren't available.
+            // Latest-day daily-totals snapshot for an exchange, plus the
+            // previous day's outstanding for day-over-day comparison.
+            // NSE and BSE publish on slightly different schedules — walks
+            // backwards through pivoted daily rows to find the most recent
+            // row that actually carries data for THIS exchange.
             _activeMarketSummary(exchange) {
                 const ex = exchange.toLowerCase();
-                if (this.data && this.data.length) {
-                    const last = this.data[this.data.length - 1];
-                    return {
-                        total_outstanding: last[`${ex}_end_outstanding`] || 0,
-                        securities_count: last[`${ex}_securities_count`] || 0,
-                        date: last.date,
-                    };
-                }
-                return null;
+                if (!this.data || !this.data.length) return null;
+                const find = (key, skip) => {
+                    for (let i = this.data.length - 1; i >= 0; i--) {
+                        const r = this.data[i];
+                        if (r === skip) continue;
+                        if (r[key] != null) return r;
+                    }
+                    return null;
+                };
+                const latest = find(`${ex}_end_outstanding`);
+                if (!latest) return null;
+                const prev = find(`${ex}_end_outstanding`, latest);
+                // NSE publishes "fresh_exposure"; BSE publishes "exposure_taken".
+                const freshKey = ex === 'nse' ? 'nse_fresh_exposure' : 'bse_exposure_taken';
+                return {
+                    total_outstanding: latest[`${ex}_end_outstanding`] || 0,
+                    securities_count:  latest[`${ex}_securities_count`] || 0,
+                    fresh:             latest[freshKey] || 0,
+                    liquidated:        latest[`${ex}_exposure_liquidated`] || 0,
+                    beginning:         latest[`${ex}_beginning_outstanding`] || 0,
+                    date:              latest.date,
+                    prev_total:        prev ? (prev[`${ex}_end_outstanding`] || 0) : null,
+                    prev_date:         prev ? prev.date : null,
+                };
+            }
+
+            // Builds the extra value-based stat rows that slot into the
+            // Market Concentration column on the NSE/BSE Stocks tabs.
+            // Returns innerHTML for 5 .stat-item rows, all ₹-denominated or %
+            // (no share-quantity figures). Returns '' if no daily data.
+            _buildMarketStats(active, totalOutstanding, topFunded) {
+                if (!active) return '';
+                const fresh   = active.fresh || 0;
+                const liq     = active.liquidated || 0;
+                const netFlow = fresh - liq;
+                const dayChangePct = (active.prev_total && active.prev_total > 0)
+                    ? ((active.total_outstanding - active.prev_total) / active.prev_total) * 100
+                    : null;
+                const dayChangeAbs = (active.prev_total != null)
+                    ? (active.total_outstanding - active.prev_total) : null;
+                const largest = (topFunded && topFunded.length)
+                    ? Math.max(...topFunded.map(s => s.amount_financed || 0))
+                    : 0;
+                const flowCls = netFlow >= 0 ? '' : ' style="color: var(--negative)"';
+                const dayCls  = (dayChangePct != null && dayChangePct < 0)
+                    ? ' style="color: var(--negative)"' : '';
+                const dayLine = (dayChangePct == null)
+                    ? '—'
+                    : `${dayChangePct >= 0 ? '+' : ''}${dayChangePct.toFixed(2)}% (${fmtINR(dayChangeAbs)})`;
+                return `
+                    <div class="stat-item">
+                        <span class="stat-label">Day Change</span>
+                        <span class="stat-value"${dayCls}>${dayLine}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Fresh Today</span>
+                        <span class="stat-value">${fmtINR(fresh)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Liquidated Today</span>
+                        <span class="stat-value">${fmtINR(liq)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Net Flow Today</span>
+                        <span class="stat-value"${flowCls}>${netFlow >= 0 ? '+' : ''}${fmtINR(netFlow)}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Largest Position</span>
+                        <span class="stat-value">${fmtINR(largest)}</span>
+                    </div>
+                `;
             }
 
             // Concentration share against the active-day denominator.
@@ -1291,6 +1355,7 @@
                 nseData.__totalDisplay = totalOutstanding;
                 nseData.__top10Display = top10;
                 nseData.__top50Display = top50;
+                nseData.__extraStats = this._buildMarketStats(active, totalOutstanding, nseData.top_funded);
                 grid.innerHTML = `
                     <div class="analytics-section">
                         <h3>Top Funded Stocks</h3>
@@ -1316,6 +1381,7 @@
                                 <span class="stat-label">Total Outstanding</span>
                                 <span class="stat-value">${fmtINR(nseData.__totalDisplay)}</span>
                             </div>
+                            ${nseData.__extraStats}
                             <div class="stat-item">
                                 <span class="stat-label">Top 10 Share</span>
                                 <span class="stat-value">${nseData.__top10Display.toFixed(1)}%</span>
@@ -1358,6 +1424,7 @@
                 bseData.__totalDisplay = totalOutstanding;
                 bseData.__top10Display = top10;
                 bseData.__top50Display = top50;
+                bseData.__extraStats = this._buildMarketStats(active, totalOutstanding, bseData.top_funded);
                 grid.innerHTML = `
                     <div class="analytics-section">
                         <h3>Top Funded Stocks</h3>
@@ -1383,6 +1450,7 @@
                                 <span class="stat-label">Total Outstanding</span>
                                 <span class="stat-value">${fmtINR(bseData.__totalDisplay)}</span>
                             </div>
+                            ${bseData.__extraStats}
                             <div class="stat-item">
                                 <span class="stat-label">Top 10 Share</span>
                                 <span class="stat-value">${bseData.__top10Display.toFixed(1)}%</span>
@@ -1489,7 +1557,7 @@
                         ${subtitle ? `<div class="stat-sub" style="margin: -.5rem 0 .65rem">${subtitle}</div>` : ''}
                         ${toggleHTML}
                         <div class="stock-list">
-                            ${filtered.slice(0, 50).map(stock => {
+                            ${filtered.slice(0, 200).map(stock => {
                                 // BSE per-stock keys are numeric scrip codes (e.g. "590096.0").
                                 // Prefer the readable name as the headline for those, with the
                                 // scrip code shown smaller below.
