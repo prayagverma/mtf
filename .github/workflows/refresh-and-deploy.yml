@@ -1,12 +1,13 @@
 name: Refresh MTF data & deploy
 
 # Triggers
-#  - Daily at 22:00 IST Mon-Fri (16:30 UTC). Indian exchanges publish T+0 reports
-#    by ~19:00 IST, so this gives them a 3-hour buffer.
+#  - Daily at 23:00 IST Mon-Fri (17:30 UTC). Indian exchanges publish T+0 reports
+#    by ~19:00 IST, so this gives them a 4-hour buffer (NSE has been late on
+#    some days at 22:00 IST, leaving BSE-only data on the live site).
 #  - Manual via the "Run workflow" button on the Actions tab.
 on:
   schedule:
-    - cron: "30 16 * * 1-5"   # 16:30 UTC = 22:00 IST, Mon-Fri
+    - cron: "30 17 * * 1-5"   # 17:30 UTC = 23:00 IST, Mon-Fri
   workflow_dispatch:
     inputs:
       lookback_days:
