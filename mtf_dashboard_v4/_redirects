@@ -1,15 +1,21 @@
-# Vanity redirects only.
-# Cloudflare Pages uses /404.html automatically for any unmatched path —
-# no explicit catch-all rule needed (and adding one shadows real files).
+# Vanity redirects.
 /dashboard       /             301
 /analytics       /             301
 /index.htm       /             301
 
-# Per-tab linkable URLs. Status 200 = rewrite (serve index.html WITHOUT
-# changing the browser address). The dashboard JS reads location.pathname
-# at boot and activates the corresponding tab.
-/overview        /index.html   200
-/nse-stocks      /index.html   200
-/bse-stocks      /index.html   200
-/cross-exchange  /index.html   200
-/market-changes  /index.html   200
+# SPA fallback for per-tab linkable URLs (/nse-stocks, /bse-stocks,
+# /cross-exchange, /market-changes, /overview): rewrite any unmatched
+# path to index.html so direct links + browser refresh stay on the
+# right tab. The dashboard JS reads location.pathname at boot and
+# activates the matching tab (unknown paths fall back to Overview).
+#
+# Why a wildcard and not five explicit /path -> /index.html 200 rules:
+# Cloudflare Pages treats literal-destination 200 rewrites on non-
+# wildcard sources as redirects (issues a 308 to /). The /* form is
+# the documented SPA pattern that actually rewrites.
+#
+# Real files (sitemap.xml, robots.txt, /compressed_data/*, *.json,
+# *.gz, *.html, etc.) are served by Cloudflare BEFORE _redirects is
+# consulted, so this catch-all only fires for paths with no on-disk
+# asset.
+/*               /index.html   200
