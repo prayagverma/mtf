@@ -414,24 +414,23 @@ class StockMTFExtractor:
                                                                                   key=lambda x: x[1]['qty_financed'], 
                                                                                   reverse=True)[:50]
         
-        # Rolling 30-day "biggest movers" list.
+        # "Biggest movers" in the last 30 days.
         #
-        # The naïve last-vs-previous comparison (1-day move) is noisy and the
-        # dashboard previously worked around it by re-computing this list
-        # client-side from the per-stock chunks (~40 MB load per tab open).
-        # Producing the list here means the client just reads it out of the
-        # base snapshot and skips the chunk fetch entirely.
+        # The previous algorithm only compared each stock's latest record to
+        # its ~30-day-old record (±5 days). That misses every intra-window
+        # spike: a stock that ran 10 -> 500 on day 15 and crashed back to 10
+        # by day 30 would have shown 0% change.
         #
-        # Algorithm mirrors the JS computeRecentChanges that this replaces:
-        #   - anchor = freshest "to_date" across all stocks
-        #   - for each stock: pick the record nearest to (last_date - 30d),
-        #     ±5d tolerance
-        #   - drop stale stocks (last_date outside the 30d window),
-        #     dust (cur AND old both < ₹100 lakh), small moves (|%| < 5)
-        #   - sort by abs(change_percent), top 50
+        # New algorithm — for each stock with records inside the trailing
+        # 30-day window, find the biggest swing (increase OR decrease)
+        # between any two of its records via a single-pass running-min /
+        # running-max scan. The reported from_date / to_date are the actual
+        # dates of the swing endpoints, not arbitrary 30-day anchors.
+        #
+        # Filters preserved from before: dust (both endpoints < ₹100 lakh),
+        # small moves (|%| < 5), stale stocks (no record in the window).
+        # Sort by abs(change_percent), top 50.
         WINDOW_DAYS = 30
-        TARGET_LOOKBACK_DAYS = 30
-        TOLERANCE_DAYS = 5
         MIN_AMOUNT = 100
         MIN_ABS_PCT = 5
 
@@ -451,36 +450,56 @@ class StockMTFExtractor:
                 anchor = last_dt
         cutoff = (anchor - timedelta(days=WINDOW_DAYS)) if anchor else None
 
-        # Pass 2: collect (symbol, latest, prev, pct).
+        # Pass 2: for each stock, find the biggest swing inside the window.
         sudden_changes = []
-        tol = timedelta(days=TOLERANCE_DAYS)
         for symbol, sr in sorted_by_symbol.items():
-            latest = sr[-1]
-            last_dt = _parse(latest['date'])
-            if cutoff and last_dt < cutoff:
-                continue  # stale — last update outside the 30-day window
-            target = last_dt - timedelta(days=TARGET_LOOKBACK_DAYS)
-            prev = None
-            best = tol + timedelta(days=1)
-            for r in reversed(sr[:-1]):
-                dt = _parse(r['date'])
-                delta = abs(dt - target)
-                if delta < best:
-                    best, prev = delta, r
-                if dt < target - tol:
-                    break  # walked too far back
-            if not prev or best > tol:
+            # Records inside the trailing 30-day window, with amount > 0.
+            # Zero-amount rows are "no trading" snapshots rather than legitimate
+            # data points and would otherwise produce ∞%-style false positives
+            # (e.g. mutual funds going from ₹0 to ₹1000 lakh = "+11,712,300%").
+            in_window = [
+                r for r in sr
+                if (cutoff is None or _parse(r['date']) >= cutoff)
+                and float(r.get('amount_financed', 0) or 0) > 0
+            ]
+            if len(in_window) < 2:
                 continue
-            cur = float(latest.get('amount_financed', 0) or 0)
-            old = float(prev.get('amount_financed', 0) or 0)
-            if cur <= 0 or old <= 0:
+
+            first = in_window[0]
+            run_min_val = run_max_val = float(first['amount_financed'])
+            run_min_rec = run_max_rec = first
+
+            best_pct  = 0.0
+            best_from = best_to = None
+            for r in in_window[1:]:
+                cur = float(r['amount_financed'])
+                # Increase: cur vs the lowest value seen earlier in the window.
+                up = (cur - run_min_val) / run_min_val * 100
+                if abs(up) > abs(best_pct):
+                    best_pct, best_from, best_to = up, run_min_rec, r
+                # Decrease: cur vs the highest value seen earlier in the window.
+                down = (cur - run_max_val) / run_max_val * 100
+                if abs(down) > abs(best_pct):
+                    best_pct, best_from, best_to = down, run_max_rec, r
+                # Update running extrema AFTER comparison so swings always go
+                # forward in time (from_date < to_date).
+                if cur < run_min_val:
+                    run_min_val, run_min_rec = cur, r
+                if cur > run_max_val:
+                    run_max_val, run_max_rec = cur, r
+
+            if best_from is None or best_to is None:
                 continue
-            if cur < MIN_AMOUNT and old < MIN_AMOUNT:
+            from_val = float(best_from['amount_financed'])
+            to_val   = float(best_to['amount_financed'])
+            # Require the START of the swing to be substantial. This drops the
+            # "stock appeared from dust" false positives without dropping real
+            # spike-downs (where the high was substantial but the low isn't).
+            if from_val < MIN_AMOUNT:
                 continue
-            change_pct = ((cur - old) / old) * 100
-            if abs(change_pct) < MIN_ABS_PCT:
+            if abs(best_pct) < MIN_ABS_PCT:
                 continue
-            sudden_changes.append((symbol, latest, prev, change_pct))
+            sudden_changes.append((symbol, best_to, best_from, best_pct))
 
         analytics['latest_snapshot']['sudden_changes'] = sorted(
             sudden_changes, key=lambda x: abs(x[3]), reverse=True
