@@ -1,4 +1,8 @@
 /dashboard       /             301
 /analytics       /             301
 /index.htm       /             301
-/*               /index.html   200
+/overview        /             200
+/nse-stocks      /             200
+/bse-stocks      /             200
+/cross-exchange  /             200
+/market-changes  /             200
