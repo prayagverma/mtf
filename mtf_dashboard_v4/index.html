@@ -98,12 +98,10 @@
                         <div class="control-group">
                             <label for="metricSelect">Metric</label>
                             <select id="metricSelect">
-                                <option value="end_outstanding">End Outstanding</option>
+                                <option value="end_outstanding">Total Outstanding</option>
                                 <option value="securities_count">Securities Count</option>
-                                <option value="fresh_exposure">Fresh Exposure (NSE)</option>
-                                <option value="exposure_liquidated">Exposure Liquidated</option>
-                                <option value="exposure_taken">Exposure Taken (BSE)</option>
-                                <option value="amount_financed">Amount Financed (BSE)</option>
+                                <option value="new_positions">New Positions</option>
+                                <option value="exposure_liquidated">Closed Positions</option>
                             </select>
                         </div>
 
@@ -489,9 +487,14 @@
                     // the overlay vanishing and setupDashboard() running.
                     this.setupDashboard();
                     this.setupEventListeners();
-                    this.updateChart();
                     this.hideLoadingOverlay();
                     document.getElementById('mainContent').style.display = 'block';
+                    // Draw the Overview chart AFTER #mainContent becomes
+                    // visible so the chart container has a real width when
+                    // timeScale().fitContent() is called — otherwise the
+                    // initial render is mis-zoomed and the user has to click
+                    // Reset Zoom.
+                    this.updateChart();
                 } catch (error) {
                     console.error('Failed to initialize:', error);
                     this.showError('Failed to load dashboard data');
@@ -1214,10 +1217,10 @@
                          `${fmtDate(bseLatest.date)} · ${fmtCount(bseLatest.bse_securities_count)} securities`,
                          'BSE',
                          bsePrev ? { text: fmtDelta(bseLatest.bse_end_outstanding, bsePrev.bse_end_outstanding), cls: deltaCls(bseLatest.bse_end_outstanding, bsePrev.bse_end_outstanding) } : null),
-                    card('Fresh Exposure (NSE)', fmtINR(nseLatest.nse_fresh_exposure),
-                         `Net new positions · ${fmtDate(nseLatest.date)}`, 'NSE'),
-                    card('Liquidated (NSE)', fmtINR(nseLatest.nse_exposure_liquidated),
-                         `Positions exited · ${fmtDate(nseLatest.date)}`, 'NSE'),
+                    card('New NSE Positions', fmtINR(nseLatest.nse_fresh_exposure),
+                         `Added · ${fmtDate(nseLatest.date)}`, 'NSE'),
+                    card('NSE Positions Closed', fmtINR(nseLatest.nse_exposure_liquidated),
+                         `Closed · ${fmtDate(nseLatest.date)}`, 'NSE'),
                     (() => {
                         // Prefer the pipeline-computed unique count when it's
                         // available (excludes the ~50 dual-listed stocks
@@ -1369,15 +1372,15 @@
                         <span class="stat-value"${dayCls}>${dayLine}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Fresh Today</span>
+                        <span class="stat-label">New Positions</span>
                         <span class="stat-value">${fmtINR(fresh)}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Liquidated Today</span>
+                        <span class="stat-label">Closed Positions</span>
                         <span class="stat-value">${fmtINR(liq)}</span>
                     </div>
                     <div class="stat-item">
-                        <span class="stat-label">Net Flow Today</span>
+                        <span class="stat-label">Net (New − Closed)</span>
                         <span class="stat-value"${flowCls}>${netFlow >= 0 ? '+' : ''}${fmtINR(netFlow)}</span>
                     </div>
                     <div class="stat-item">
@@ -1848,24 +1851,39 @@
             getMetricValue(dataPoint, metric, exchange) {
                 const prefix = exchange.toLowerCase();
                 switch (metric) {
-                    case 'end_outstanding': return dataPoint[`${prefix}_end_outstanding`] || 0;
-                    case 'securities_count': return dataPoint[`${prefix}_securities_count`] || 0;
-                    case 'fresh_exposure': return exchange === 'NSE' ? (dataPoint.nse_fresh_exposure || 0) : 0;
-                    case 'exposure_liquidated': return dataPoint[`${prefix}_exposure_liquidated`] || 0;
-                    case 'exposure_taken': return exchange === 'BSE' ? (dataPoint.bse_exposure_taken || 0) : 0;
-                    case 'amount_financed': return exchange === 'BSE' ? (dataPoint.bse_amount_financed || 0) : 0;
+                    // "Total Outstanding" — each exchange's own end_outstanding
+                    // field, plotted as two separate per-exchange lines on the
+                    // chart (BSE's bse_end_outstanding stays distinct from
+                    // its bse_amount_financed, which is its own metric).
+                    case 'end_outstanding':    return dataPoint[`${prefix}_end_outstanding`] || 0;
+                    case 'securities_count':   return dataPoint[`${prefix}_securities_count`] || 0;
+                    // "New Positions" — NSE reports as fresh_exposure, BSE as
+                    // exposure_taken (same concept under different per-exchange
+                    // column names, but each plotted as its own line).
+                    case 'new_positions':      return exchange === 'NSE'
+                                                     ? (dataPoint.nse_fresh_exposure || 0)
+                                                     : (dataPoint.bse_exposure_taken || 0);
+                    case 'exposure_liquidated':return dataPoint[`${prefix}_exposure_liquidated`] || 0;
+                    // BSE-only metric: amount financed by members.
+                    case 'amount_financed':    return exchange === 'BSE' ? (dataPoint.bse_amount_financed || 0) : 0;
+                    // Legacy keys kept for backwards-compatibility with any
+                    // bookmarks / saved URLs from before the rename.
+                    case 'fresh_exposure':     return exchange === 'NSE' ? (dataPoint.nse_fresh_exposure || 0) : 0;
+                    case 'exposure_taken':     return exchange === 'BSE' ? (dataPoint.bse_exposure_taken || 0) : 0;
                     default: return 0;
                 }
             }
 
             getMetricLabel(metric) {
                 switch (metric) {
-                    case 'end_outstanding': return 'End Outstanding';
-                    case 'securities_count': return 'Securities Count';
-                    case 'fresh_exposure': return 'Fresh Exposure';
-                    case 'exposure_liquidated': return 'Exposure Liquidated';
-                    case 'exposure_taken': return 'Exposure Taken';
-                    case 'amount_financed': return 'Amount Financed';
+                    case 'end_outstanding':    return 'Total Outstanding';
+                    case 'securities_count':   return 'Securities Count';
+                    case 'new_positions':      return 'New Positions';
+                    case 'exposure_liquidated':return 'Closed Positions';
+                    // Legacy
+                    case 'fresh_exposure':     return 'New Positions';
+                    case 'exposure_taken':     return 'New Positions';
+                    case 'amount_financed':    return 'BSE Funded Amount';
                     default: return metric;
                 }
             }
