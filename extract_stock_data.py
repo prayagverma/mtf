@@ -29,9 +29,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 logger = logging.getLogger(__name__)
 
 
-def _load_nse_symbol_to_isin():
-    """Return {SYMBOL: ISIN}. Try a fresh fetch; fall back to the cached file
-    so a one-off NSE outage doesn't break the run."""
+def _normalize_company_key(name: str) -> str:
+    """Best-effort normalised short token from a company name.
+    Mirrors StockMTFExtractor._bse_key_from_name so the NSE-name index
+    and the BSE-name fallback produce identical lookups."""
+    if not name:
+        return ''
+    n = re.sub(r'[^A-Za-z0-9 &]+', ' ', name).upper()
+    n = re.sub(r'\b(LIMITED|LTD|LIMITE|PVT|PRIVATE|CORPORATION|CORP|COMPANY|INC|INCORPORATED|INDIA)\b', ' ', n)
+    n = re.sub(r'\s+', ' ', n).strip()
+    return ' '.join(n.split()[:3])
+
+
+def _load_nse_master():
+    """Return ({SYMBOL: ISIN}, {NAME_KEY: SYMBOL}). Try a fresh fetch; fall
+    back to the cached file so a one-off NSE outage doesn't break the run.
+    NAME_KEY is a stable short token (see _normalize_company_key) — used
+    to rescue BSE rows where the only identifier is a company name."""
     try:
         import requests
         resp = requests.get(
@@ -52,35 +66,52 @@ def _load_nse_symbol_to_isin():
                 body = f.read()
         except FileNotFoundError:
             logger.error('No NSE equity master available — dedup will fall back to symbol keys.')
-            return {}
-    m = {}
+            return {}, {}
+    sym_to_isin = {}
+    name_to_sym = {}
     reader = _csv.reader(io.StringIO(body))
     header = next(reader, None) or []
     sym_idx  = next((i for i, c in enumerate(header) if c.strip().upper() == 'SYMBOL'), 0)
+    name_idx = next((i for i, c in enumerate(header) if 'NAME' in c.strip().upper()), 1)
     isin_idx = next((i for i, c in enumerate(header) if 'ISIN' in c.strip().upper()), -1)
     if isin_idx < 0:
         logger.error('NSE master missing ISIN column.')
-        return {}
+        return {}, {}
     for row in reader:
-        if len(row) > max(sym_idx, isin_idx):
-            sym = row[sym_idx].strip()
-            isin = row[isin_idx].strip()
-            if sym and isin:
-                m[sym] = isin
-    logger.info('NSE symbol→ISIN map: %d entries', len(m))
-    return m
+        if len(row) <= max(sym_idx, isin_idx, name_idx):
+            continue
+        sym  = row[sym_idx].strip()
+        isin = row[isin_idx].strip()
+        name = row[name_idx].strip() if name_idx >= 0 else ''
+        if sym and isin:
+            sym_to_isin[sym] = isin
+        nk = _normalize_company_key(name)
+        # Only set if not already present — first-seen wins, avoiding noisy
+        # collisions between near-identical names.
+        if sym and nk and nk not in name_to_sym:
+            name_to_sym[nk] = sym
+    logger.info('NSE symbol→ISIN map: %d entries; name→symbol map: %d entries',
+                len(sym_to_isin), len(name_to_sym))
+    return sym_to_isin, name_to_sym
+
+
+def _load_nse_symbol_to_isin():
+    """Backwards-compatible wrapper: return only the symbol→ISIN map."""
+    return _load_nse_master()[0]
 
 
 class StockMTFExtractor:
     def __init__(self):
         self.stock_data = defaultdict(list)  # {stock_symbol: [daily_records]}
         self.exchange_summary = {'NSE': {}, 'BSE': {}}
-        self.nse_isin_map = _load_nse_symbol_to_isin()
+        self.nse_isin_map, self.nse_name_to_symbol = _load_nse_master()
         # Inverse map: ISIN → NSE symbol. Used to canonicalise BSE 4-col CSV rows
         # (which carry ISIN but no Symbol) back to the legacy BSE scripname for
         # dual-listed stocks — e.g. Infosys ISIN INE009A01021 resolves to "INFY",
         # matching the legacy BSE scripname, instead of being bucketed under
-        # "INFOSYS" by the name-based fallback.
+        # "INFOSYS" by the name-based fallback. The name→symbol map covers
+        # transitional 5-col CSV rows (Sept-Oct 2025) where the Symbol column
+        # carried a polluted company name ("INFOSYS LTD") and no ISIN was given.
         self.isin_to_nse_symbol = {isin: sym for sym, isin in self.nse_isin_map.items() if isin}
         
     def extract_nse_stocks(self, filepath, date):
@@ -248,25 +279,31 @@ class StockMTFExtractor:
             except ValueError:
                 continue
 
-            # Determine the merge key.
-            # 5-col format has Symbol → use that (matches legacy scripname semantics).
-            # 4-col format has Name + ISIN → first try ISIN → NSE symbol (the
-            # same security on NSE almost always carries the BSE legacy scripname
-            # we want, e.g. Infosys ISIN → "INFY"), then fall back to a sanitised
-            # short-name token. Without the ISIN bridge, dual-listed stocks split
-            # into two BSE buckets: legacy "INFY" + new "INFOSYS".
+            # Determine the merge key. Priority order:
+            #   1) ISIN bridge — most reliable when present (4-col CSVs).
+            #   2) Symbol column value if it looks like a clean ticker (no spaces,
+            #      no LTD/LIMITED suffix). True for legacy 5-col files with a
+            #      proper Symbol column.
+            #   3) NSE-name bridge — for transitional 5-col CSVs (Sep-Oct 2025)
+            #      where the Symbol column was populated with a company name
+            #      like "INFOSYS LTD" and no ISIN was carried.
+            #   4) Sanitised short-name token (BSE-only listings).
             name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else ''
             isin = row[isin_idx].strip() if isin_idx >= 0 and len(row) > isin_idx else ''
-            if sym_idx >= 0:
-                key = row[sym_idx].strip().upper()
-                if not name:
-                    name = key
-            elif isin and isin in self.isin_to_nse_symbol:
+            sym_raw = row[sym_idx].strip() if sym_idx >= 0 and len(row) > sym_idx else ''
+            key = ''
+            if isin and isin in self.isin_to_nse_symbol:
                 key = self.isin_to_nse_symbol[isin].upper()
+            elif sym_raw and self._looks_like_clean_ticker(sym_raw):
+                key = sym_raw.upper()
             else:
-                key = self._bse_key_from_name(name)
+                name_key = self._bse_key_from_name(name or sym_raw)
+                # Map normalised name → NSE symbol where the security is dual-listed.
+                key = self.nse_name_to_symbol.get(name_key, name_key)
             if not key:
                 continue
+            if not name:
+                name = sym_raw or key
 
             stock_record = {
                 'date': date.strftime('%Y-%m-%d'),
@@ -292,13 +329,22 @@ class StockMTFExtractor:
     @staticmethod
     def _bse_key_from_name(name: str) -> str:
         """Best-effort merge key from a BSE company name. Strips common suffixes."""
-        if not name:
-            return ''
-        n = re.sub(r'[^A-Za-z0-9 &]+', ' ', name).upper()
-        n = re.sub(r'\b(LIMITED|LTD|LIMITE|PVT|PRIVATE|CORPORATION|CORP|COMPANY|INC|INCORPORATED|INDIA)\b', ' ', n)
-        n = re.sub(r'\s+', ' ', n).strip()
-        # Take first 3 words at most as the short key.
-        return ' '.join(n.split()[:3])
+        return _normalize_company_key(name)
+
+    @staticmethod
+    def _looks_like_clean_ticker(sym: str) -> bool:
+        """Heuristic: a 'real' ticker is a single short token without LTD/LIMITED.
+        Polluted BSE 5-col rows put the full company name into the Symbol column
+        (e.g. 'INFOSYS LTD', 'ABB LTD') — those should fall through to the name
+        bridge so they don't create a phantom bucket per company."""
+        s = (sym or '').strip().upper()
+        if not s:
+            return False
+        if ' ' in s:
+            return False
+        if re.search(r'\b(LIMITED|LTD|LIMITE|PVT|PRIVATE|CORPORATION|CORP|COMPANY|INC|INCORPORATED)\b', s):
+            return False
+        return True
     
     def calculate_stock_analytics(self):
         """Calculate comprehensive stock analytics with daily time-series data"""
