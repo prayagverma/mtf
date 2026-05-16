@@ -76,6 +76,12 @@ class StockMTFExtractor:
         self.stock_data = defaultdict(list)  # {stock_symbol: [daily_records]}
         self.exchange_summary = {'NSE': {}, 'BSE': {}}
         self.nse_isin_map = _load_nse_symbol_to_isin()
+        # Inverse map: ISIN → NSE symbol. Used to canonicalise BSE 4-col CSV rows
+        # (which carry ISIN but no Symbol) back to the legacy BSE scripname for
+        # dual-listed stocks — e.g. Infosys ISIN INE009A01021 resolves to "INFY",
+        # matching the legacy BSE scripname, instead of being bucketed under
+        # "INFOSYS" by the name-based fallback.
+        self.isin_to_nse_symbol = {isin: sym for sym, isin in self.nse_isin_map.items() if isin}
         
     def extract_nse_stocks(self, filepath, date):
         """Extract individual stock data from NSE MTF file"""
@@ -244,13 +250,20 @@ class StockMTFExtractor:
 
             # Determine the merge key.
             # 5-col format has Symbol → use that (matches legacy scripname semantics).
-            # 4-col format has Name + ISIN → derive a short name token from Name.
+            # 4-col format has Name + ISIN → first try ISIN → NSE symbol (the
+            # same security on NSE almost always carries the BSE legacy scripname
+            # we want, e.g. Infosys ISIN → "INFY"), then fall back to a sanitised
+            # short-name token. Without the ISIN bridge, dual-listed stocks split
+            # into two BSE buckets: legacy "INFY" + new "INFOSYS".
+            name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else ''
+            isin = row[isin_idx].strip() if isin_idx >= 0 and len(row) > isin_idx else ''
             if sym_idx >= 0:
                 key = row[sym_idx].strip().upper()
-                name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else key
+                if not name:
+                    name = key
+            elif isin and isin in self.isin_to_nse_symbol:
+                key = self.isin_to_nse_symbol[isin].upper()
             else:
-                # Strip common company suffixes to better merge with legacy scrip names.
-                name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else ''
                 key = self._bse_key_from_name(name)
             if not key:
                 continue
@@ -260,7 +273,7 @@ class StockMTFExtractor:
                 'exchange': 'BSE',
                 'symbol': key,
                 'name': name or key,
-                'isin': row[isin_idx].strip() if isin_idx >= 0 and len(row) > isin_idx else None,
+                'isin': isin or None,
                 'qty_financed': qty_financed,
                 'amount_financed': amount_financed,
                 # New format doesn't carry per-stock outstanding/exposure breakdowns.
