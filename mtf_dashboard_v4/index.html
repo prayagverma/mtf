@@ -36,7 +36,19 @@
     <script src="https://kit.fontawesome.com/957d1f8ec0.js" crossorigin="anonymous"></script>
 
     <style>:root{--font-sans: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;--font-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;--background: #f7f8fa;--foreground: #0b1220;--card: #ffffff;--card-foreground: #0b1220;--primary: #2563eb;--primary-foreground: #ffffff;--secondary: #eef2f7;--secondary-foreground: #0b1220;--muted: #eef2f7;--muted-foreground: #5b6679;--faint: #f1f4f9;--faint-foreground: #8c97ab;--accent: #e6efff;--accent-foreground: #1d4ed8;--danger: #dc2626;--danger-foreground: #ffffff;--success: #059669;--success-foreground: #ffffff;--warning: #d97706;--warning-foreground: #ffffff;--border: #e3e8ef;--input: #d4dae3;--ring: #2563eb;--shadow-small: 0 1px 2px 0 rgb(15 23 42 / .04), 0 0 0 1px rgb(15 23 42 / .04);--shadow-medium: 0 1px 3px 0 rgb(15 23 42 / .08), 0 1px 2px -1px rgb(15 23 42 / .05);--shadow-large: 0 12px 24px -10px rgb(15 23 42 / .18), 0 4px 8px -4px rgb(15 23 42 / .08);--nse-color: #2563eb;--bse-color: #059669;--positive: #059669;--negative: #dc2626}body[data-theme=dark]{--background: #000000;--foreground: #e6eaf2;--card: #0a0a0a;--card-foreground: #e6eaf2;--primary: #60a5fa;--primary-foreground: #000000;--secondary: #141414;--secondary-foreground: #e6eaf2;--muted: #141414;--muted-foreground: #8b94a3;--faint: #0a0a0a;--faint-foreground: #5b6473;--accent: #14213d;--accent-foreground: #93c5fd;--danger: #f87171;--danger-foreground: #000000;--success: #34d399;--success-foreground: #000000;--warning: #fbbf24;--warning-foreground: #000000;--border: #1f1f1f;--input: #2a2a2a;--ring: #60a5fa;color-scheme:dark;--nse-color: #60a5fa;--bse-color: #34d399;--positive: #34d399;--negative: #f87171;--shadow-small: 0 1px 2px 0 rgb(0 0 0 / .8);--shadow-medium: 0 1px 3px 0 rgb(0 0 0 / .7), 0 1px 2px -1px rgb(0 0 0 / .6);--shadow-large: 0 12px 24px -10px rgb(0 0 0 / .9), 0 4px 8px -4px rgb(0 0 0 / .6)}body{font-family:var(--font-sans);background:var(--background);color:var(--foreground);min-height:100vh;-webkit-font-smoothing:antialiased}.num,.stat-value,.stat-change,td.num,.mono{font-variant-numeric:tabular-nums;font-feature-settings:"tnum" 1}.mono{font-family:var(--font-mono)}.loading-overlay{position:fixed;inset:0;background:color-mix(in srgb,var(--background) 92%,transparent);backdrop-filter:blur(6px);display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:9999;transition:opacity .3s ease}.loading-overlay.hidden{opacity:0;pointer-events:none}.loading-spinner{width:44px;height:44px;margin-bottom:1rem;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}.loading-text{font-weight:800;font-size:1rem;letter-spacing:-.02em}.loading-subtext{color:var(--muted-foreground);font-size:.76rem;margin-top:.35rem;font-weight:600;text-transform:uppercase;letter-spacing:.08em}.app-header{position:sticky;top:0;z-index:50;background:color-mix(in srgb,var(--background) 88%,transparent);backdrop-filter:saturate(180%) blur(10px);border-bottom:1px solid var(--border)}.app-header-inner{max-width:1280px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem;gap:1rem}.brand{display:flex;align-items:baseline;gap:.65rem;min-width:0}.brand-mark{font-weight:900;font-size:1.05rem;letter-spacing:-.04em;color:var(--foreground);font-feature-settings:"ss01" 1}.brand-mark:after{content:"";display:inline-block;width:5px;height:5px;border-radius:50%;background:var(--primary);margin-left:.35rem;transform:translateY(-2px)}.brand-text{display:flex;flex-direction:column;line-height:1.15;min-width:0}.brand-text small{font-size:.68rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em;font-weight:600}.header-meta{display:flex;align-items:center;gap:1rem}.live-dot{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--positive);animation:pulse 1.8s ease-in-out infinite}@keyframes pulse{50%{opacity:.4}}.meta-text{display:inline-flex;align-items:center;gap:.45rem;font-size:.72rem;color:var(--muted-foreground);white-space:nowrap;font-weight:700;text-transform:uppercase;letter-spacing:.08em}.theme-toggle{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:6px;background:transparent;cursor:pointer;user-select:none;color:var(--muted-foreground);transition:background-color .15s,border-color .15s,color .15s}.theme-toggle:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}.theme-toggle svg,.theme-toggle i{width:15px;height:15px;font-size:15px}.theme-toggle span{display:none}main.app{max-width:1280px;margin:0 auto;padding:1.5rem 1.5rem 4rem;display:flex;flex-direction:column;gap:1.25rem}.status-bar{display:flex;align-items:center;gap:.5rem;padding:0;color:var(--muted-foreground);font-size:.76rem;font-weight:600;letter-spacing:.04em;text-transform:uppercase}.status-bar[data-status=error]{color:var(--danger)}.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--border);border-radius:8px;background:var(--card);overflow:hidden}@media(max-width:900px){.stats-grid{grid-template-columns:repeat(2,1fr)}}@media(max-width:540px){.stats-grid{grid-template-columns:1fr}}.stat{position:relative;padding:1.1rem 1.25rem 1.2rem;display:flex;flex-direction:column;gap:.45rem;min-height:110px;border-right:1px solid var(--border);border-bottom:1px solid var(--border)}.stat-label{font-size:.68rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em}.stat-value{font-size:1.85rem;font-weight:800;letter-spacing:-.04em;line-height:1.1;color:var(--foreground)}.stat-sub{font-size:.76rem;color:var(--muted-foreground);font-weight:500}.stat-change{display:inline-flex;align-items:center;gap:.2rem;font-size:.78rem;font-weight:700;color:var(--positive);margin-top:auto}.stat-change.negative{color:var(--negative)}.stat-accent{display:none}.panel{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1rem 1.1rem}.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:.9rem;align-items:end}.control-group{display:flex;flex-direction:column;gap:.4rem;min-width:0}.control-group>label{font-size:.68rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em}.control-group select{width:100%;padding:.55rem .8rem;border-radius:6px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.88rem;font-family:inherit;font-weight:600;cursor:pointer;transition:border-color .15s,box-shadow .15s}.control-group select:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 22%,transparent)}.timeframe-buttons{display:inline-flex;border:1px solid var(--border);border-radius:6px;padding:0;width:fit-content;overflow:hidden}.timeframe-btn{background:transparent;color:var(--muted-foreground);border:0;border-right:1px solid var(--border);padding:.5rem .85rem;font-size:.78rem;font-weight:700;letter-spacing:.03em;cursor:pointer;font-family:inherit;transition:background-color .15s,color .15s}.timeframe-btn:last-child{border-right:0}.timeframe-btn:hover{color:var(--foreground);background:var(--faint)}.timeframe-btn.active{background:var(--foreground);color:var(--background)}.button-group{display:flex;gap:.5rem;flex-wrap:wrap}.btn{display:inline-flex;align-items:center;justify-content:center;gap:.4rem;padding:.55rem 1rem;background:var(--foreground);color:var(--background);border:1px solid var(--foreground);border-radius:6px;font-size:.82rem;font-weight:700;font-family:inherit;letter-spacing:-.005em;cursor:pointer;transition:opacity .15s,transform .12s}.btn:hover{opacity:.85}.btn:active{transform:translateY(1px)}.btn.secondary{background:transparent;color:var(--foreground);border-color:var(--border)}.btn.secondary:hover{background:var(--faint);border-color:var(--input);opacity:1}.btn:disabled{opacity:.4;cursor:not-allowed}.tab-navigation{display:flex;gap:0;flex-wrap:nowrap;border-bottom:1px solid var(--border);overflow-x:auto;margin:0 -1px}.tab-btn{position:relative;display:inline-flex;align-items:center;gap:.4rem;padding:.8rem 1.1rem .85rem;background:transparent;color:var(--muted-foreground);border:0;font-size:.85rem;font-weight:700;font-family:inherit;letter-spacing:-.01em;white-space:nowrap;cursor:pointer;transition:color .15s}.tab-btn::after{content:"";position:absolute;left:50%;bottom:-1px;width:calc(100% - 1.8rem);height:2px;border-radius:2px;background:var(--foreground);transform:translateX(-50%) scaleX(0);transform-origin:center;transition:transform .22s cubic-bezier(.4,0,.2,1),opacity .15s}.tab-btn:hover{color:var(--foreground)}.tab-btn:hover:not(.active)::after{transform:translateX(-50%) scaleX(.35);opacity:.45}.tab-btn.active{color:var(--foreground)}.tab-btn.active::after{transform:translateX(-50%) scaleX(1)}.tab-content{display:none;flex-direction:column;gap:1.25rem}.tab-content.active{display:flex}.chart-controls{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:.85rem}.chart-title{font-weight:800;font-size:1.05rem;letter-spacing:-.02em;color:var(--foreground)}.chart-options{display:flex;gap:1rem;flex-wrap:wrap;align-items:center}.chart-option{display:flex;align-items:center;gap:.35rem;font-size:.76rem;color:var(--muted-foreground);font-weight:700;text-transform:uppercase;letter-spacing:.08em}.chart-option input{accent-color:var(--primary)}.chart-option-select{margin-left:.3rem;padding:.2rem .45rem;border-radius:5px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.74rem;font-family:inherit;font-weight:600;cursor:pointer}.chart-option-select:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 2px color-mix(in srgb,var(--ring) 25%,transparent)}.chart-content{width:100%;height:480px;position:relative}.stock-chart-container{position:relative}.lwc-legend{position:absolute;top:12px;left:16px;display:flex;flex-direction:column;gap:6px;padding:10px 14px;background:color-mix(in srgb,var(--card) 88%,transparent);backdrop-filter:blur(8px);border:1px solid var(--border);border-radius:10px;box-shadow:var(--shadow-medium);font-size:.82rem;min-width:200px;pointer-events:none;z-index:5;transition:opacity .12s ease}.lwc-legend-row{display:flex;align-items:center;justify-content:space-between;gap:12px;font-variant-numeric:tabular-nums}.lwc-legend-name{display:inline-flex;align-items:center;gap:.45rem;color:var(--muted-foreground);font-weight:500}.lwc-legend-name:before{content:"";width:9px;height:9px;border-radius:50%;background:var(--legend-color, var(--primary));display:inline-block}.lwc-legend-value{color:var(--foreground);font-weight:600}.lwc-legend-delta{font-size:.76em;font-weight:600;margin-left:6px}.lwc-legend-delta.up{color:var(--positive)}.lwc-legend-delta.down{color:var(--negative)}.lwc-legend-meta{color:var(--faint-foreground);font-size:.72rem;margin-bottom:2px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}.chart-reset{background:transparent;border:1px solid var(--border);border-radius:7px;padding:.25rem .55rem;font-size:.75rem;color:var(--muted-foreground);cursor:pointer;font-family:inherit;font-weight:500;transition:background-color .12s,color .12s,border-color .12s}.chart-reset:hover{color:var(--foreground);border-color:var(--input);background:var(--accent)}.stock-search-container{display:flex;flex-direction:column;gap:.65rem;margin-bottom:1rem}.search-controls{display:flex;gap:.5rem;flex-wrap:wrap}.stock-search-input{flex:1 1 240px;padding:.6rem .85rem;border-radius:8px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.9rem;font-family:inherit;transition:border-color .15s,box-shadow .15s}.stock-search-input:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 25%,transparent)}.chart-stock-btn{white-space:nowrap}.search-results{display:none;max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:12px;background:var(--card);box-shadow:var(--shadow-small)}.search-result-item{display:flex;align-items:center;justify-content:space-between;gap:.75rem;padding:.65rem .9rem;border-bottom:1px solid var(--border);cursor:pointer;transition:background-color .12s}.search-result-item:last-child{border-bottom:0}.search-result-item:hover{background:var(--accent)}.search-result-item.selected{background:color-mix(in srgb,var(--primary) 10%,transparent)}.selected-stock-chart{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;box-shadow:var(--shadow-small)}.chart-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}.stock-chart-container{width:100%;height:380px}.close-btn{background:transparent;border:1px solid var(--border);border-radius:8px;width:32px;height:32px;cursor:pointer;color:var(--muted-foreground);font-size:.9rem}.close-btn:hover{color:var(--foreground)}.analytics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(340px,1fr));gap:1rem}.analytics-section{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:1.1rem 1.2rem 1.2rem}.analytics-section h3{font-size:.82rem;font-weight:800;margin:0 0 .85rem;text-transform:uppercase;letter-spacing:.14em;color:var(--muted-foreground)}.stock-list{display:flex;flex-direction:column;gap:0;max-height:460px;overflow-y:auto}.stock-item{display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .25rem;border-bottom:1px solid var(--border);transition:background-color .12s}.stock-item:last-child{border-bottom:0}.stock-item:hover{background:var(--faint)}.stock-info{display:flex;flex-direction:column;min-width:0;gap:1px}.stock-symbol{font-weight:800;font-size:.88rem;letter-spacing:-.01em}.stock-name{font-size:.72rem;color:var(--muted-foreground);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:38ch;font-weight:500}#sudden-changes-tab .stock-name{white-space:normal;overflow:visible;text-overflow:clip;max-width:none;line-height:1.3}#sudden-changes-tab .stock-info{flex:1 1 auto;min-width:0}.stock-metrics{display:flex;align-items:center;gap:.65rem;flex-shrink:0}.stock-amount{font-variant-numeric:tabular-nums;font-weight:700;font-size:.86rem;letter-spacing:-.01em}.stock-exchange{font-size:.62rem;font-weight:800;padding:.15rem .4rem;border-radius:3px;text-transform:uppercase;letter-spacing:.08em;border:1px solid currentColor}.stock-exchange.exchange-nse{color:var(--nse-color)}.stock-exchange.exchange-bse{color:var(--bse-color)}.stock-exchange.positive-change{color:var(--positive)}.stock-exchange.negative-change{color:var(--negative)}.concentration-stats{display:flex;flex-direction:column;gap:0}.stat-item{display:flex;align-items:center;justify-content:space-between;padding:.7rem 0;border-bottom:1px solid var(--border)}.stat-item:last-child{border-bottom:0}.stat-item .stat-label{font-size:.7rem;font-weight:700}.stat-item .stat-value{font-size:1rem;font-weight:800;letter-spacing:-.02em}.cross-exchange-info{display:flex;flex-direction:column;align-items:flex-end;gap:2px;font-size:.76rem;color:var(--muted-foreground);font-weight:500}.cross-exchange-info strong{color:var(--foreground);font-weight:800}.tab-content h2{font-size:1.5rem;font-weight:800;letter-spacing:-.03em;margin:0;color:var(--foreground)}.loading{display:flex;align-items:center;justify-content:center;gap:.65rem;padding:2rem;color:var(--muted-foreground);font-size:.9rem}.loading .spinner{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--primary);animation:spin .9s linear infinite}.error{padding:1rem;background:color-mix(in srgb,var(--danger) 10%,transparent);color:var(--danger);border-radius:10px;border:1px solid color-mix(in srgb,var(--danger) 30%,var(--border));font-size:.9rem}@media(max-width:768px){.app-header-inner{padding:.75rem 1rem}.meta-text{display:none}main.app{padding:1rem;gap:1rem}.stat{padding:.85rem .9rem;min-height:84px}.stat-value{font-size:1.3rem}.chart-content{height:360px}.stock-chart-container{height:320px}.controls{grid-template-columns:1fr}.tab-btn{font-size:.82rem;padding:.45rem .7rem}.tab-navigation{width:100%;justify-content:flex-start;flex-wrap:nowrap}}@media(max-width:480px){.brand-text small{display:none}.stat-value{font-size:1.2rem}.stats-grid{grid-template-columns:repeat(2,1fr)}.timeframe-btn{padding:.3rem .5rem;font-size:.76rem}}
-.stock-chart-actions{display:inline-flex;align-items:center;gap:.5rem}.stock-tf-buttons{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.stock-tf-btn{background:transparent;color:var(--muted-foreground);border:0;border-right:1px solid var(--border);padding:.35rem .7rem;font-size:.72rem;font-weight:700;letter-spacing:.03em;cursor:pointer;font-family:inherit;transition:background-color .15s,color .15s}.stock-tf-btn:last-child{border-right:0}.stock-tf-btn:hover{color:var(--foreground);background:var(--faint)}.stock-tf-btn.active{background:var(--foreground);color:var(--background)}.stock-tf-reset{background:transparent;border:1px solid var(--border);border-radius:6px;width:30px;height:28px;padding:0;cursor:pointer;color:var(--muted-foreground);font-size:1rem;font-family:inherit;line-height:1;transition:background-color .15s,color .15s,border-color .15s}.stock-search-inline{position:relative;display:inline-block}.stock-search-icon{position:absolute;left:.55rem;top:50%;transform:translateY(-50%);color:var(--muted-foreground);font-size:.7rem;pointer-events:none;z-index:1}.stock-search-input-inline{width:200px;padding:.32rem .55rem .32rem 1.65rem;border-radius:6px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.78rem;font-family:inherit;transition:border-color .15s,box-shadow .15s,width .2s}.stock-search-input-inline:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 22%,transparent);width:260px}.search-results-popover{display:none;position:absolute;top:calc(100% + 4px);right:0;width:320px;max-height:340px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-large);z-index:30}.search-results-popover.open{display:block}.stock-chart-link{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-left:.45rem;padding:0;background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;color:var(--muted-foreground);font-size:.78rem;font-family:inherit;line-height:1;transition:color .12s,background-color .12s,border-color .12s;flex-shrink:0}.stock-chart-link:hover{color:var(--primary);background:var(--accent);border-color:var(--accent)}.stock-chart-wrap{position:relative}.stock-chart-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:.55rem;color:var(--muted-foreground);font-size:.82rem;font-weight:600;background:color-mix(in srgb,var(--card) 72%,transparent);backdrop-filter:blur(2px);pointer-events:none;z-index:4;border-radius:8px}.stock-chart-loading.is-loading{display:flex}.stock-chart-loading .spinner{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--primary);animation:spin .9s linear infinite}.stock-tf-reset:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}.stock-amount-stack{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15}.stock-prev{font-size:.7rem;color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}</style>
+.stock-chart-actions{display:inline-flex;align-items:center;gap:.5rem}.stock-tf-buttons{display:inline-flex;border:1px solid var(--border);border-radius:6px;overflow:hidden}.stock-tf-btn{background:transparent;color:var(--muted-foreground);border:0;border-right:1px solid var(--border);padding:.35rem .7rem;font-size:.72rem;font-weight:700;letter-spacing:.03em;cursor:pointer;font-family:inherit;transition:background-color .15s,color .15s}.stock-tf-btn:last-child{border-right:0}.stock-tf-btn:hover{color:var(--foreground);background:var(--faint)}.stock-tf-btn.active{background:var(--foreground);color:var(--background)}.stock-tf-reset{background:transparent;border:1px solid var(--border);border-radius:6px;width:30px;height:28px;padding:0;cursor:pointer;color:var(--muted-foreground);font-size:1rem;font-family:inherit;line-height:1;transition:background-color .15s,color .15s,border-color .15s}.stock-search-inline{position:relative;display:inline-block}.stock-search-icon{position:absolute;left:.55rem;top:50%;transform:translateY(-50%);color:var(--muted-foreground);font-size:.7rem;pointer-events:none;z-index:1}.stock-search-input-inline{width:200px;padding:.32rem .55rem .32rem 1.65rem;border-radius:6px;border:1px solid var(--input);background:var(--card);color:var(--foreground);font-size:.78rem;font-family:inherit;transition:border-color .15s,box-shadow .15s,width .2s}.stock-search-input-inline:focus{outline:none;border-color:var(--ring);box-shadow:0 0 0 3px color-mix(in srgb,var(--ring) 22%,transparent);width:260px}.search-results-popover{display:none;position:absolute;top:calc(100% + 4px);right:0;width:320px;max-height:340px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow-large);z-index:30}.search-results-popover.open{display:block}.stock-chart-link{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;margin-left:.45rem;padding:0;background:transparent;border:1px solid transparent;border-radius:4px;cursor:pointer;color:var(--muted-foreground);font-size:.78rem;font-family:inherit;line-height:1;transition:color .12s,background-color .12s,border-color .12s;flex-shrink:0}.stock-chart-link:hover{color:var(--primary);background:var(--accent);border-color:var(--accent)}.stock-chart-wrap{position:relative}.stock-chart-loading{position:absolute;inset:0;display:none;align-items:center;justify-content:center;gap:.55rem;color:var(--muted-foreground);font-size:.82rem;font-weight:600;background:color-mix(in srgb,var(--card) 72%,transparent);backdrop-filter:blur(2px);pointer-events:none;z-index:4;border-radius:8px}.stock-chart-loading.is-loading{display:flex}.stock-chart-loading .spinner{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);border-top-color:var(--primary);animation:spin .9s linear infinite}.stock-tf-reset:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}.stock-amount-stack{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15}.stock-prev{font-size:.7rem;color:var(--muted-foreground);font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+/* Stock chart per-exchange option row (mirror of Overview's .chart-options). */
+.stock-chart-options{margin:.15rem 0 .85rem;padding:.45rem .15rem .55rem;border-top:1px dashed var(--border);justify-content:flex-end}
+.stock-chart-options .chart-option{font-size:.7rem}
+/* Font Awesome — classy inline-icon sizing. */
+.tab-btn .tab-icon{font-size:.78rem;opacity:.85;margin-right:.15rem}
+.tab-btn.active .tab-icon,.tab-btn:hover .tab-icon{opacity:1}
+.chart-option > i{font-size:.7rem;color:var(--faint-foreground);margin-right:.1rem}
+.chart-option:hover > i,.chart-option:has(input:checked) > i{color:var(--primary)}
+.chart-reset > i{font-size:.7rem;margin-right:.2rem}
+.btn > i{font-size:.75rem}
+.stock-tf-reset > i{font-size:.78rem}
+@media(max-width:640px){.tab-btn .tab-icon{display:none}}</style>
 </head>
 <body>
     <!-- Loading overlay -->
@@ -80,11 +92,11 @@
 
             <!-- Tab nav -->
             <nav class="tab-navigation" role="tablist" aria-label="Sections">
-                <button class="tab-btn active" data-tab="overview" role="tab" type="button">Overview</button>
-                <button class="tab-btn" data-tab="nse-stocks" role="tab" type="button">NSE Stocks</button>
-                <button class="tab-btn" data-tab="bse-stocks" role="tab" type="button">BSE Stocks</button>
-                <button class="tab-btn" data-tab="cross-exchange" role="tab" type="button">Cross-Exchange</button>
-                <button class="tab-btn" data-tab="sudden-changes" role="tab" type="button">Market Changes</button>
+                <button class="tab-btn active" data-tab="overview" role="tab" type="button"><i class="fa-regular fa-gauge-high tab-icon" aria-hidden="true"></i>Overview</button>
+                <button class="tab-btn" data-tab="nse-stocks" role="tab" type="button"><i class="fa-regular fa-chart-line tab-icon" aria-hidden="true"></i>NSE Stocks</button>
+                <button class="tab-btn" data-tab="bse-stocks" role="tab" type="button"><i class="fa-regular fa-building-columns tab-icon" aria-hidden="true"></i>BSE Stocks</button>
+                <button class="tab-btn" data-tab="cross-exchange" role="tab" type="button"><i class="fa-regular fa-arrow-right-arrow-left tab-icon" aria-hidden="true"></i>Cross-Exchange</button>
+                <button class="tab-btn" data-tab="sudden-changes" role="tab" type="button"><i class="fa-regular fa-bolt tab-icon" aria-hidden="true"></i>Market Changes</button>
             </nav>
 
             <!-- Overview -->
@@ -135,8 +147,8 @@
                         <div class="control-group">
                             <label>Actions</label>
                             <div class="button-group">
-                                <button id="updateChart" class="btn" type="button">Update Chart</button>
-                                <button id="downloadCSV" class="btn secondary" type="button">Download CSV</button>
+                                <button id="updateChart" class="btn" type="button"><i class="fa-regular fa-arrows-rotate" aria-hidden="true"></i> Update Chart</button>
+                                <button id="downloadCSV" class="btn secondary" type="button"><i class="fa-regular fa-arrow-down-to-bracket" aria-hidden="true"></i> Download CSV</button>
                             </div>
                         </div>
                     </div>
@@ -146,12 +158,12 @@
                     <div class="chart-controls">
                         <div class="chart-title" id="chartTitle">Loading MTF data…</div>
                         <div class="chart-options">
-                            <label class="chart-option"><input type="checkbox" id="smoothLines" checked> Smooth</label>
-                            <label class="chart-option" title="Logarithmic price scale"><input type="checkbox" id="logScale"> Log</label>
-                            <label class="chart-option" title="Crosshair snaps to data points"><input type="checkbox" id="crosshairMagnet"> Magnet</label>
-                            <label class="chart-option" title="Show grid lines"><input type="checkbox" id="showGrid" checked> Grid</label>
-                            <label class="chart-option" title="Auto-fit Y axis to visible data"><input type="checkbox" id="autoScale" checked> Auto-fit Y</label>
-                            <button id="chartReset" class="chart-reset" type="button">Reset Zoom</button>
+                            <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" id="smoothLines" checked> Smooth</label>
+                            <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" id="logScale"> Log</label>
+                            <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" id="crosshairMagnet"> Magnet</label>
+                            <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" id="showGrid" checked> Grid</label>
+                            <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" id="autoScale" checked> Auto-fit Y</label>
+                            <button id="chartReset" class="chart-reset" type="button"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i> Reset Zoom</button>
                             <!-- legacy ids kept hidden so any leftover handlers don't crash -->
                             <input type="checkbox" id="showDataZoom" hidden>
                             <input type="checkbox" id="showToolbox" hidden>
@@ -182,8 +194,15 @@
                                 <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
                                 <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
                             </div>
-                            <button class="stock-tf-reset" data-stock-reset="nse" type="button" aria-label="Reset zoom"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                            <button class="stock-tf-reset" data-stock-reset="nse" type="button" aria-label="Reset zoom" title="Reset zoom"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i></button>
                         </div>
+                    </div>
+                    <div class="chart-options stock-chart-options" data-stock-opts="nse">
+                        <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
+                        <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
+                        <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
                     </div>
                     <div class="stock-chart-wrap">
                         <div id="stockTimeSeriesChartNse" class="stock-chart-container"></div>
@@ -216,8 +235,15 @@
                                 <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
                                 <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
                             </div>
-                            <button class="stock-tf-reset" data-stock-reset="bse" type="button" aria-label="Reset zoom"><i class="fa-solid fa-arrow-rotate-left"></i></button>
+                            <button class="stock-tf-reset" data-stock-reset="bse" type="button" aria-label="Reset zoom" title="Reset zoom"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i></button>
                         </div>
+                    </div>
+                    <div class="chart-options stock-chart-options" data-stock-opts="bse">
+                        <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
+                        <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
+                        <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
                     </div>
                     <div class="stock-chart-wrap">
                         <div id="stockTimeSeriesChartBse" class="stock-chart-container"></div>
@@ -798,6 +824,22 @@
                     });
                     if (this.stockChart && this.stockChart._renderLatest) this.stockChart._renderLatest();
                 }
+                // Per-exchange stock charts: re-color from new palette, then re-apply
+                // the local option toggles (Smooth / Log / Magnet / Grid / Auto-fit Y)
+                // so the theme switch doesn't reset them to Overview's defaults.
+                if (this._stockSeriesByExchange) {
+                    const pal = this.paletteFromCSS();
+                    Object.keys(this._stockSeriesByExchange).forEach(ex => {
+                        (this._stockSeriesByExchange[ex] || []).forEach(s => {
+                            const color = s.role === 'amount' ? pal.nse : pal.bse;
+                            s.color = color;
+                        });
+                        const chart = this.stockCharts && this.stockCharts[ex];
+                        if (chart) chart.applyOptions(this.chartLayoutOptions());
+                        this._applyStockChartOptions(ex);
+                        if (chart && chart._renderLatest) chart._renderLatest();
+                    });
+                }
             }
 
             _lineOptions(color, useArea, dashed=false) {
@@ -865,6 +907,16 @@
                     });
                 });
 
+                // Per-stock-chart options (smooth / log / magnet / grid / autoscale) —
+                // mirror of the Overview chart toggles, but per-exchange. Applied
+                // in place so the chart and series don't have to be rebuilt.
+                document.querySelectorAll('.stock-chart-options input[type="checkbox"]').forEach(el => {
+                    el.addEventListener('change', (e) => {
+                        const exchange = e.currentTarget.closest('.stock-chart-options').dataset.stockOpts;
+                        this._applyStockChartOptions(exchange);
+                    });
+                });
+
                 ['exchangeFilter', 'metricSelect', 'chartType'].forEach(id => {
                     document.getElementById(id).addEventListener('change', () => this.updateChart());
                 });
@@ -878,6 +930,63 @@
                 if (resetBtn) resetBtn.addEventListener('click', () => {
                     if (this.chart) this.chart.timeScale().fitContent();
                 });
+            }
+
+            // Read the per-exchange option toggles into a plain object.
+            _readStockOpts(exchange) {
+                const root = document.querySelector(`.stock-chart-options[data-stock-opts="${exchange}"]`);
+                const read = (name, dflt) => {
+                    const el = root && root.querySelector(`input[data-stock-opt="${name}"]`);
+                    return el ? el.checked : dflt;
+                };
+                return {
+                    smooth:    read('smooth',    true),
+                    log:       read('log',       false),
+                    magnet:    read('magnet',    false),
+                    grid:      read('grid',      true),
+                    autoscale: read('autoscale', true),
+                };
+            }
+
+            // Re-apply the chart-option toggles to an already-built per-exchange
+            // chart. Mirrors Overview's updateChart() option block, but operates
+            // in place: scale modes via priceScale().applyOptions, crosshair/grid
+            // via chart.applyOptions, smooth via per-series applyOptions.
+            _applyStockChartOptions(exchange) {
+                const chart  = this.stockCharts            && this.stockCharts[exchange];
+                const series = this._stockSeriesByExchange && this._stockSeriesByExchange[exchange];
+                if (!chart) return;
+                const o = this._readStockOpts(exchange);
+
+                const priceMode = o.log
+                    ? LightweightCharts.PriceScaleMode.Logarithmic
+                    : LightweightCharts.PriceScaleMode.Normal;
+                chart.priceScale('right').applyOptions({ mode: priceMode, autoScale: o.autoscale });
+                chart.priceScale('left' ).applyOptions({ mode: priceMode, autoScale: o.autoscale });
+
+                chart.applyOptions({
+                    crosshair: {
+                        mode: o.magnet
+                            ? LightweightCharts.CrosshairMode.Magnet
+                            : LightweightCharts.CrosshairMode.Normal,
+                    },
+                    grid: {
+                        vertLines: { visible: o.grid },
+                        horzLines: { visible: o.grid },
+                    },
+                });
+
+                if (series && series.length) {
+                    const lineType = o.smooth
+                        ? LightweightCharts.LineType.Curved
+                        : LightweightCharts.LineType.Simple;
+                    series.forEach(s => {
+                        // Preserve series-specific styling (dashed quantity line, area fill)
+                        // by re-deriving the base options and overriding only lineType.
+                        const base = this._lineOptions(s.color, s.useArea, s.role === 'qty');
+                        s.series.applyOptions({ ...base, lineType });
+                    });
+                }
             }
 
             // Zoom the stock chart to the chosen window without re-filtering the
@@ -1049,6 +1158,10 @@
                     const all = grp.querySelector('.stock-tf-btn[data-stock-period="ALL"]');
                     if (all) all.classList.add('active');
                 }
+
+                // Honor the current state of the per-exchange option toggles
+                // (Smooth / Log / Magnet / Grid / Auto-fit Y) on first paint.
+                this._applyStockChartOptions(exchange);
 
                 chart.timeScale().fitContent();
                 if (chart._renderLatest) chart._renderLatest();
