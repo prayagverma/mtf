@@ -141,6 +141,8 @@
                             <label class="chart-option"><input type="checkbox" id="smoothLines" checked> Smooth</label>
                             <label class="chart-option" title="Logarithmic price scale"><input type="checkbox" id="logScale"> Log</label>
                             <label class="chart-option" title="Crosshair snaps to data points"><input type="checkbox" id="crosshairMagnet"> Magnet</label>
+                            <label class="chart-option" title="Show grid lines"><input type="checkbox" id="showGrid" checked> Grid</label>
+                            <label class="chart-option" title="Auto-fit Y axis to visible data"><input type="checkbox" id="autoScale" checked> Auto-fit Y</label>
                             <button id="chartReset" class="chart-reset" type="button">Reset Zoom</button>
                             <!-- legacy ids kept hidden so any leftover handlers don't crash -->
                             <input type="checkbox" id="showDataZoom" hidden>
@@ -842,7 +844,7 @@
                     document.getElementById(id).addEventListener('change', () => this.updateChart());
                 });
 
-                ['smoothLines', 'logScale', 'crosshairMagnet'].forEach(id => {
+                ['smoothLines', 'logScale', 'crosshairMagnet', 'showGrid', 'autoScale'].forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.addEventListener('change', () => this.updateChart());
                 });
@@ -1747,24 +1749,30 @@
                 const exchangeFilter = document.getElementById('exchangeFilter').value;
                 const metricSelect   = document.getElementById('metricSelect').value;
                 const chartType      = document.getElementById('chartType').value;
-                const logScale = document.getElementById('logScale')?.checked || false;
-                const magnet   = document.getElementById('crosshairMagnet')?.checked || false;
-                const isCount  = metricSelect === 'securities_count';
-                const fmtVal   = (v) => (v === null || v === undefined) ? '—' : (isCount ? fmtCount(v) : fmtINR(v));
+                const logScale  = document.getElementById('logScale')?.checked || false;
+                const magnet    = document.getElementById('crosshairMagnet')?.checked || false;
+                const showGrid  = document.getElementById('showGrid')?.checked !== false;     // default true
+                const autoScale = document.getElementById('autoScale')?.checked !== false;    // default true
+                const isCount   = metricSelect === 'securities_count';
+                const fmtVal    = (v) => (v === null || v === undefined) ? '—' : (isCount ? fmtCount(v) : fmtINR(v));
 
-                // TradingView native controls: linear vs logarithmic price
-                // scale, normal vs magnet crosshair. Re-applied each render
-                // so toggle state is always in sync with the displayed chart.
+                // TradingView native controls — re-applied each render so
+                // toggle state stays in sync with the displayed chart.
                 this.chart.priceScale('right').applyOptions({
                     mode: logScale
                         ? LightweightCharts.PriceScaleMode.Logarithmic
                         : LightweightCharts.PriceScaleMode.Normal,
+                    autoScale,
                 });
                 this.chart.applyOptions({
                     crosshair: {
                         mode: magnet
                             ? LightweightCharts.CrosshairMode.Magnet
                             : LightweightCharts.CrosshairMode.Normal,
+                    },
+                    grid: {
+                        vertLines: { visible: showGrid },
+                        horzLines: { visible: showGrid },
                     },
                 });
 

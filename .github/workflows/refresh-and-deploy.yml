@@ -76,11 +76,17 @@ jobs:
       #
       #    mtf_downloader.py is idempotent (skips files that already exist
       #    and resolves the BSE legacy/new format automatically), so retries
-      #    are cheap. After each fetch we check whether today's NSE and BSE
-      #    reports landed on disk. If either is missing, sleep & retry per
-      #    the backoff schedule (30 min, 1 h, 2 h). After the final attempt
-      #    we proceed regardless — the dashboard's per-exchange last-
-      #    available-row logic handles partial-day data correctly.
+      #    are cheap. After each fetch we check whether the most recent
+      #    EXPECTED weekday's NSE and BSE reports landed on disk. If either
+      #    is missing, sleep & retry per the backoff schedule (30 min, 1 h,
+      #    2 h). After the final attempt we proceed regardless — the
+      #    dashboard's per-exchange last-available-row logic handles
+      #    partial-day data correctly.
+      #
+      #    "Expected weekday" = the most recent Mon-Fri on or before today
+      #    in IST. This handles the common case where GitHub's cron is
+      #    delayed past midnight IST into Saturday: we still look for
+      #    Friday's reports and retry if NSE blocked the earlier attempt.
       #
       #    Scheduled runs use 4 attempts (1 + 3 retries). Manual dispatch
       #    defaults to 1 (override via the `max_attempts` input).
@@ -92,17 +98,19 @@ jobs:
           set -e
           # Backoff schedule (seconds): immediate, 30m, 1h, 2h.
           BACKOFFS=(0 1800 3600 7200)
-          TODAY_IST=$(TZ=Asia/Kolkata date +%d%m%Y)
-          DOW=$(TZ=Asia/Kolkata date +%u)      # 1=Mon..7=Sun
-          NSE_PATH="mtf_reports/NSE/NSE_MTF_${TODAY_IST}.zip"
-          BSE_CSV="mtf_reports/BSE/BSE_MTF_${TODAY_IST}.csv"
-          BSE_XLS="mtf_reports/BSE/BSE_MTF_${TODAY_IST}.xls"
-
-          if [ "$DOW" -gt 5 ]; then
-            echo "Weekend in IST — no fresh report expected. Single fetch, no retry."
-            python mtf_downloader.py --last-days "$LOOKBACK" --exchange both --delay 2
-            exit 0
-          fi
+          # Most recent weekday on or before "today in IST" — robust to
+          # late-firing cron that crosses midnight into Saturday/Sunday.
+          EXPECTED=$(TZ=Asia/Kolkata python3 -c "
+          from datetime import datetime, timedelta
+          d = datetime.now()
+          while d.weekday() >= 5:
+              d -= timedelta(days=1)
+          print(d.strftime('%d%m%Y'))
+          ")
+          echo "Expected weekday for retry-check: $EXPECTED"
+          NSE_PATH="mtf_reports/NSE/NSE_MTF_${EXPECTED}.zip"
+          BSE_CSV="mtf_reports/BSE/BSE_MTF_${EXPECTED}.csv"
+          BSE_XLS="mtf_reports/BSE/BSE_MTF_${EXPECTED}.xls"
 
           for attempt in $(seq 1 "$MAX_ATTEMPTS"); do
             sleep_secs=${BACKOFFS[$((attempt-1))]}
@@ -118,13 +126,13 @@ jobs:
             [ -f "$NSE_PATH" ] || missing="$missing NSE"
             { [ -f "$BSE_CSV" ] || [ -f "$BSE_XLS" ]; } || missing="$missing BSE"
             if [ -z "$missing" ]; then
-              echo "Both NSE and BSE reports for $TODAY_IST present. Done."
+              echo "Both NSE and BSE reports for $EXPECTED present. Done."
               break
             fi
             if [ "$attempt" -eq "$MAX_ATTEMPTS" ]; then
               echo "::warning::Missing after $MAX_ATTEMPTS attempts:$missing — proceeding with whatever we have."
             else
-              echo "Missing for $TODAY_IST:$missing — will retry."
+              echo "Missing for $EXPECTED:$missing — will retry."
             fi
           done
 
