@@ -74,19 +74,23 @@ jobs:
 
       # 1) Pull any new BSE/NSE MTF reports — with retry-on-missing.
       #
-      #    mtf_downloader.py is idempotent (skips files that already exist
-      #    and resolves the BSE legacy/new format automatically), so retries
-      #    are cheap. After each fetch we check whether the most recent
-      #    EXPECTED weekday's NSE and BSE reports landed on disk. If either
-      #    is missing, sleep & retry per the backoff schedule (30 min, 1 h,
-      #    2 h). After the final attempt we proceed regardless — the
-      #    dashboard's per-exchange last-available-row logic handles
-      #    partial-day data correctly.
+      #    Weekend rule:
+      #      - Manual workflow_dispatch on Sat/Sun in IST → SKIP fetch.
+      #        No trading happens on weekends; nothing new to pull.
+      #      - Scheduled cron (always Mon-Fri originally) that gets fired
+      #        late by GitHub and lands with the runner showing Sat IST →
+      #        PROCEED. This is the "Friday exception": cron is best
+      #        effort and routinely runs 60-120 min late, so the Friday
+      #        cron can bleed into Sat IST. EXPECTED resolves to the most
+      #        recent weekday so the retry ladder targets Friday's reports.
       #
-      #    "Expected weekday" = the most recent Mon-Fri on or before today
-      #    in IST. This handles the common case where GitHub's cron is
-      #    delayed past midnight IST into Saturday: we still look for
-      #    Friday's reports and retry if NSE blocked the earlier attempt.
+      #    mtf_downloader is idempotent (skips files that already exist and
+      #    resolves BSE legacy/new format automatically). After each fetch
+      #    we check whether the EXPECTED weekday's NSE and BSE reports
+      #    landed on disk. If either is missing, sleep & retry per the
+      #    backoff schedule (30 min, 1 h, 2 h). After the final attempt we
+      #    proceed regardless — the dashboard's per-exchange last-available-
+      #    row logic handles partial-day data correctly.
       #
       #    Scheduled runs use 4 attempts (1 + 3 retries). Manual dispatch
       #    defaults to 1 (override via the `max_attempts` input).
@@ -96,10 +100,20 @@ jobs:
           LOOKBACK: ${{ inputs.lookback_days || '7' }}
         run: |
           set -e
+          DOW=$(TZ=Asia/Kolkata date +%u)      # 1=Mon..7=Sun
+          # Manual weekend dispatch → skip. Scheduled runs always proceed
+          # (cron is Mon-Fri; landing on Sat IST means a delayed Fri cron
+          # that should still recover Friday's data via retries).
+          if [ "$DOW" -gt 5 ] && [ "${{ github.event_name }}" != "schedule" ]; then
+            echo "::notice::Saturday/Sunday manual dispatch in IST — no fetch (no trading day)."
+            exit 0
+          fi
+
           # Backoff schedule (seconds): immediate, 30m, 1h, 2h.
           BACKOFFS=(0 1800 3600 7200)
-          # Most recent weekday on or before "today in IST" — robust to
-          # late-firing cron that crosses midnight into Saturday/Sunday.
+          # Most recent weekday on or before "today in IST" — resolves to
+          # Friday on a late-fire scheduled cron that lands on a Sat IST
+          # runner. The retry ladder below targets THIS date.
           EXPECTED=$(TZ=Asia/Kolkata python3 -c "
           from datetime import datetime, timedelta
           d = datetime.now()
