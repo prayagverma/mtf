@@ -17,3 +17,9 @@
 /bse-stocks      /             200
 /cross-exchange  /             200
 /market-changes  /             200
+
+# Per-stock deep links: /nse-stocks/HDFCBANK, /bse-stocks/INFY, etc.
+# The trailing /<symbol> is parsed by the dashboard JS at load time
+# (resolveRoute → _switchToTab → _loadStockChartBySymbol).
+/nse-stocks/*    /             200
+/bse-stocks/*    /             200

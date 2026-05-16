@@ -479,6 +479,21 @@
             'sudden-changes': 'Market Changes · MTF Analytics',
         };
 
+        // Path → { tab, stock } resolver. Supports the bare-tab URLs in
+        // PATH_TO_TAB plus per-stock deep links like /nse-stocks/HDFCBANK
+        // and /bse-stocks/INFY. The trailing segment is URL-decoded and
+        // looked up by display symbol (the same value users see in the
+        // search results / stock-list rows).
+        function resolveRoute(pathname) {
+            if (PATH_TO_TAB[pathname]) return { tab: PATH_TO_TAB[pathname], stock: null };
+            const m = pathname.match(/^\/(nse-stocks|bse-stocks)\/(.+?)\/?$/);
+            if (m) {
+                try { return { tab: m[1], stock: decodeURIComponent(m[2]) }; }
+                catch (_) { return { tab: m[1], stock: m[2] }; }
+            }
+            return { tab: 'overview', stock: null };
+        }
+
         class OptimizedMTFDashboard {
             constructor() {
                 this.dataLoader = new CompressedDataLoader();
@@ -1065,6 +1080,7 @@
                             exchange: item.dataset.exchange,
                         };
                         this.showStockChart(selected, exchange);
+                        this._pushStockUrl(`${exchange}-stocks`, selected.symbol);
                         if (searchInput) searchInput.value = '';
                         searchResultsDiv.classList.remove('open');
                         searchResultsDiv.innerHTML = '';
@@ -1075,24 +1091,42 @@
 
             // Activate a tab in the UI + update the URL/title/canonical so the
             // tab is shareable. Called from tab-button clicks, popstate (back/
-            // forward), and once at startup to honour the URL the user landed on.
-            _switchToTab(tab, { pushState = true } = {}) {
+            // forward), and once at startup to honour the URL the user landed
+            // on. `stock` (optional) is a display symbol — when present and
+            // the tab is nse-stocks/bse-stocks, the URL becomes
+            // /<tab>/<symbol> and the corresponding stock chart is loaded
+            // at the top of the tab. Otherwise the bare tab URL is used and
+            // the default top-funded chart loads.
+            _switchToTab(tab, { pushState = true, stock = null } = {}) {
                 if (!TAB_PATHS[tab]) tab = 'overview';
                 document.querySelectorAll('.tab-btn').forEach(b =>
                     b.classList.toggle('active', b.dataset.tab === tab));
                 document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 const target = document.getElementById(`${tab}-tab`);
                 if (target) target.classList.add('active');
+
+                // Per-stock deep links only make sense on the NSE/BSE Stocks tabs.
+                const isStockTab = (tab === 'nse-stocks' || tab === 'bse-stocks');
+                if (!isStockTab) stock = null;
+
+                // Stash the desired stock for loadTabData → default-load path.
+                this._pendingStockLoad = stock;
                 this.loadTabData(tab);
 
-                const path = TAB_PATHS[tab];
-                document.title = TAB_TITLES[tab] || TAB_TITLES.overview;
+                // URL + SEO bookkeeping
+                const exchange = tab === 'nse-stocks' ? 'NSE' : 'BSE';
+                const path = stock
+                    ? `${TAB_PATHS[tab]}/${encodeURIComponent(stock)}`.replace('//', '/')
+                    : TAB_PATHS[tab];
+                document.title = stock
+                    ? `${stock} · ${exchange} Stocks · MTF Analytics`
+                    : (TAB_TITLES[tab] || TAB_TITLES.overview);
                 const can = document.querySelector('link[rel="canonical"]');
                 if (can) can.href = `https://mtf.trading${path}`;
                 const ogUrl = document.querySelector('meta[property="og:url"]');
                 if (ogUrl) ogUrl.setAttribute('content', `https://mtf.trading${path}`);
                 if (pushState && location.pathname !== path) {
-                    history.pushState({ tab }, '', path);
+                    history.pushState({ tab, stock }, '', path);
                 }
 
                 // Resize chart in case it was hidden when first rendered
@@ -1101,18 +1135,34 @@
                 }
             }
 
+            // After a chart has been loaded via direct click (chart-link icon
+            // or search result), push the new URL so the page is shareable.
+            // Called instead of _switchToTab when we're already on the right
+            // tab and only the chart is changing.
+            _pushStockUrl(tab, symbol) {
+                const path = `${TAB_PATHS[tab]}/${encodeURIComponent(symbol)}`.replace('//', '/');
+                if (location.pathname === path) return;
+                const exchange = tab === 'nse-stocks' ? 'NSE' : 'BSE';
+                document.title = `${symbol} · ${exchange} Stocks · MTF Analytics`;
+                const can = document.querySelector('link[rel="canonical"]');
+                if (can) can.href = `https://mtf.trading${path}`;
+                const ogUrl = document.querySelector('meta[property="og:url"]');
+                if (ogUrl) ogUrl.setAttribute('content', `https://mtf.trading${path}`);
+                history.pushState({ tab, stock: symbol }, '', path);
+            }
+
             setupTabNavigation() {
                 document.querySelectorAll('.tab-btn').forEach(btn => {
                     btn.addEventListener('click', () => this._switchToTab(btn.dataset.tab));
                 });
                 window.addEventListener('popstate', () => {
-                    const tab = PATH_TO_TAB[location.pathname] || 'overview';
-                    this._switchToTab(tab, { pushState: false });
+                    const { tab, stock } = resolveRoute(location.pathname);
+                    this._switchToTab(tab, { pushState: false, stock });
                 });
                 // Activate whichever tab the URL says — replaces the hardcoded
                 // class="active" on #overview-tab when entry path isn't '/'.
-                const initial = PATH_TO_TAB[location.pathname] || 'overview';
-                this._switchToTab(initial, { pushState: false });
+                const initial = resolveRoute(location.pathname);
+                this._switchToTab(initial.tab, { pushState: false, stock: initial.stock });
             }
 
             setupStockSearch() {
@@ -1146,28 +1196,39 @@
                 });
             }
 
-            // Auto-load the top-funded stock for an exchange into its chart
-            // when the user first lands on the tab and no stock is shown yet.
-            // Subsequent tab visits keep whatever chart the user last looked at.
+            // Auto-load a stock into the tab's chart. Honours the URL
+            // (/<tab>/<symbol> deep links via _pendingStockLoad) if present;
+            // otherwise falls back to the exchange's top-funded stock the
+            // first time the tab is opened. Subsequent visits with no
+            // explicit URL keep whatever chart the user last looked at.
             _loadDefaultStockChartIfNeeded(exchange) {
                 this.stockCharts = this.stockCharts || {};
+                const want = (exchange === 'nse' ? 'NSE' : 'BSE');
+                const pending = this._pendingStockLoad;
+                this._pendingStockLoad = null;
+                if (pending) {
+                    // Explicit deep-link request — always honour it, even if
+                    // a different chart is currently rendered for this tab.
+                    const key = this._findStockKey(pending, want);
+                    const info = this.dataLoader.baseData?.stock_index?.[key];
+                    if (info) {
+                        this.showStockChart({
+                            key,
+                            symbol: info.symbol || pending,
+                            name:   info.name || pending,
+                            exchange: want,
+                        }, exchange);
+                        return;
+                    }
+                    // Unknown symbol → fall through to top-funded default.
+                }
                 if (this.stockCharts[exchange]) return;        // already loaded
                 const snap = this.dataLoader.baseData?.latest_snapshot;
                 if (!snap) return;
                 const list = (exchange === 'nse' ? snap.nse_stocks : snap.bse_stocks)?.top_funded || [];
                 const top  = list[0];
                 if (!top) return;
-                // Find the matching stock_index entry — for dual-listed tickers
-                // the snapshot's `symbol` is the display ticker, but the
-                // lookup key in stock_index may be compound (e.g. "BSE:INFY").
-                const idx  = this.dataLoader.baseData.stock_index || {};
-                const want = (exchange === 'nse' ? 'NSE' : 'BSE');
-                let key = null;
-                for (const [k, info] of Object.entries(idx)) {
-                    if ((info.exchange || '').toUpperCase() === want &&
-                        ((info.symbol || k) === top.symbol)) { key = k; break; }
-                }
-                if (!key) key = top.symbol;
+                const key = this._findStockKey(top.symbol, want);
                 this.showStockChart({
                     key,
                     symbol: top.symbol,
@@ -1469,6 +1530,8 @@
                             name: info.name || symbol,
                             exchange: (ex || '').toUpperCase(),
                         }, ex);
+                        // Deep-link the URL so the chart is shareable.
+                        this._pushStockUrl(`${ex}-stocks`, symbol);
                         // Scroll the chart into view (it's at top of the tab).
                         const sfx = this._exSfx(ex);
                         const target = document.getElementById(`selectedStockChart${sfx}`);
