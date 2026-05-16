@@ -1,7 +1,7 @@
 name: Refresh MTF data & deploy
 
 # Triggers
-#  - Scheduled: 22:47 IST Mon-Fri (17:17 UTC). Indian exchanges publish T+0
+#  - Scheduled: 22:22 IST Mon-Fri (16:52 UTC). Indian exchanges publish T+0
 #    reports by ~19:00 IST. If either NSE's or BSE's report for today is
 #    still missing when the run starts, the workflow retries up to 3 more
 #    times with backoffs of 30 min, 1 h, and 2 h (then proceeds with
@@ -11,7 +11,7 @@ name: Refresh MTF data & deploy
 #    single-attempt fetch (override via the `max_attempts` input).
 on:
   schedule:
-    - cron: "17 17 * * 1-5"   # 17:17 UTC = 22:47 IST, Mon-Fri
+    - cron: "52 16 * * 1-5"   # 16:52 UTC = 22:22 IST, Mon-Fri
   workflow_dispatch:
     inputs:
       lookback_days:
@@ -101,12 +101,15 @@ jobs:
         run: |
           set -e
           DOW=$(TZ=Asia/Kolkata date +%u)      # 1=Mon..7=Sun
-          # Manual weekend dispatch → skip. Scheduled runs always proceed
-          # (cron is Mon-Fri; landing on Sat IST means a delayed Fri cron
-          # that should still recover Friday's data via retries).
+          # Manual weekend dispatch → fetch ONCE, no retry ladder. Useful if
+          # the Friday cron silently failed and you want to manually try
+          # recovering Friday's data, but without burning 3.5 h of retries
+          # on what's probably a market holiday. Scheduled runs are
+          # untouched (cron is Mon-Fri; if it lands on Sat IST it's a
+          # delayed Fri cron that needs the full retry ladder).
           if [ "$DOW" -gt 5 ] && [ "${{ github.event_name }}" != "schedule" ]; then
-            echo "::notice::Saturday/Sunday manual dispatch in IST — no fetch (no trading day)."
-            exit 0
+            echo "::notice::Saturday/Sunday manual dispatch in IST — single fetch attempt, no retries."
+            MAX_ATTEMPTS=1
           fi
 
           # Backoff schedule (seconds): immediate, 30m, 1h, 2h.
