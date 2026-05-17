@@ -113,6 +113,16 @@ class StockMTFExtractor:
         # transitional 5-col CSV rows (Sept-Oct 2025) where the Symbol column
         # carried a polluted company name ("INFOSYS LTD") and no ISIN was given.
         self.isin_to_nse_symbol = {isin: sym for sym, isin in self.nse_isin_map.items() if isin}
+        # BSE legacy scripnames seen during .xls parsing (used by word-prefix and
+        # 5-col-Symbol bridges to canonicalise post-2025-10 rows whose ISINs
+        # aren't in the NSE master).
+        self.bse_legacy_scripnames = set()
+        # name_token → legacy_scripname, populated from the 3 transitional 5-col
+        # CSVs (30 Sep / 1 Oct / 3 Oct 2025). Each carries both a polluted
+        # Symbol (e.g. "REL INFRA") and a Name ("Reliance Infrastructure Ltd").
+        # Stripping whitespace from Symbol often yields a legacy scripname or a
+        # longer prefix of it (RELINFRA, MANGCHEFER, ANDREWYULC ⊃ ANDREWYU).
+        self.bse_name_to_legacy = {}
         
     def extract_nse_stocks(self, filepath, date):
         """Extract individual stock data from NSE MTF file"""
@@ -141,8 +151,9 @@ class StockMTFExtractor:
                             qty_financed = float(parts[2]) if parts[2] else 0
                             amount_financed = float(parts[3].strip().rstrip('\r')) if parts[3] else 0
                             
-                            # Skip empty symbols or header-like rows
-                            if not symbol or symbol.lower() in ['symbol', 'total']:
+                            # Skip empty symbols, header rows, total row, and the
+                            # NSE CSV footer (" * Figures are rounded to the nearest decimal.").
+                            if not symbol or symbol.startswith('*') or symbol.lower() in ['symbol', 'total']:
                                 continue
                             
                             stock_record = {
@@ -233,9 +244,76 @@ class StockMTFExtractor:
                 }
                 stocks.append(stock_record)
                 self.stock_data[key].append(stock_record)
+                # Remember every legacy scripname so the post-2025-10
+                # resolvers can map new-format rows back to the same bucket.
+                self.bse_legacy_scripnames.add(key)
             except (ValueError, KeyError):
                 continue
         return stocks
+
+    @staticmethod
+    def _word_prefix_match(legacy, words):
+        """Can `legacy` be reconstructed by concatenating non-empty prefixes
+        of successive words in `words` (with no leftover and no skipped
+        word in the middle)? E.g. legacy='RELINFRA', words=['RELIANCE',
+        'INFRASTRUCTURE'] succeeds via 'REL'+'INFRA'. Returns the number
+        of words consumed (0 if no match)."""
+        if not legacy or not words:
+            return 0
+        def rec(rem, idx):
+            if not rem:
+                return idx
+            if idx >= len(words):
+                return 0
+            w = words[idx]
+            for cut in range(min(len(rem), len(w)), 0, -1):
+                if w.startswith(rem[:cut]):
+                    n = rec(rem[cut:], idx + 1)
+                    if n:
+                        return n
+            return 0
+        return rec(legacy, 0)
+
+    # Confirmed-different-securities exclusions. The word-prefix-match can't
+    # algorithmically distinguish these from genuine splits — they share a
+    # name prefix but represent different issuers (verified during data audit).
+    # Format: (legacy_scripname, joined_new_name_words).
+    _BSE_DO_NOT_MERGE = {
+        ('RAJNISH',  'RAJNISH RETAIL'),    # Different from BSE legacy RAJNISH.
+        ('HERCULES', 'HERCULES HOISTS'),   # HERCULES INVESTMENTS is the real
+                                           # continuation; HOISTS is a separate
+                                           # listing despite sharing a parent ISIN.
+    }
+
+    def _resolve_via_word_prefix(self, name_words):
+        """Word-prefix bridge: find a legacy BSE scripname that can be
+        reconstructed as concatenated word-prefixes of `name_words`.
+        Heuristic rules tuned to capture the known split set without merging
+        unrelated securities:
+          - legacy must be ≥5 chars (filters HDFC/SIL/MEGH-style coincidences)
+          - either match consumes ≥2 word-prefixes (RELINFRA, HINDMOTORS, …)
+          - OR legacy exactly equals the first word (HERCULES, KISAN, JOSTS)
+        Among candidates, prefer multi-word matches over single-word; tiebreak
+        by which legacy bucket has the most existing records (most active)."""
+        if not name_words:
+            return None
+        joined = ' '.join(name_words)
+        candidates = []
+        for legacy in self.bse_legacy_scripnames:
+            if len(legacy) < 5:
+                continue
+            if (legacy, joined) in self._BSE_DO_NOT_MERGE:
+                continue
+            n = self._word_prefix_match(legacy, name_words)
+            if n >= 2:
+                candidates.append((legacy, 2, len(self.stock_data.get(legacy, []))))
+            elif legacy == name_words[0]:
+                candidates.append((legacy, 1, len(self.stock_data.get(legacy, []))))
+        if not candidates:
+            return None
+        # Multi-word matches win over single-word; then most-active legacy.
+        candidates.sort(key=lambda c: (-c[1], -c[2]))
+        return candidates[0][0]
 
     def _extract_bse_new_csv(self, filepath, date):
         """Parse new-format BSE CSV (post-2025-10-03)."""
@@ -280,26 +358,62 @@ class StockMTFExtractor:
                 continue
 
             # Determine the merge key. Priority order:
-            #   1) ISIN bridge — most reliable when present (4-col CSVs).
-            #   2) Symbol column value if it looks like a clean ticker (no spaces,
-            #      no LTD/LIMITED suffix). True for legacy 5-col files with a
-            #      proper Symbol column.
-            #   3) NSE-name bridge — for transitional 5-col CSVs (Sep-Oct 2025)
-            #      where the Symbol column was populated with a company name
-            #      like "INFOSYS LTD" and no ISIN was carried.
-            #   4) Sanitised short-name token (BSE-only listings).
+            #   1) ISIN → NSE-symbol bridge (best — works for dual-listed stocks
+            #      still on NSE, e.g. INFY).
+            #   2) 5-col-collapsed-Symbol → legacy bridge — captures stocks
+            #      observed in the 30 Sep / 1 Oct / 3 Oct 2025 transitional
+            #      CSVs whose whitespace-collapsed Symbol begins with a known
+            #      legacy scripname (RELINFRA, SANGHIIND, MANGCHEFER, …).
+            #   3) Clean single-token Symbol column value as-is.
+            #   4) Word-prefix-match against legacy scripnames (HINDMOTORS=
+            #      HIND+MOTORS, MERCURYEV=MERCURY+EV, …).
+            #   5) NSE-name bridge — when normalised name matches an NSE
+            #      company name (handles polluted Symbol cells like "INFOSYS LTD").
+            #   6) Sanitised short-name token (BSE-only listings, genuinely new).
             name = row[name_idx].strip() if name_idx >= 0 and len(row) > name_idx else ''
             isin = row[isin_idx].strip() if isin_idx >= 0 and len(row) > isin_idx else ''
             sym_raw = row[sym_idx].strip() if sym_idx >= 0 and len(row) > sym_idx else ''
+
+            # Feed the 5-col bridge whenever we have BOTH a Symbol and a Name
+            # (5-col transitional CSVs; the 4-col Oct+ CSVs don't have Symbol).
+            # Pick the LONGEST legacy that prefixes the whitespace-collapsed
+            # Symbol — otherwise short scripnames (e.g. CIGNITI vs CIGNITITEC)
+            # can shadow the more specific match. ≥5 chars filters 3-4-char
+            # legacy tickers (HDFC, SIL, MEGH) that coincidentally prefix
+            # unrelated company names ("HDFC AMC" → starts with HDFC).
+            if sym_raw and name and not self._looks_like_clean_ticker(sym_raw):
+                sym_collapsed = re.sub(r'\s+', '', sym_raw).upper()
+                if sym_collapsed:
+                    best = ''
+                    for legacy in self.bse_legacy_scripnames:
+                        if len(legacy) >= 5 and sym_collapsed.startswith(legacy) and len(legacy) > len(best):
+                            best = legacy
+                    if best:
+                        nk = self._bse_key_from_name(name)
+                        if nk and nk not in self.bse_name_to_legacy:
+                            self.bse_name_to_legacy[nk] = best
+
+            name_key = self._bse_key_from_name(name or sym_raw)
             key = ''
             if isin and isin in self.isin_to_nse_symbol:
                 key = self.isin_to_nse_symbol[isin].upper()
+            elif name_key and name_key in self.bse_name_to_legacy:
+                key = self.bse_name_to_legacy[name_key]
             elif sym_raw and self._looks_like_clean_ticker(sym_raw):
                 key = sym_raw.upper()
             else:
-                name_key = self._bse_key_from_name(name or sym_raw)
-                # Map normalised name → NSE symbol where the security is dual-listed.
-                key = self.nse_name_to_symbol.get(name_key, name_key)
+                # Word-prefix-match against legacy scripnames.
+                name_words = (name or sym_raw).upper()
+                name_words = re.sub(r'[^A-Z0-9 &]+', ' ', name_words).split()
+                name_words = [w for w in name_words if w not in {
+                    'LIMITED','LTD','LIMITE','PVT','PRIVATE','CORPORATION','CORP',
+                    'COMPANY','INC','INCORPORATED','INDIA','THE'}]
+                wp = self._resolve_via_word_prefix(name_words)
+                if wp:
+                    key = wp
+                else:
+                    # Last resort: NSE-name bridge, else the bare name token.
+                    key = self.nse_name_to_symbol.get(name_key, name_key)
             if not key:
                 continue
             if not name:
@@ -791,8 +905,20 @@ class StockMTFExtractor:
         # Process BSE files (both legacy .xls and new .csv formats)
         bse_dir = "mtf_reports/BSE"
         if os.path.exists(bse_dir):
-            bse_files = sorted([f for f in os.listdir(bse_dir)
-                                if f.startswith('BSE_MTF_') and f.endswith(('.xls', '.csv'))])
+            # Sort by trade DATE (not filename) so legacy .xls files (all
+            # pre-2025-10) are processed before .csv files (post-2025-09-30).
+            # Order matters: the BSE bridges built in __init__ depend on legacy
+            # scripnames being known before any 4-col CSV row is resolved.
+            def _bse_parse_date(fn):
+                try:
+                    return datetime.strptime(fn.replace('BSE_MTF_','').rsplit('.',1)[0], '%d%m%Y')
+                except ValueError:
+                    return datetime.max
+            bse_files = sorted(
+                [f for f in os.listdir(bse_dir)
+                 if f.startswith('BSE_MTF_') and f.endswith(('.xls', '.csv'))],
+                key=_bse_parse_date,
+            )
             if sample_size:
                 bse_files = bse_files[-sample_size:]
             xls_n = sum(1 for f in bse_files if f.endswith('.xls'))
