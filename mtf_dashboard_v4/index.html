@@ -61,7 +61,14 @@
 [data-fs-root="bse"]:fullscreen .stock-chart-container{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 180px)}
 [data-fs-root="nse"]:fullscreen .stock-chart-wrap,
 [data-fs-root="bse"]:fullscreen .stock-chart-wrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
-@media(max-width:640px){.tab-btn .tab-icon{display:none}}</style>
+@media(max-width:640px){.tab-btn .tab-icon{display:none}}
+/* Theme toggle icon visibility — driven by body[data-theme] so it survives
+   Font Awesome's <i>→<svg> replacement (which detaches the captured node
+   references). `body` prefix bumps specificity above FA's .svg-inline--fa. */
+body #themeIconSun{display:none}
+body #themeIconMoon{display:inline-block}
+body[data-theme=dark] #themeIconSun{display:inline-block}
+body[data-theme=dark] #themeIconMoon{display:none}</style>
 </head>
 <body>
     <!-- Loading overlay -->
@@ -89,7 +96,7 @@
                         <span id="lastUpdatedDate">—</span>
                     </span>
                     <button id="themeToggle" class="theme-toggle" type="button" aria-label="Toggle theme">
-                        <i id="themeIconSun" class="fa-solid fa-sun" style="display:none;" aria-hidden="true"></i>
+                        <i id="themeIconSun" class="fa-solid fa-sun" aria-hidden="true"></i>
                         <i id="themeIconMoon" class="fa-solid fa-moon" aria-hidden="true"></i>
                         <span id="themeLabel">Dark</span>
                     </button>
@@ -308,15 +315,15 @@
             function apply(theme) {
                 if (theme === 'dark') {
                     body.setAttribute('data-theme', 'dark');
-                    sunIcon.style.display = 'inline-block';
-                    moonIcon.style.display = 'none';
                     label.textContent = 'Light';
                 } else {
                     body.removeAttribute('data-theme');
-                    sunIcon.style.display = 'none';
-                    moonIcon.style.display = 'inline-block';
                     label.textContent = 'Dark';
                 }
+                // Icon visibility is now driven by CSS rules keyed off
+                // body[data-theme="dark"] — manipulating style.display on the
+                // captured <i> references broke when Font Awesome's Kit
+                // replaced them with inline <svg> nodes at runtime.
                 if (window.dashboard && typeof window.dashboard.repaintCharts === 'function') {
                     window.dashboard.repaintCharts();
                 }
