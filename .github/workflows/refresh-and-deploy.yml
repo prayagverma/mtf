@@ -158,14 +158,16 @@ jobs:
       #        - the contents of mtf_reports/ (raw NSE/BSE files, append-only)
       #        - the source of extract_stock_data.py
       #        - the source of compress_stock_data.py
-      #      File names + sizes + mtimes are enough to identify the corpus
-      #      state — content-hashing all 184MB takes ~10s for no extra signal,
-      #      since the raw files never change once written. Computed AFTER the
-      #      fetch step so any new files just downloaded are part of the key.
+      #      File name + size is enough — raw report files are append-only
+      #      (never edited in place), so size uniquely identifies content.
+      #      mtimes are intentionally excluded: actions/checkout@v4 resets
+      #      them every run, which would defeat caching across runs even
+      #      when the corpus is identical. Computed AFTER the fetch step
+      #      so newly-downloaded files participate in the key.
       - name: Compute pipeline fingerprint
         id: fp
         run: |
-          REP=$(find mtf_reports -type f -printf '%P %s %T@\n' 2>/dev/null | LC_ALL=C sort | sha256sum | cut -c1-32)
+          REP=$(find mtf_reports -type f -printf '%P %s\n' 2>/dev/null | LC_ALL=C sort | sha256sum | cut -c1-32)
           SCR=$(sha256sum extract_stock_data.py compress_stock_data.py | sha256sum | cut -c1-16)
           KEY="mtf-stock-v1-${SCR}-${REP}"
           echo "key=${KEY}" >> "$GITHUB_OUTPUT"
