@@ -1552,8 +1552,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     ? `NSE ${fmtDate(nseLatest.date)} · BSE ${fmtDate(bseLatest.date)}`
                     : `${fmtDate(nseLatest.date || bseLatest.date)} · NSE + BSE`;
 
-                const card = (label, value, sub, exchange, change) => `
-                    <div class="stat" data-exchange="${exchange || ''}">
+                const card = (label, value, sub, exchange, change, tip) => `
+                    <div class="stat" data-exchange="${exchange || ''}"${tip ? ` title="${tip.replace(/"/g, '&quot;')}"` : ''}>
                         ${exchange ? '<span class="stat-accent" aria-hidden="true"></span>' : ''}
                         <div class="stat-label">${label}</div>
                         <div class="stat-value">${value}</div>
@@ -1611,7 +1611,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     card('Total Outstanding', fmtINR(totalEnd),
                          combinedAsOf,
                          'TOTAL',
-                         prevTotalEnd ? { text: `${fmtDelta(totalEnd, prevTotalEnd)} vs prev day`, cls: deltaCls(totalEnd, prevTotalEnd) } : null),
+                         prevTotalEnd ? { text: `${fmtDelta(totalEnd, prevTotalEnd)} vs prev day`, cls: deltaCls(totalEnd, prevTotalEnd) } : null,
+                         'Day-over-day book size change. Includes the small overnight reconciliation gap between yesterday’s closing and today’s opening books (~₹0–3 Cr) — that gap is why this differs slightly from Net Daily Flow.'),
                     card('NSE Outstanding', fmtINR(nseLatest.nse_end_outstanding),
                          `${fmtDate(nseLatest.date)} · ${fmtCount(nseLatest.nse_securities_count)} securities`,
                          'NSE',
@@ -1675,7 +1676,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                          `Inflow − Outflow · ${combinedAsOf}`, 'TOTAL',
                          prevNetFlow != null
                             ? { text: fmtDelta(netFlow, prevNetFlow), cls: deltaCls(netFlow, prevNetFlow) }
-                            : null),
+                            : null,
+                         'Today’s pure flow accounting (fresh positions − closed positions). Excludes the overnight reconciliation gap exchanges record between yesterday’s closing and today’s opening books, so this can differ from Total Outstanding’s day-over-day change by ~₹0–3 Cr.'),
 
                     // ───── Row 4 — Market composition ─────
                     card('NSE Market Share', `${sharePctNse.toFixed(1)}%`,
