@@ -351,11 +351,13 @@
         function fmtCount(value) {
             return Number(value || 0).toLocaleString('en-IN');
         }
-        function fmtDelta(curr, prev) {
+        function fmtDelta(curr, prev, fmt = fmtINR) {
             if (prev === undefined || prev === null || prev === 0) return '';
-            const pct = ((curr - prev) / prev) * 100;
-            const sign = pct >= 0 ? '▲' : '▼';
-            return `${sign} ${Math.abs(pct).toFixed(2)}%`;
+            const diff = curr - prev;
+            const pct  = (diff / prev) * 100;
+            const sign = pct  >= 0 ? '▲' : '▼';
+            const absStr = `${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}`;
+            return `${sign} ${Math.abs(pct).toFixed(2)}% · ${absStr}`;
         }
         function fmtDate(ds) {
             if (!ds) return '—';
