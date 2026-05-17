@@ -153,6 +153,37 @@ jobs:
             fi
           done
 
+      # 1.5) Fingerprint the inputs to the stock-data pipeline so we can cache
+      #      the (deterministic) output. The pipeline is a pure function of:
+      #        - the contents of mtf_reports/ (raw NSE/BSE files, append-only)
+      #        - the source of extract_stock_data.py
+      #        - the source of compress_stock_data.py
+      #      File names + sizes + mtimes are enough to identify the corpus
+      #      state — content-hashing all 184MB takes ~10s for no extra signal,
+      #      since the raw files never change once written. Computed AFTER the
+      #      fetch step so any new files just downloaded are part of the key.
+      - name: Compute pipeline fingerprint
+        id: fp
+        run: |
+          REP=$(find mtf_reports -type f -printf '%P %s %T@\n' 2>/dev/null | LC_ALL=C sort | sha256sum | cut -c1-32)
+          SCR=$(sha256sum extract_stock_data.py compress_stock_data.py | sha256sum | cut -c1-16)
+          KEY="mtf-stock-v1-${SCR}-${REP}"
+          echo "key=${KEY}" >> "$GITHUB_OUTPUT"
+          echo "Pipeline fingerprint: ${KEY}"
+
+      # 1.6) Restore the cached compressed_data/ output. On a hit, the two
+      #      slow Python steps (extract + compress, ~9.5 min combined) are
+      #      skipped via the `if:` guards below — saving ~10 min on dispatches
+      #      where mtf_reports/ hasn't changed (typical UI-only deploys).
+      #      actions/cache@v4 also auto-saves compressed_data/ post-job on
+      #      successful completion if the key didn't already exist.
+      - name: Restore stock-data cache
+        id: stock_cache
+        uses: actions/cache@v4
+        with:
+          path: compressed_data
+          key: ${{ steps.fp.outputs.key }}
+
       # 2) Daily totals: extract → sanitize → trim to 2017-06-22 cutoff.
       - name: Extract daily totals
         run: python extract_daily_totals_complete_fix.py
@@ -199,10 +230,14 @@ jobs:
       # 3) Stock-level extraction + compression.
       #    extract_stock_data.py also enforces the 2017-06-22 cutoff internally.
       #    stock_analytics.json is ~1.7 GB intermediate -- stays in the runner only.
+      #    Both steps are skipped when the pipeline fingerprint hit the cache —
+      #    compressed_data/ is restored from cache and used as-is.
       - name: Extract stock-level analytics
+        if: steps.stock_cache.outputs.cache-hit != 'true'
         run: python extract_stock_data.py
 
       - name: Compress stock data into gzipped chunks
+        if: steps.stock_cache.outputs.cache-hit != 'true'
         run: python compress_stock_data.py
 
       # 4) Sync the freshly-built data into the v4 deploy folder.
