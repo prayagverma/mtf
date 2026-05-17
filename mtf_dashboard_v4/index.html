@@ -162,8 +162,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                 <button class="timeframe-btn" data-period="1M" type="button">1M</button>
                                 <button class="timeframe-btn" data-period="3M" type="button">3M</button>
                                 <button class="timeframe-btn" data-period="6M" type="button">6M</button>
-                                <button class="timeframe-btn" data-period="1Y" type="button">1Y</button>
-                                <button class="timeframe-btn active" data-period="ALL" type="button">ALL</button>
+                                <button class="timeframe-btn active" data-period="1Y" type="button">1Y</button>
+                                <button class="timeframe-btn" data-period="ALL" type="button">ALL</button>
                             </div>
                         </div>
 
@@ -216,8 +216,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                 <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
                                 <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
                                 <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
-                                <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
-                                <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
+                                <button class="stock-tf-btn active" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn" data-stock-period="ALL" type="button">ALL</button>
                             </div>
                             <button class="stock-tf-reset" data-stock-reset="nse" type="button" aria-label="Reset zoom" title="Reset zoom"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i></button>
                         </div>
@@ -259,8 +259,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                 <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
                                 <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
                                 <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
-                                <button class="stock-tf-btn" data-stock-period="1Y" type="button">1Y</button>
-                                <button class="stock-tf-btn active" data-stock-period="ALL" type="button">ALL</button>
+                                <button class="stock-tf-btn active" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn" data-stock-period="ALL" type="button">ALL</button>
                             </div>
                             <button class="stock-tf-reset" data-stock-reset="bse" type="button" aria-label="Reset zoom" title="Reset zoom"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i></button>
                         </div>
@@ -592,7 +592,9 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     // browsers — calling fitContent() before that resolves
                     // produces a mis-zoomed initial paint. Two rAFs guarantee
                     // we're past both the layout pass and the next paint.
-                    requestAnimationFrame(() => requestAnimationFrame(() => this.updateChart()));
+                    // Default timeframe on first paint is 1Y (matches the active pill).
+                    // setTimeframe internally calls updateChart() with the right window.
+                    requestAnimationFrame(() => requestAnimationFrame(() => this.setTimeframe('1Y')));
                 } catch (error) {
                     console.error('Failed to initialize:', error);
                     this.showError('Failed to load dashboard data');
@@ -1285,19 +1287,21 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
                 this._stockChartFullData[exchange] = amounts;
 
-                // Reset timeframe pills to ALL whenever a new stock is loaded.
+                // Reset timeframe pills to 1Y (the default view) whenever a new
+                // stock is loaded.
                 const grp = document.querySelector(`.stock-tf-buttons[data-stock-tf="${exchange}"]`);
                 if (grp) {
                     grp.querySelectorAll('.stock-tf-btn').forEach(b => b.classList.remove('active'));
-                    const all = grp.querySelector('.stock-tf-btn[data-stock-period="ALL"]');
-                    if (all) all.classList.add('active');
+                    const one = grp.querySelector('.stock-tf-btn[data-stock-period="1Y"]');
+                    if (one) one.classList.add('active');
                 }
 
                 // Honor the current state of the per-exchange option toggles
                 // (Smooth / Log / Magnet / Grid / Auto-fit Y) on first paint.
                 this._applyStockChartOptions(exchange);
 
-                chart.timeScale().fitContent();
+                // Open at the 1Y window (falls back to fitContent if <1Y of data).
+                this._applyStockTimeframe(exchange, '1Y');
                 if (chart._renderLatest) chart._renderLatest();
             }
 
