@@ -1704,13 +1704,22 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                          (avg7 != null && avg7Prior != null)
                             ? { text: fmtDelta(avg7, avg7Prior), cls: deltaCls(avg7, avg7Prior) }
                             : null),
-                    card('30-Day Change',
-                         fmtINR(totalAt(todayRow)),
-                         `vs ${row30Ago ? fmtDate(row30Ago.date) : '—'}`, 'TOTAL',
-                         total30Ago != null
-                            ? { text: fmtDelta(totalAt(todayRow), total30Ago),
-                                cls: deltaCls(totalAt(todayRow), total30Ago) }
-                            : null),
+                    (() => {
+                        // Headline = the signed absolute change since 30 trading
+                        // days ago; change line carries the percentage. The full
+                        // book size is already shown in the Total Outstanding card.
+                        const diff30 = total30Ago != null ? (totalAt(todayRow) - total30Ago) : null;
+                        const valStr = diff30 != null
+                            ? `${diff30 >= 0 ? '+' : '−'}${fmtINR(Math.abs(diff30))}`
+                            : '—';
+                        const pctStr = (diff30 != null && total30Ago > 0)
+                            ? `${diff30 >= 0 ? '▲' : '▼'} ${Math.abs((diff30 / total30Ago) * 100).toFixed(2)}%`
+                            : null;
+                        return card('30-Day Change', valStr,
+                            row30Ago ? `30 trading days · vs ${fmtDate(row30Ago.date)}` : '—',
+                            'TOTAL',
+                            pctStr ? { text: pctStr, cls: deltaCls(diff30, 0) } : null);
+                    })(),
                 ].join('');
             }
 
