@@ -48,6 +48,9 @@
 .chart-reset > i{font-size:.7rem;margin-right:.2rem}
 .btn > i{font-size:.75rem}
 .stock-tf-reset > i{font-size:.78rem}
+/* Icon-only variant for .btn (Overview's Update Chart + Download CSV). */
+.btn.icon-only{padding:0;width:36px;height:34px;gap:0}
+.btn.icon-only > i{font-size:.85rem;margin:0}
 /* Compact icon-only chart action buttons (legend position, fullscreen). */
 .chart-icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px;padding:0;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted-foreground);cursor:pointer;font-family:inherit;line-height:1;transition:background-color .12s,color .12s,border-color .12s}
 .chart-icon-btn:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}
@@ -167,8 +170,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         <div class="control-group">
                             <label>Actions</label>
                             <div class="button-group">
-                                <button id="updateChart" class="btn" type="button"><i class="fa-regular fa-arrows-rotate" aria-hidden="true"></i> Update Chart</button>
-                                <button id="downloadCSV" class="btn secondary" type="button"><i class="fa-regular fa-arrow-down-to-bracket" aria-hidden="true"></i> Download CSV</button>
+                                <button id="updateChart" class="btn icon-only" type="button" title="Update chart" aria-label="Update chart"><i class="fa-regular fa-arrows-rotate" aria-hidden="true"></i></button>
+                                <button id="downloadCSV" class="btn secondary icon-only" type="button" title="Download CSV" aria-label="Download CSV"><i class="fa-regular fa-arrow-down-to-bracket" aria-hidden="true"></i></button>
                             </div>
                         </div>
                     </div>
