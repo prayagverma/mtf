@@ -1564,6 +1564,49 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
                 const deltaCls = (a, b) => (a >= b ? '' : 'negative');
 
+                // ───── Derived quantities for the second block of stat cards ──────
+                const rollingMean = (rows, getter) => {
+                    const vals = rows.map(getter).filter(v => v != null);
+                    return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
+                };
+                const fmtMul = (v) => (v == null || !isFinite(v)) ? '—' : `${v.toFixed(1)}×`;
+                const fmtPp  = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)} pp`;
+
+                const totalAt    = (r) => r ? ((r.nse_end_outstanding || 0) + (r.bse_end_outstanding || 0)) : 0;
+                const inflowAt   = (r) => r ? ((r.nse_fresh_exposure  || 0) + (r.bse_exposure_taken     || 0)) : 0;
+                const outflowAt  = (r) => r ? ((r.nse_exposure_liquidated || 0) + (r.bse_exposure_liquidated || 0)) : 0;
+
+                const todayRow  = this.data.at(-1);
+                const prevRow   = this.data.at(-2);
+                const total30Ago = this.data.length >= 31 ? totalAt(this.data.at(-31)) : null;
+                const row30Ago   = this.data.length >= 31 ? this.data.at(-31) : null;
+                const avg7       = rollingMean(this.data.slice(-7),  totalAt);
+                const avg7Prior  = this.data.length >= 14 ? rollingMean(this.data.slice(-14, -7), totalAt) : null;
+                const avgInflow30 = rollingMean(this.data.slice(-30), inflowAt);
+
+                // All-time high of combined NSE+BSE outstanding.
+                let athVal = 0, athDate = null, athIdx = -1;
+                for (let i = 0; i < this.data.length; i++) {
+                    const t = totalAt(this.data[i]);
+                    if (t > athVal) { athVal = t; athDate = this.data[i].date; athIdx = i; }
+                }
+                const athAgeDays = athIdx >= 0 ? (this.data.length - 1 - athIdx) : null;
+
+                const netFlow      = inflowAt(todayRow) - outflowAt(todayRow);
+                const prevNetFlow  = prevRow ? inflowAt(prevRow) - outflowAt(prevRow) : null;
+
+                const sharePctNse     = totalEnd > 0
+                    ? ((nseLatest.nse_end_outstanding || 0) / totalEnd) * 100 : 0;
+                const sharePctNsePrev = (prevTotalEnd && nsePrev)
+                    ? ((nsePrev.nse_end_outstanding || 0) / prevTotalEnd) * 100 : null;
+
+                const ratio = (bseLatest.bse_end_outstanding > 0)
+                    ? (nseLatest.nse_end_outstanding || 0) / bseLatest.bse_end_outstanding
+                    : null;
+                const ratioPrev = (bsePrev && bsePrev.bse_end_outstanding > 0)
+                    ? (nsePrev.nse_end_outstanding || 0) / bsePrev.bse_end_outstanding
+                    : null;
+
                 statsContainer.innerHTML = [
                     card('Total Outstanding', fmtINR(totalEnd),
                          combinedAsOf,
@@ -1614,6 +1657,60 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             : null;
                         return card('Securities Total', fmtCount(uniq), sub, 'TOTAL', change);
                     })(),
+
+                    // ───── Row 3 — BSE daily activity + combined day's flow ─────
+                    card('New BSE Positions', fmtINR(bseLatest.bse_exposure_taken),
+                         `Added · ${fmtDate(bseLatest.date)}`, 'BSE',
+                         (bsePrev && bsePrev.bse_exposure_taken != null)
+                            ? { text: fmtDelta(bseLatest.bse_exposure_taken, bsePrev.bse_exposure_taken),
+                                cls: deltaCls(bseLatest.bse_exposure_taken, bsePrev.bse_exposure_taken) }
+                            : null),
+                    card('BSE Positions Closed', fmtINR(bseLatest.bse_exposure_liquidated),
+                         `Closed · ${fmtDate(bseLatest.date)}`, 'BSE',
+                         (bsePrev && bsePrev.bse_exposure_liquidated != null)
+                            ? { text: fmtDelta(bseLatest.bse_exposure_liquidated, bsePrev.bse_exposure_liquidated),
+                                cls: deltaCls(bseLatest.bse_exposure_liquidated, bsePrev.bse_exposure_liquidated) }
+                            : null),
+                    card('Net Daily Flow', fmtINR(netFlow),
+                         `Inflow − Outflow · ${combinedAsOf}`, 'TOTAL',
+                         prevNetFlow != null
+                            ? { text: fmtDelta(netFlow, prevNetFlow), cls: deltaCls(netFlow, prevNetFlow) }
+                            : null),
+
+                    // ───── Row 4 — Market composition ─────
+                    card('NSE Market Share', `${sharePctNse.toFixed(1)}%`,
+                         `${sharePctNse.toFixed(1)}% NSE · ${(100 - sharePctNse).toFixed(1)}% BSE`, 'NSE',
+                         sharePctNsePrev != null
+                            ? { text: `${fmtPp(sharePctNse - sharePctNsePrev)} vs prev day`,
+                                cls: deltaCls(sharePctNse, sharePctNsePrev) }
+                            : null),
+                    card('NSE / BSE Ratio', fmtMul(ratio),
+                         `NSE / BSE outstanding`, 'TOTAL',
+                         (ratio != null && ratioPrev != null)
+                            ? { text: `${ratio >= ratioPrev ? '+' : '−'}${Math.abs(ratio - ratioPrev).toFixed(2)}× vs prev day`,
+                                cls: deltaCls(ratio, ratioPrev) }
+                            : null),
+                    card('Avg Daily Inflow (30d)',
+                         avgInflow30 != null ? fmtINR(avgInflow30) : '—',
+                         'Trailing 30 trading days', 'TOTAL'),
+
+                    // ───── Row 5 — Time / historical context ─────
+                    card('All-Time High', fmtINR(athVal),
+                         athDate ? `On ${fmtDate(athDate)} · ${athAgeDays} trading days ago` : '—',
+                         'TOTAL'),
+                    card('7-Day Avg Outstanding',
+                         avg7 != null ? fmtINR(avg7) : '—',
+                         'Trailing 7 trading days', 'TOTAL',
+                         (avg7 != null && avg7Prior != null)
+                            ? { text: fmtDelta(avg7, avg7Prior), cls: deltaCls(avg7, avg7Prior) }
+                            : null),
+                    card('30-Day Change',
+                         fmtINR(totalAt(todayRow)),
+                         `vs ${row30Ago ? fmtDate(row30Ago.date) : '—'}`, 'TOTAL',
+                         total30Ago != null
+                            ? { text: fmtDelta(totalAt(todayRow), total30Ago),
+                                cls: deltaCls(totalAt(todayRow), total30Ago) }
+                            : null),
                 ].join('');
             }
 
