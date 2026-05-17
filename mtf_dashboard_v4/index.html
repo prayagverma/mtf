@@ -1578,9 +1578,15 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                          'BSE',
                          bsePrev ? { text: fmtDelta(bseLatest.bse_end_outstanding, bsePrev.bse_end_outstanding), cls: deltaCls(bseLatest.bse_end_outstanding, bsePrev.bse_end_outstanding) } : null),
                     card('New NSE Positions', fmtINR(nseLatest.nse_fresh_exposure),
-                         `Added · ${fmtDate(nseLatest.date)}`, 'NSE'),
+                         `Added · ${fmtDate(nseLatest.date)}`, 'NSE',
+                         (nsePrev && nsePrev.nse_fresh_exposure != null)
+                            ? { text: fmtDelta(nseLatest.nse_fresh_exposure, nsePrev.nse_fresh_exposure), cls: deltaCls(nseLatest.nse_fresh_exposure, nsePrev.nse_fresh_exposure) }
+                            : null),
                     card('NSE Positions Closed', fmtINR(nseLatest.nse_exposure_liquidated),
-                         `Closed · ${fmtDate(nseLatest.date)}`, 'NSE'),
+                         `Closed · ${fmtDate(nseLatest.date)}`, 'NSE',
+                         (nsePrev && nsePrev.nse_exposure_liquidated != null)
+                            ? { text: fmtDelta(nseLatest.nse_exposure_liquidated, nsePrev.nse_exposure_liquidated), cls: deltaCls(nseLatest.nse_exposure_liquidated, nsePrev.nse_exposure_liquidated) }
+                            : null),
                     (() => {
                         // Prefer the pipeline-computed unique count when it's
                         // available (excludes the ~50 dual-listed stocks
@@ -1596,7 +1602,17 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         const sub  = (dual != null)
                             ? `NSE ${fmtCount(nseN)} · BSE ${fmtCount(bseN)} · ${dual} dual-listed`
                             : `NSE ${fmtCount(nseN)} · BSE ${fmtCount(bseN)}`;
-                        return card('Securities Total', fmtCount(uniq), sub, 'TOTAL');
+                        // Prev-day unique count: today's dual_listed is a stable
+                        // proxy (the dual-listed set changes by 0-1 stock per day).
+                        const prevNseN = (nsePrev && nsePrev.nse_securities_count) || 0;
+                        const prevBseN = (bsePrev && bsePrev.bse_securities_count) || 0;
+                        const prevUniq = (prevNseN || prevBseN)
+                            ? Math.max(0, prevNseN + prevBseN - (dual || 0))
+                            : null;
+                        const change = (prevUniq != null && prevUniq > 0)
+                            ? { text: fmtDelta(uniq, prevUniq, fmtCount), cls: deltaCls(uniq, prevUniq) }
+                            : null;
+                        return card('Securities Total', fmtCount(uniq), sub, 'TOTAL', change);
                     })(),
                 ].join('');
             }
