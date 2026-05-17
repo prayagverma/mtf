@@ -330,6 +330,37 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
             <section class="tab-content" id="cross-exchange-tab" role="tabpanel">
                 <h2>Cross-Exchange Analysis</h2>
+                <div id="selectedStockChartCross" class="selected-stock-chart" data-fs-root="cross">
+                    <div class="chart-header">
+                        <h3 id="selectedStockTitleCross">Click a chart icon below to load a stock</h3>
+                        <div class="stock-chart-actions">
+                            <div class="stock-tf-buttons" role="group" aria-label="Stock chart timeframe" data-stock-tf="cross">
+                                <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
+                                <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
+                                <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
+                                <button class="stock-tf-btn active" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn" data-stock-period="ALL" type="button">ALL</button>
+                            </div>
+                            <button class="stock-tf-reset" data-stock-reset="cross" type="button" aria-label="Reset zoom" title="Reset zoom"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-options stock-chart-options" data-stock-opts="cross">
+                        <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
+                        <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
+                        <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
+                        <button class="chart-icon-btn chart-legend-pos" data-legend-scope="cross" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
+                        <button class="chart-icon-btn chart-fs" data-fs-scope="cross" type="button" title="Fullscreen" aria-label="Fullscreen"><i class="fa-regular fa-expand" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="stock-chart-wrap">
+                        <div id="stockTimeSeriesChartCross" class="stock-chart-container"></div>
+                        <div class="stock-chart-loading" data-loading="cross">
+                            <span class="spinner"></span>
+                            <span class="stock-chart-loading-text">Loading…</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="analytics-grid" id="crossExchangeGrid">
                     <div class="loading">Loading cross-exchange data…</div>
                 </div>
@@ -337,6 +368,37 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
             <section class="tab-content" id="sudden-changes-tab" role="tabpanel">
                 <h2>Recent Market Changes</h2>
+                <div id="selectedStockChartChanges" class="selected-stock-chart" data-fs-root="changes">
+                    <div class="chart-header">
+                        <h3 id="selectedStockTitleChanges">Click a chart icon below to load a stock</h3>
+                        <div class="stock-chart-actions">
+                            <div class="stock-tf-buttons" role="group" aria-label="Stock chart timeframe" data-stock-tf="changes">
+                                <button class="stock-tf-btn" data-stock-period="1M" type="button">1M</button>
+                                <button class="stock-tf-btn" data-stock-period="3M" type="button">3M</button>
+                                <button class="stock-tf-btn" data-stock-period="6M" type="button">6M</button>
+                                <button class="stock-tf-btn active" data-stock-period="1Y" type="button">1Y</button>
+                                <button class="stock-tf-btn" data-stock-period="ALL" type="button">ALL</button>
+                            </div>
+                            <button class="stock-tf-reset" data-stock-reset="changes" type="button" aria-label="Reset zoom" title="Reset zoom"><i class="fa-regular fa-arrows-to-circle" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-options stock-chart-options" data-stock-opts="changes">
+                        <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
+                        <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
+                        <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
+                        <button class="chart-icon-btn chart-legend-pos" data-legend-scope="changes" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
+                        <button class="chart-icon-btn chart-fs" data-fs-scope="changes" type="button" title="Fullscreen" aria-label="Fullscreen"><i class="fa-regular fa-expand" aria-hidden="true"></i></button>
+                    </div>
+                    <div class="stock-chart-wrap">
+                        <div id="stockTimeSeriesChartChanges" class="stock-chart-container"></div>
+                        <div class="stock-chart-loading" data-loading="changes">
+                            <span class="spinner"></span>
+                            <span class="stock-chart-loading-text">Loading…</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="analytics-grid" id="marketChangesGrid">
                     <div class="loading">Loading market changes data…</div>
                 </div>
@@ -589,10 +651,14 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
         // search results / stock-list rows).
         function resolveRoute(pathname) {
             if (PATH_TO_TAB[pathname]) return { tab: PATH_TO_TAB[pathname], stock: null };
-            const m = pathname.match(/^\/(nse-stocks|bse-stocks)\/(.+?)\/?$/);
+            const m = pathname.match(/^\/(nse-stocks|bse-stocks|cross-exchange|market-changes)\/(.+?)\/?$/);
             if (m) {
-                try { return { tab: m[1], stock: decodeURIComponent(m[2]) }; }
-                catch (_) { return { tab: m[1], stock: m[2] }; }
+                // market-changes is the public URL slug; the internal data-tab
+                // for that section is "sudden-changes". Translate so the rest
+                // of the routing works uniformly.
+                const tab = m[1] === 'market-changes' ? 'sudden-changes' : m[1];
+                try { return { tab, stock: decodeURIComponent(m[2]) }; }
+                catch (_) { return { tab, stock: m[2] }; }
             }
             return { tab: 'overview', stock: null };
         }
@@ -1402,8 +1468,9 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 const target = document.getElementById(`${tab}-tab`);
                 if (target) target.classList.add('active');
 
-                // Per-stock deep links only make sense on the NSE/BSE Stocks tabs.
-                const isStockTab = (tab === 'nse-stocks' || tab === 'bse-stocks');
+                // Per-stock deep links are allowed on the four data tabs.
+                const isStockTab = (tab === 'nse-stocks' || tab === 'bse-stocks'
+                                 || tab === 'cross-exchange' || tab === 'sudden-changes');
                 if (!isStockTab) stock = null;
 
                 // Stash the desired stock for loadTabData → default-load path.
@@ -1411,12 +1478,16 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 this.loadTabData(tab);
 
                 // URL + SEO bookkeeping
-                const exchange = tab === 'nse-stocks' ? 'NSE' : 'BSE';
+                const tabLabel = tab === 'nse-stocks' ? 'NSE Stocks'
+                              : tab === 'bse-stocks' ? 'BSE Stocks'
+                              : tab === 'cross-exchange' ? 'Cross-Exchange'
+                              : tab === 'sudden-changes' ? 'Market Changes'
+                              : '';
                 const path = stock
                     ? `${TAB_PATHS[tab]}/${encodeURIComponent(stock)}`.replace('//', '/')
                     : TAB_PATHS[tab];
                 document.title = stock
-                    ? `${stock} · ${exchange} Stocks · MTF Analytics`
+                    ? `${stock} · ${tabLabel} · MTF Analytics`
                     : (TAB_TITLES[tab] || TAB_TITLES.overview);
                 const can = document.querySelector('link[rel="canonical"]');
                 if (can) can.href = `https://mtf.trading${path}`;
@@ -1439,8 +1510,12 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             _pushStockUrl(tab, symbol) {
                 const path = `${TAB_PATHS[tab]}/${encodeURIComponent(symbol)}`.replace('//', '/');
                 if (location.pathname === path) return;
-                const exchange = tab === 'nse-stocks' ? 'NSE' : 'BSE';
-                document.title = `${symbol} · ${exchange} Stocks · MTF Analytics`;
+                const tabLabel = tab === 'nse-stocks' ? 'NSE Stocks'
+                              : tab === 'bse-stocks' ? 'BSE Stocks'
+                              : tab === 'cross-exchange' ? 'Cross-Exchange'
+                              : tab === 'sudden-changes' ? 'Market Changes'
+                              : '';
+                document.title = `${symbol} · ${tabLabel} · MTF Analytics`;
                 const can = document.querySelector('link[rel="canonical"]');
                 if (can) can.href = `https://mtf.trading${path}`;
                 const ogUrl = document.querySelector('meta[property="og:url"]');
@@ -1498,6 +1573,62 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             // otherwise falls back to the exchange's top-funded stock the
             // first time the tab is opened. Subsequent visits with no
             // explicit URL keep whatever chart the user last looked at.
+            // Resolve a symbol to its (key, info, exchange) — tries NSE first,
+            // falls back to BSE. Used by the cross-exchange / market-changes
+            // chart loaders where the chart scope doesn't dictate an exchange.
+            _resolveAnyExchange(symbol) {
+                const idx = this.dataLoader.baseData?.stock_index || {};
+                for (const ex of ['NSE', 'BSE']) {
+                    const k = this._findStockKey(symbol, ex);
+                    const info = idx[k];
+                    if (info && (info.exchange || '').toUpperCase() === ex) {
+                        return { key: k, info, exchange: ex };
+                    }
+                }
+                return null;
+            }
+
+            // Auto-load a default chart for the Cross-Exchange / Market Changes
+            // tabs. Honors a pending deep-link symbol first, else loads the
+            // top entry from the tab's own data. Idempotent — does nothing if
+            // a chart is already shown for the scope.
+            _loadDefaultScopeChartIfNeeded(scope) {
+                this.stockCharts = this.stockCharts || {};
+                const pending = this._pendingStockLoad;
+                this._pendingStockLoad = null;
+                if (pending) {
+                    const r = this._resolveAnyExchange(pending);
+                    if (r) {
+                        this.showStockChart({
+                            key: r.key,
+                            symbol: r.info.symbol || pending,
+                            name:   r.info.name   || pending,
+                            exchange: r.exchange,
+                        }, scope);
+                        return;
+                    }
+                    // Unknown symbol — fall through to default.
+                }
+                if (this.stockCharts[scope]) return;     // already loaded
+                let topSymbol = null;
+                if (scope === 'cross') {
+                    const list = this._crossExchangeAll || this.dataLoader.baseData?.latest_snapshot?.cross_exchange_stocks || [];
+                    if (list[0]) topSymbol = list[0].symbol;
+                } else if (scope === 'changes') {
+                    const list = this._suddenChangesAll || this.dataLoader.baseData?.latest_snapshot?.sudden_changes || [];
+                    if (list[0]) topSymbol = list[0].symbol;
+                }
+                if (!topSymbol) return;
+                const r = this._resolveAnyExchange(topSymbol);
+                if (!r) return;
+                this.showStockChart({
+                    key: r.key,
+                    symbol: r.info.symbol || topSymbol,
+                    name:   r.info.name   || topSymbol,
+                    exchange: r.exchange,
+                }, scope);
+            }
+
             _loadDefaultStockChartIfNeeded(exchange) {
                 this.stockCharts = this.stockCharts || {};
                 const want = (exchange === 'nse' ? 'NSE' : 'BSE');
@@ -1937,9 +2068,12 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             // Small chart-line icon button rendered in stock-list rows. Click
             // loads that stock into the tab's top chart (wired by
             // _wireChartLinks via event delegation).
-            _chartLinkBtn(symbol, exchange) {
+            _chartLinkBtn(symbol, exchange, scope) {
                 const safe = String(symbol || '').replace(/"/g, '&quot;');
-                return `<button class="stock-chart-link" type="button" data-link-symbol="${safe}" data-link-exchange="${exchange}" aria-label="Chart ${safe}" title="Show on chart"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></button>`;
+                // scope = the chart container to load into (nse | bse | cross | changes).
+                // Defaults to exchange when omitted (legacy NSE/BSE call sites).
+                const sc = scope || exchange;
+                return `<button class="stock-chart-link" type="button" data-link-symbol="${safe}" data-link-exchange="${exchange}" data-link-scope="${sc}" aria-label="Chart ${safe}" title="Show on chart"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></button>`;
             }
 
             // Locate the stock_index dict key for a (symbol, exchange) pair.
@@ -1956,24 +2090,34 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             }
 
             // Event-delegate clicks on chart-link icons inside the given grid.
-            _wireChartLinks(grid, exchange) {
+            // `defaultScope` covers chart-link buttons that don't specify a
+            // data-link-scope (legacy NSE/BSE rows). Cross-Exchange and Market
+            // Changes rows set scope='cross' / 'changes' on the button so the
+            // chart loads into the tab the row was clicked from.
+            _wireChartLinks(grid, defaultScope) {
                 if (!grid) return;
+                const TAB_FOR_SCOPE = {
+                    nse: 'nse-stocks', bse: 'bse-stocks',
+                    cross: 'cross-exchange', changes: 'sudden-changes',
+                };
                 grid.querySelectorAll('.stock-chart-link').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         e.preventDefault(); e.stopPropagation();
                         const symbol = btn.dataset.linkSymbol;
-                        const ex     = btn.dataset.linkExchange || exchange;
+                        const ex     = (btn.dataset.linkExchange || defaultScope || '').toLowerCase();
+                        const scope  = (btn.dataset.linkScope || defaultScope || ex).toLowerCase();
                         const key    = this._findStockKey(symbol, ex);
                         const info   = this.dataLoader.baseData?.stock_index?.[key] || {};
                         this.showStockChart({
                             key, symbol,
                             name: info.name || symbol,
-                            exchange: (ex || '').toUpperCase(),
-                        }, ex);
+                            exchange: ex.toUpperCase(),
+                        }, scope);
                         // Deep-link the URL so the chart is shareable.
-                        this._pushStockUrl(`${ex}-stocks`, symbol);
+                        const tab = TAB_FOR_SCOPE[scope] || `${scope}-stocks`;
+                        this._pushStockUrl(tab, symbol);
                         // Scroll the chart into view (it's at top of the tab).
-                        const sfx = this._exSfx(ex);
+                        const sfx = this._exSfx(scope);
                         const target = document.getElementById(`selectedStockChart${sfx}`);
                         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
                     });
@@ -2134,6 +2278,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
             populateCrossExchange(crossExchangeData) {
                 if (!crossExchangeData) return;
+                this._crossExchangeAll = crossExchangeData;
                 const grid = document.getElementById('crossExchangeGrid');
                 grid.innerHTML = `
                     <div class="analytics-section" style="grid-column: 1 / -1;">
@@ -2150,11 +2295,16 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                         <div>BSE: ${fmtINR(stock.bse_data?.amount_financed || 0)}</div>
                                         <div><strong>Total: ${fmtINR(stock.total_funding || 0)}</strong></div>
                                     </div>
+                                    <div class="stock-metrics">
+                                        ${this._chartLinkBtn(stock.symbol, 'nse', 'cross')}
+                                    </div>
                                 </div>
                             `).join('')}
                         </div>
                     </div>
                 `;
+                this._wireChartLinks(grid, 'cross');
+                this._loadDefaultScopeChartIfNeeded('cross');
             }
 
             populateSuddenChanges(suddenChanges) {
@@ -2166,6 +2316,9 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             <div class="loading"><div class="spinner"></div> Computing month-over-month changes…</div>
                         </div>
                     `;
+                    // Even without a list to render, honor a pending deep-link
+                    // load so /market-changes/<SYMBOL> still draws the chart.
+                    this._loadDefaultScopeChartIfNeeded('changes');
                     return;
                 }
                 // Cache the full set so toggle filtering can re-render without recomputing.
@@ -2220,6 +2373,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                     : '';
                                 const ex = (stock.exchange || '').toUpperCase();
                                 const exClass = ex === 'NSE' ? 'exchange-nse' : (ex === 'BSE' ? 'exchange-bse' : '');
+                                const exLower = ex ? ex.toLowerCase() : 'nse';
                                 return `
                                 <div class="stock-item">
                                     <div class="stock-info">
@@ -2235,6 +2389,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                         <div class="stock-exchange ${stock.change_percent > 0 ? 'positive-change' : 'negative-change'}">
                                             ${fmtPctChange(stock.change_percent)}
                                         </div>
+                                        ${this._chartLinkBtn(stock.symbol, exLower, 'changes')}
                                     </div>
                                 </div>`;
                             }).join('')}
@@ -2249,6 +2404,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         this.populateSuddenChanges(this._suddenChangesAll);
                     });
                 });
+                this._wireChartLinks(grid, 'changes');
+                this._loadDefaultScopeChartIfNeeded('changes');
             }
 
             updateChart() {
