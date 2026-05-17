@@ -1578,11 +1578,26 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
                 const todayRow  = this.data.at(-1);
                 const prevRow   = this.data.at(-2);
-                const total30Ago = this.data.length >= 31 ? totalAt(this.data.at(-31)) : null;
-                const row30Ago   = this.data.length >= 31 ? this.data.at(-31) : null;
+                // 30 CALENDAR days back (not 30 trading rows) — matches the
+                // intuitive reading of "30-day change". Pick the latest data
+                // row whose date is ≤ (latest_date − 30 days).
+                const _latestDateObj = new Date(this.data.at(-1).date);
+                const _target30Cal   = new Date(_latestDateObj);
+                _target30Cal.setDate(_target30Cal.getDate() - 30);
+                let _idx30Cal = -1;
+                for (let i = this.data.length - 1; i >= 0; i--) {
+                    if (new Date(this.data[i].date) <= _target30Cal) { _idx30Cal = i; break; }
+                }
+                const row30Ago   = _idx30Cal >= 0 ? this.data[_idx30Cal] : null;
+                const total30Ago = row30Ago ? totalAt(row30Ago) : null;
                 const avg7       = rollingMean(this.data.slice(-7),  totalAt);
                 const avg7Prior  = this.data.length >= 14 ? rollingMean(this.data.slice(-14, -7), totalAt) : null;
-                const avgInflow30 = rollingMean(this.data.slice(-30), inflowAt);
+                // Average daily NET flow over the last 30 trading rows. Net
+                // (inflow − outflow) is what actually changes the book size —
+                // shipping gross inflow misled users into expecting much
+                // larger book growth than they'd see.
+                const netFlowAt    = (r) => inflowAt(r) - outflowAt(r);
+                const avgNetFlow30 = rollingMean(this.data.slice(-30), netFlowAt);
 
                 // All-time high of combined NSE+BSE outstanding.
                 let athVal = 0, athDate = null, athIdx = -1;
@@ -1692,9 +1707,13 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ? { text: `${ratio >= ratioPrev ? '+' : '−'}${Math.abs(ratio - ratioPrev).toFixed(2)}× vs prev day`,
                                 cls: deltaCls(ratio, ratioPrev) }
                             : null),
-                    card('Avg Daily Inflow (30d)',
-                         avgInflow30 != null ? fmtINR(avgInflow30) : '—',
-                         'Trailing 30 trading days', 'TOTAL'),
+                    card('Avg Daily Net Flow (30d)',
+                         avgNetFlow30 != null
+                            ? `${avgNetFlow30 >= 0 ? '+' : '−'}${fmtINR(Math.abs(avgNetFlow30))}`
+                            : '—',
+                         'Trailing 30 trading days · inflow − outflow', 'TOTAL',
+                         null,
+                         'Average daily NET flow (fresh − closed) over the last 30 trading days. Reconciles with the 30-day book change: avg × ~30 ≈ Total Outstanding’s 30-day delta. Gross inflow alone (~₹5K Cr/day on NSE+BSE) is much larger but is almost entirely offset by daily closures.'),
 
                     // ───── Row 5 — Time / historical context ─────
                     card('All-Time High', fmtINR(athVal),
@@ -1718,7 +1737,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ? `${diff30 >= 0 ? '▲' : '▼'} ${Math.abs((diff30 / total30Ago) * 100).toFixed(2)}%`
                             : null;
                         return card('30-Day Change', valStr,
-                            row30Ago ? `30 trading days · vs ${fmtDate(row30Ago.date)}` : '—',
+                            row30Ago ? `vs ${fmtDate(row30Ago.date)} (≈ 30 calendar days ago)` : '—',
                             'TOTAL',
                             pctStr ? { text: pctStr, cls: deltaCls(diff30, 0) } : null);
                     })(),
