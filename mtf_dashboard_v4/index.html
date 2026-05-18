@@ -69,47 +69,47 @@
 [data-fs-root="bse"]:fullscreen .stock-chart-container{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 180px)}
 [data-fs-root="nse"]:fullscreen .stock-chart-wrap,
 [data-fs-root="bse"]:fullscreen .stock-chart-wrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
-/* Stat card tooltip — replaces native title= so wide explanations don't get
-   truncated by the OS. Pseudo-element bubble with proper wrapping. */
-.stat[data-tip]{position:relative}
-.stat-tip-icon{font-size:.6rem;opacity:.4;margin-left:.3rem;vertical-align:baseline;transition:opacity .15s ease,color .15s ease}
-.stat[data-tip]:hover .stat-tip-icon{opacity:.9;color:var(--primary)}
-.stat[data-tip]:hover::after{
-  content:attr(data-tip);
-  position:absolute;
-  top:calc(100% + 10px);
-  left:50%;
-  transform:translateX(-50%);
+/* Stat card tooltip — the parent .stats-grid has overflow:hidden (needed
+   for the rounded corners), so we can't rely on a pseudo-element bubble
+   on each card. A single floating popover element gets appended to <body>
+   by JS on hover, positioned via getBoundingClientRect — escapes any
+   ancestor clipping. The icon next to the label hints that the card has
+   extra info on hover. */
+.stat-tip-icon{font-size:.6rem;opacity:.45;margin-left:.3rem;vertical-align:baseline;transition:opacity .15s ease,color .15s ease;cursor:help}
+.stat[data-tip]{cursor:help}
+.stat[data-tip]:hover .stat-tip-icon{opacity:.95;color:var(--primary)}
+.card-tip-popover{
+  position:fixed;
+  z-index:200;
   background:var(--card);
   color:var(--foreground);
   border:1px solid var(--border);
-  padding:.7rem .9rem;
   border-radius:10px;
+  padding:.7rem .9rem;
   font-size:.74rem;
   font-weight:500;
-  white-space:normal;
   width:max-content;
   max-width:340px;
-  z-index:100;
-  pointer-events:none;
   box-shadow:var(--shadow-large);
   line-height:1.5;
   letter-spacing:normal;
   text-transform:none;
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(-4px);
+  transition:opacity .12s ease,transform .12s ease;
+  white-space:normal;
 }
-.stat[data-tip]:hover::before{
+.card-tip-popover.visible{opacity:1;transform:translateY(0)}
+.card-tip-popover::before{
   content:'';
   position:absolute;
-  top:100%;
   left:50%;
   transform:translateX(-50%);
-  margin-top:4px;
-  width:0;height:0;
   border:6px solid transparent;
-  border-bottom-color:var(--border);
-  z-index:101;
-  pointer-events:none;
 }
+.card-tip-popover.below::before{top:-12px;border-bottom-color:var(--border)}
+.card-tip-popover.above::before{bottom:-12px;border-top-color:var(--border)}
 @media(max-width:640px){.tab-btn .tab-icon{display:none}}
 /* Theme toggle icon visibility — driven by body[data-theme] so it survives
    Font Awesome's <i>→<svg> replacement (which detaches the captured node
@@ -970,6 +970,57 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 });
             }
 
+            // Idempotent: one floating tooltip element lives in <body> for
+            // the whole session. Hover events are delegated from document so
+            // it works for cards rendered before or after this runs.
+            _setupCardTooltips() {
+                if (this._cardTipBound) return;
+                this._cardTipBound = true;
+                let tip = null;
+                const ensureTip = () => {
+                    if (!tip) {
+                        tip = document.createElement('div');
+                        tip.className = 'card-tip-popover';
+                        document.body.appendChild(tip);
+                    }
+                    return tip;
+                };
+                const show = (target) => {
+                    const text = target.getAttribute('data-tip');
+                    if (!text) return;
+                    const el = ensureTip();
+                    el.textContent = text;
+                    // Show first so layout sizes correctly before positioning.
+                    el.classList.add('visible');
+                    const r = target.getBoundingClientRect();
+                    const tipR = el.getBoundingClientRect();
+                    const margin = 8;
+                    // Horizontal: centered on the card, clamped to viewport.
+                    const cardCenter = r.left + r.width / 2;
+                    let left = cardCenter - tipR.width / 2;
+                    left = Math.max(margin, Math.min(window.innerWidth - tipR.width - margin, left));
+                    // Vertical: below by default; flip above if no room.
+                    const spaceBelow = window.innerHeight - r.bottom;
+                    const above = spaceBelow < tipR.height + 16 && r.top > tipR.height + 16;
+                    const top = above ? (r.top - tipR.height - 10) : (r.bottom + 10);
+                    el.style.left = `${left}px`;
+                    el.style.top  = `${top}px`;
+                    el.classList.toggle('above', above);
+                    el.classList.toggle('below', !above);
+                };
+                const hide = () => { if (tip) tip.classList.remove('visible'); };
+                document.addEventListener('pointerover', (e) => {
+                    const card = e.target.closest && e.target.closest('.stat[data-tip]');
+                    if (card) show(card);
+                });
+                document.addEventListener('pointerout', (e) => {
+                    const card = e.target.closest && e.target.closest('.stat[data-tip]');
+                    if (card && !card.contains(e.relatedTarget)) hide();
+                });
+                window.addEventListener('scroll', hide, { passive: true });
+                window.addEventListener('resize', hide);
+            }
+
             _wireHoverLegend(chart, getSeries, legendEl) {
                 const renderLatest = () => {
                     const list = getSeries();
@@ -1099,6 +1150,13 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             setupEventListeners() {
                 document.getElementById('updateChart').addEventListener('click', () => this.updateChart());
                 document.getElementById('downloadCSV').addEventListener('click', () => this.downloadCSV());
+
+                // Stat-card hover tooltip. A single floating popover in <body>
+                // sidesteps .stats-grid's overflow:hidden (kept for the rounded
+                // border) and any other ancestor clipping. Positions itself
+                // below the hovered card by default; flips above when there's
+                // not enough room. Clamps inside the viewport horizontally.
+                this._setupCardTooltips();
 
                 // Overview chart timeframe (1M/3M/6M/1Y/ALL) — scoped to the Overview
                 // panel so it doesn't collide with the Market Changes filter pills
