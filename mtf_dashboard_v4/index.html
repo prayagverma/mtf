@@ -167,6 +167,7 @@
 .heatmap-legend .heatmap-cell:hover{transform:none}
 .heatmap-stats{display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap;font-size:.72rem;color:var(--muted-foreground);font-weight:600;font-variant-numeric:tabular-nums}
 .heatmap-stat{white-space:nowrap}
+.heatmap-stats [data-tip]{cursor:help}
 .heatmap-stat strong{color:var(--foreground);font-weight:700}
 .heatmap-stat .up{color:var(--positive)}
 .heatmap-stat .down{color:var(--negative)}
@@ -2401,16 +2402,23 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 flushRun();
 
                 const fmtSum = (v) => `${v >= 0 ? '+' : '−'}${fmtINR(Math.abs(v))}`;
+                const tipUp = `${upCount} trading days in the past 52 weeks where the combined NSE+BSE book grew vs the previous day. Cumulative gain across those days: ${fmtSum(upSum)}.`;
+                const tipDown = `${downCount} trading days in the past 52 weeks where the combined NSE+BSE book shrank vs the previous day. Cumulative loss across those days: ${fmtSum(downSum)}.`;
                 tallies.innerHTML = `
-                    <span class="up"><strong>▲ ${upCount}</strong> up · ${fmtSum(upSum)}</span>
+                    <span class="up" data-tip="${esc(tipUp)}"><strong>▲ ${upCount}</strong> up · ${fmtSum(upSum)}</span>
                     <span class="sep">·</span>
-                    <span class="down"><strong>▼ ${downCount}</strong> down · ${fmtSum(downSum)}</span>
+                    <span class="down" data-tip="${esc(tipDown)}"><strong>▼ ${downCount}</strong> down · ${fmtSum(downSum)}</span>
                 `;
 
                 const fmtStreak = (s, dir) => {
-                    if (!s.len) return `${dir} —`;
                     const arrow = dir === '↑' ? 'up' : 'down';
-                    return `<span class="${arrow}"><strong>${dir} ${s.len}d</strong></span> · ${fmtDate(s.start)} → ${fmtDate(s.end)}`;
+                    const longLabel = dir === '↑' ? 'up' : 'down';
+                    if (!s.len) {
+                        const tip = `No ${longLabel} streak detected in the past 52 weeks.`;
+                        return `<span class="${arrow}" data-tip="${esc(tip)}">${dir} —</span>`;
+                    }
+                    const tip = `Longest ${longLabel}-day streak in the past 52 weeks: ${s.len} consecutive trading days, ${fmtDate(s.start)} → ${fmtDate(s.end)} (combined NSE+BSE book ${longLabel === 'up' ? 'grew' : 'shrank'} every day in that window).`;
+                    return `<span data-tip="${esc(tip)}"><span class="${arrow}"><strong>${dir} ${s.len}d</strong></span> · ${fmtDate(s.start)} → ${fmtDate(s.end)}</span>`;
                 };
                 streaks.innerHTML = `
                     ${fmtStreak(longest.up,   '↑')}
