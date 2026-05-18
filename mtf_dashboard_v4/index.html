@@ -73,6 +73,34 @@
 [data-fs-root="bse"]:fullscreen .stock-chart-container{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 180px)}
 [data-fs-root="nse"]:fullscreen .stock-chart-wrap,
 [data-fs-root="bse"]:fullscreen .stock-chart-wrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+/* Stock-size distribution histogram (Overview tab, below the heatmap). */
+.histogram-panel{padding:1rem 1.1rem}
+.histogram-header{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.85rem;flex-wrap:wrap}
+.histogram-title{font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
+.histogram-meta{font-size:.7rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.histogram-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.6rem;align-items:end;height:200px}
+.histogram-bar{display:flex;flex-direction:column;align-items:center;gap:.3rem;height:100%;min-width:0}
+.histogram-count{font-size:.74rem;font-weight:800;color:var(--foreground);letter-spacing:-.01em;font-variant-numeric:tabular-nums}
+.histogram-bars{display:flex;align-items:flex-end;gap:3px;flex:1 1 auto;width:100%;min-height:0}
+.histogram-sub{flex:1;border-radius:4px 4px 0 0;min-height:2px;transition:opacity .15s,filter .15s;cursor:default}
+.histogram-sub:hover{filter:brightness(1.1)}
+.histogram-sub.nse{background:var(--nse-color)}
+.histogram-sub.bse{background:var(--bse-color)}
+.histogram-label{font-size:.72rem;font-weight:700;color:var(--foreground)}
+.histogram-range{font-size:.64rem;color:var(--muted-foreground);font-weight:600;text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
+.histogram-legend{display:flex;align-items:center;gap:.4rem;margin-top:.7rem;font-size:.7rem;color:var(--muted-foreground);font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.histogram-legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px}
+.histogram-legend-swatch.nse{background:var(--nse-color)}
+.histogram-legend-swatch.bse{background:var(--bse-color)}
+.histogram-legend>*+*{margin-left:.05rem}
+.histogram-legend>span:nth-child(2){margin-right:.85rem}
+/* Stock-list sparklines — tiny inline 30-day trend per row. */
+.stock-sparkline{display:inline-flex;width:80px;height:24px;align-items:center;justify-content:center;margin-right:.5rem;flex-shrink:0;color:var(--muted-foreground)}
+.stock-sparkline svg.sl{display:block;width:100%;height:100%}
+.stock-sparkline.sl-up   svg.sl polyline{stroke:var(--positive)}
+.stock-sparkline.sl-down svg.sl polyline{stroke:var(--negative)}
+.stock-sparkline.sl-flat svg.sl polyline{stroke:var(--muted-foreground);opacity:.7}
+@media(max-width:640px){.stock-sparkline{display:none}}
 /* GitHub-style daily activity heatmap (Overview tab, below the stat grid). */
 .heatmap-panel{padding:1rem 1.1rem}
 .heatmap-header{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
@@ -239,6 +267,21 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             <span>More</span>
                         </div>
                         <div class="heatmap-pinned" id="heatmapPinned" aria-live="polite">Click any day to pin its details here</div>
+                    </div>
+                </section>
+
+                <!-- Stock-size distribution histogram. Buckets every active
+                     stock by its latest amount_financed (NSE + BSE side-by-
+                     side per bucket) to reveal the long-tail of the MTF book. -->
+                <section class="panel histogram-panel" aria-label="Stock size distribution">
+                    <div class="histogram-header">
+                        <div class="histogram-title">Stock Size Distribution</div>
+                        <div class="histogram-meta" id="histogramMeta">Active securities by latest amount financed</div>
+                    </div>
+                    <div class="histogram-grid" id="histogramGrid"></div>
+                    <div class="histogram-legend">
+                        <span class="histogram-legend-swatch nse"></span><span>NSE</span>
+                        <span class="histogram-legend-swatch bse"></span><span>BSE</span>
                     </div>
                 </section>
 
@@ -2180,6 +2223,56 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
 
                 // Render the GitHub-style activity heatmap below the cards.
                 this.renderActivityHeatmap();
+                // Render the stock-size distribution histogram below the heatmap.
+                this.renderStockSizeHistogram();
+            }
+
+            /* ─── #5 Stock-size distribution histogram ─── */
+            renderStockSizeHistogram() {
+                const grid = document.getElementById('histogramGrid');
+                const idx  = this.dataLoader.baseData?.stock_index;
+                if (!grid || !idx) return;
+
+                const buckets = [
+                    { label: 'Micro', lo: 0,       hi: 100,      range: '< ₹1 Cr',    nse: 0, bse: 0 },
+                    { label: 'Small', lo: 100,     hi: 1000,     range: '₹1–10 Cr',   nse: 0, bse: 0 },
+                    { label: 'Mid',   lo: 1000,    hi: 10000,    range: '₹10–100 Cr', nse: 0, bse: 0 },
+                    { label: 'Large', lo: 10000,   hi: 100000,   range: '₹100–1K Cr', nse: 0, bse: 0 },
+                    { label: 'Mega',  lo: 100000,  hi: Infinity, range: '> ₹1K Cr',   nse: 0, bse: 0 },
+                ];
+
+                for (const [key, info] of Object.entries(idx)) {
+                    // Skip the BSE:/NSE: compound dual-listed keys so a single
+                    // dual-listed stock isn't double-counted across exchanges.
+                    if (key.includes(':')) continue;
+                    const a  = info.latest_amount || 0;
+                    const ex = (info.exchange || '').toUpperCase();
+                    for (const b of buckets) {
+                        if (a >= b.lo && a < b.hi) {
+                            if      (ex === 'NSE') b.nse++;
+                            else if (ex === 'BSE') b.bse++;
+                            break;
+                        }
+                    }
+                }
+
+                const maxTotal = Math.max(...buckets.map(b => b.nse + b.bse), 1);
+                grid.innerHTML = buckets.map(b => {
+                    const total = b.nse + b.bse;
+                    const nsePct = (b.nse / maxTotal) * 100;
+                    const bsePct = (b.bse / maxTotal) * 100;
+                    const nseTip = `${b.label} · NSE — ${fmtCount(b.nse)} stocks (${b.range})`;
+                    const bseTip = `${b.label} · BSE — ${fmtCount(b.bse)} stocks (${b.range})`;
+                    return `<div class="histogram-bar">
+                        <div class="histogram-count">${fmtCount(total)}</div>
+                        <div class="histogram-bars">
+                            <div class="histogram-sub nse" style="height:${nsePct.toFixed(2)}%" data-tip="${esc(nseTip)}"></div>
+                            <div class="histogram-sub bse" style="height:${bsePct.toFixed(2)}%" data-tip="${esc(bseTip)}"></div>
+                        </div>
+                        <div class="histogram-label">${b.label}</div>
+                        <div class="histogram-range">${b.range}</div>
+                    </div>`;
+                }).join('');
             }
 
             // Daily-activity heatmap — one cell per calendar day in the
@@ -2453,6 +2546,72 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             // Small chart-line icon button rendered in stock-list rows. Click
             // loads that stock into the tab's top chart (wired by
             // _wireChartLinks via event delegation).
+            // Tiny inline 30-day sparkline placeholder. The actual SVG is
+            // drawn asynchronously by _fillSparklines() once the relevant
+            // stock-data chunks have loaded.
+            _sparklineSlot(key, exchange) {
+                const safeKey = String(key || '').replace(/"/g, '&quot;');
+                const safeEx  = (exchange || '').toLowerCase();
+                return `<span class="stock-sparkline" data-sl-key="${safeKey}" data-sl-ex="${safeEx}" aria-hidden="true"></span>`;
+            }
+
+            // Render an SVG sparkline of a stock's last 30 trading days
+            // (using amount_financed). Returns the SVG markup; caller injects.
+            _renderSparkline(series, width=80, height=24, pad=2) {
+                if (!series || series.length < 2) return '';
+                const min = Math.min(...series.map(p => p.value));
+                const max = Math.max(...series.map(p => p.value));
+                const range = max - min || 1;
+                const dx = (width - 2*pad) / (series.length - 1);
+                const pts = series.map((p, i) => {
+                    const x = pad + i * dx;
+                    const y = pad + (height - 2*pad) * (1 - (p.value - min) / range);
+                    return `${x.toFixed(1)},${y.toFixed(1)}`;
+                }).join(' ');
+                return `<svg class="sl" viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" aria-hidden="true"><polyline fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" points="${pts}"/></svg>`;
+            }
+
+            // Look at every .stock-sparkline placeholder inside `container`,
+            // batch the required chunk loads, then draw an SVG into each.
+            async _fillSparklines(container) {
+                if (!container) return;
+                const slots = Array.from(container.querySelectorAll('.stock-sparkline[data-sl-key]'));
+                if (!slots.length) return;
+                const idx = this.dataLoader.baseData?.stock_index || {};
+                // Resolve each slot's actual stock_index key and required chunk.
+                const resolved = slots.map(slot => {
+                    const k = slot.dataset.slKey;
+                    const ex = (slot.dataset.slEx || '').toUpperCase();
+                    // For BSE list rows, the data key may be a numeric scrip
+                    // code that needs symbol-based lookup. _findStockKey
+                    // already handles the (symbol, exchange) → chunk_key map.
+                    const lookupKey = idx[k] ? k : this._findStockKey(k, ex);
+                    return { slot, lookupKey, info: idx[lookupKey] };
+                });
+                const chunks = new Set();
+                for (const r of resolved) {
+                    if (r.info && r.info.chunk_number) chunks.add(r.info.chunk_number);
+                }
+                if (chunks.size) {
+                    await Promise.all([...chunks].map(n => this.dataLoader.loadStockChunk(n)));
+                }
+                // Draw — last 30 trading rows; classify trend direction.
+                for (const r of resolved) {
+                    const data = this.dataLoader.getStockData(r.lookupKey);
+                    if (!data || data.length < 2) continue;
+                    const tail = data.slice(-30).filter(d => d.amount_financed > 0);
+                    if (tail.length < 2) continue;
+                    const series = tail.map(d => ({ time: d.date, value: d.amount_financed }));
+                    const first = series[0].value, last = series.at(-1).value;
+                    const dir = last > first * 1.005 ? 'sl-up'
+                              : last < first * 0.995 ? 'sl-down' : 'sl-flat';
+                    r.slot.classList.add(dir);
+                    r.slot.innerHTML = this._renderSparkline(series);
+                    r.slot.setAttribute('data-tip',
+                        `${tail.length}-day trend · ${series[0].time} → ${series.at(-1).time}`);
+                }
+            }
+
             _chartLinkBtn(symbol, exchange, scope) {
                 const safe = String(symbol || '').replace(/"/g, '&quot;');
                 // scope = the chart container to load into (nse | bse | cross | changes).
@@ -2550,6 +2709,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
                                         <div class="stock-exchange exchange-nse">NSE</div>
+                                        ${this._sparklineSlot(stock.symbol, 'nse')}
                                         ${this._chartLinkBtn(stock.symbol, 'nse')}
                                     </div>
                                 </div>
@@ -2586,6 +2746,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtCount(stock.qty_financed)}</div>
                                         <div class="stock-exchange exchange-nse">QTY</div>
+                                        ${this._sparklineSlot(stock.symbol, 'nse')}
                                         ${this._chartLinkBtn(stock.symbol, 'nse')}
                                     </div>
                                 </div>
@@ -2594,6 +2755,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     </div>
                 `;
                 this._wireChartLinks(grid, 'nse');
+                this._fillSparklines(grid);
             }
 
             populateBSEStocks(bseData) {
@@ -2622,6 +2784,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
                                         <div class="stock-exchange exchange-bse">BSE</div>
+                                        ${this._sparklineSlot(stock.symbol, 'bse')}
                                         ${this._chartLinkBtn(stock.symbol, 'bse')}
                                     </div>
                                 </div>
@@ -2658,6 +2821,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtCount(stock.qty_financed)}</div>
                                         <div class="stock-exchange exchange-bse">QTY</div>
+                                        ${this._sparklineSlot(stock.symbol, 'bse')}
                                         ${this._chartLinkBtn(stock.symbol, 'bse')}
                                     </div>
                                 </div>
@@ -2666,6 +2830,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     </div>
                 `;
                 this._wireChartLinks(grid, 'bse');
+                this._fillSparklines(grid);
             }
 
             populateCrossExchange(crossExchangeData) {
@@ -2688,6 +2853,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                         <div><strong>Total: ${fmtINR(stock.total_funding || 0)}</strong></div>
                                     </div>
                                     <div class="stock-metrics">
+                                        ${this._sparklineSlot(stock.symbol, 'nse')}
                                         ${this._chartLinkBtn(stock.symbol, 'nse', 'cross')}
                                     </div>
                                 </div>
@@ -2696,6 +2862,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     </div>
                 `;
                 this._wireChartLinks(grid, 'cross');
+                this._fillSparklines(grid);
                 this._loadDefaultScopeChartIfNeeded('cross');
             }
 
@@ -2788,6 +2955,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                             </div>
                                             ${stock.prev_iter_change_percent != null ? `<div class="stock-exchange prev-iter-badge ${prevPctClass}" title="Same swing computed against the window ending one day earlier">${fmtPctChange(stock.prev_iter_change_percent)}</div>` : ''}
                                         </div>
+                                        ${this._sparklineSlot(stock.symbol, exLower)}
                                         ${this._chartLinkBtn(stock.symbol, exLower, 'changes')}
                                     </div>
                                 </div>`;
@@ -2804,6 +2972,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     });
                 });
                 this._wireChartLinks(grid, 'changes');
+                this._fillSparklines(grid);
                 this._loadDefaultScopeChartIfNeeded('changes');
             }
 
