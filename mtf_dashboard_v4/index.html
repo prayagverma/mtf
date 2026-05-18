@@ -78,15 +78,18 @@
 .heatmap-header{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
 .heatmap-title{font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
 .heatmap-meta{font-size:.7rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
-.heatmap-canvas{display:flex;flex-direction:column;gap:.3rem;overflow-x:auto;overflow-y:hidden;padding-bottom:.2rem}
-.heatmap-month-labels{display:grid;grid-auto-flow:column;grid-auto-columns:12px;column-gap:3px;height:14px;font-size:.68rem;color:var(--muted-foreground);font-weight:600;padding-left:30px;letter-spacing:.04em}
-.heatmap-month-labels span{white-space:nowrap;line-height:14px}
-.heatmap-body{display:flex;gap:.35rem}
-.heatmap-dow-labels{display:grid;grid-template-rows:repeat(7,12px);row-gap:3px;width:26px;font-size:.62rem;color:var(--muted-foreground);font-weight:600;align-items:center;line-height:12px}
-.heatmap-grid{display:grid;grid-template-rows:repeat(7,12px);grid-auto-flow:column;grid-auto-columns:12px;column-gap:3px;row-gap:3px}
-.heatmap-cell{width:12px;height:12px;border-radius:2px;background:var(--heatmap-0);cursor:default;transition:transform .12s ease}
-.heatmap-cell:hover{transform:scale(1.4)}
+.heatmap-canvas{display:flex;flex-direction:column;gap:.3rem;padding-bottom:.2rem}
+.heatmap-month-labels{display:grid;grid-template-columns:repeat(53,1fr);column-gap:3px;height:14px;font-size:.68rem;color:var(--muted-foreground);font-weight:600;padding-left:30px;letter-spacing:.04em}
+.heatmap-month-labels span{white-space:nowrap;line-height:14px;align-self:end}
+.heatmap-body{display:flex;gap:.35rem;align-items:stretch}
+.heatmap-dow-labels{display:grid;grid-template-rows:repeat(7,1fr);row-gap:3px;width:26px;font-size:.62rem;color:var(--muted-foreground);font-weight:600;align-items:center;line-height:1}
+/* Grid stretches to container width — cells are square-ish via aspect-ratio
+   tied to the 53-week × 7-day shape. */
+.heatmap-grid{display:grid;grid-template-columns:repeat(53,1fr);grid-template-rows:repeat(7,1fr);grid-auto-flow:column;column-gap:3px;row-gap:3px;flex:1 1 auto;aspect-ratio:53 / 7}
+.heatmap-cell{border-radius:3px;background:var(--heatmap-0);cursor:pointer;transition:transform .12s ease,outline-color .12s ease;outline:2px solid transparent;outline-offset:1px}
+.heatmap-cell:hover{transform:scale(1.4);z-index:2;position:relative}
 .heatmap-cell.empty{background:var(--heatmap-0)}
+.heatmap-cell.placeholder{visibility:hidden;cursor:default}
 .heatmap-cell.up-1{background:var(--heatmap-up-1)}
 .heatmap-cell.up-2{background:var(--heatmap-up-2)}
 .heatmap-cell.up-3{background:var(--heatmap-up-3)}
@@ -95,9 +98,15 @@
 .heatmap-cell.down-2{background:var(--heatmap-down-2)}
 .heatmap-cell.down-3{background:var(--heatmap-down-3)}
 .heatmap-cell.down-4{background:var(--heatmap-down-4)}
-.heatmap-legend{display:flex;align-items:center;gap:.35rem;margin-top:.7rem;font-size:.7rem;color:var(--muted-foreground);font-weight:600}
-.heatmap-legend .heatmap-cell{cursor:default}
+.heatmap-cell.selected{outline-color:var(--foreground);z-index:3;position:relative}
+.heatmap-footer{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.7rem;flex-wrap:wrap}
+.heatmap-legend{display:flex;align-items:center;gap:.35rem;font-size:.7rem;color:var(--muted-foreground);font-weight:600}
+.heatmap-legend .heatmap-cell{width:11px;height:11px;cursor:default}
 .heatmap-legend .heatmap-cell:hover{transform:none}
+.heatmap-pinned{font-size:.76rem;color:var(--muted-foreground);font-weight:600;font-variant-numeric:tabular-nums;text-align:right}
+.heatmap-pinned strong{color:var(--foreground);font-weight:700}
+.heatmap-pinned .up{color:var(--positive)}
+.heatmap-pinned .down{color:var(--negative)}
 /* Stat card tooltip — the parent .stats-grid has overflow:hidden (needed
    for the rounded corners), so we can't rely on a pseudo-element bubble
    on each card. A single floating popover element gets appended to <body>
@@ -219,14 +228,17 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             <div class="heatmap-grid" id="heatmapGrid" role="img" aria-label="Daily activity heatmap — trailing 52 weeks"></div>
                         </div>
                     </div>
-                    <div class="heatmap-legend">
-                        <span>Less</span>
-                        <span class="heatmap-cell down-4" aria-hidden="true"></span>
-                        <span class="heatmap-cell down-2" aria-hidden="true"></span>
-                        <span class="heatmap-cell empty"  aria-hidden="true"></span>
-                        <span class="heatmap-cell up-2"   aria-hidden="true"></span>
-                        <span class="heatmap-cell up-4"   aria-hidden="true"></span>
-                        <span>More</span>
+                    <div class="heatmap-footer">
+                        <div class="heatmap-legend">
+                            <span>Less</span>
+                            <span class="heatmap-cell down-4" aria-hidden="true"></span>
+                            <span class="heatmap-cell down-2" aria-hidden="true"></span>
+                            <span class="heatmap-cell empty"  aria-hidden="true"></span>
+                            <span class="heatmap-cell up-2"   aria-hidden="true"></span>
+                            <span class="heatmap-cell up-4"   aria-hidden="true"></span>
+                            <span>More</span>
+                        </div>
+                        <div class="heatmap-pinned" id="heatmapPinned" aria-live="polite">Click any day to pin its details here</div>
                     </div>
                 </section>
 
@@ -2214,7 +2226,10 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 const backToMon = (startDow + 6) % 7;    // Mon→0, Sun→6
                 start.setDate(start.getDate() - backToMon);
 
-                // 4) Build cells, column-major (week-major).
+                // 4) Build cells, column-major (week-major). Emit every grid
+                //    slot — out-of-window dates get a hidden placeholder so
+                //    the column alignment stays intact (grid-auto-flow:column
+                //    would otherwise pull subsequent cells into empty slots).
                 grid.innerHTML = '';
                 months.innerHTML = '';
                 const monthShort = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -2224,13 +2239,16 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     for (let r = 0; r < 7; r++) {
                         const d = new Date(start);
                         d.setDate(start.getDate() + w * 7 + r);
-                        if (d > endOfWeek) continue;
-                        const ds = d.toISOString().slice(0, 10);
-                        const chg = changes.has(ds) ? changes.get(ds) : null;
                         const cell = document.createElement('span');
-                        cell.className = 'heatmap-cell ' + bucket(chg);
-                        cell.dataset.date   = ds;
-                        cell.dataset.change = chg == null ? '' : String(chg);
+                        if (d > endOfWeek || d < start) {
+                            cell.className = 'heatmap-cell placeholder';
+                        } else {
+                            const ds = d.toISOString().slice(0, 10);
+                            const chg = changes.has(ds) ? changes.get(ds) : null;
+                            cell.className = 'heatmap-cell ' + bucket(chg);
+                            cell.dataset.date   = ds;
+                            cell.dataset.change = chg == null ? '' : String(chg);
+                        }
                         frag.appendChild(cell);
                     }
                     // Month label whenever the column's first day is in days 1–7.
@@ -2246,12 +2264,11 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 }
                 grid.appendChild(frag);
 
-                // 5) Tooltip wiring — set data-tip on hover so the existing
-                //    body-level floating tooltip picks it up. Cheap delegated
-                //    handler; runs once per render.
+                // 5) Tooltip + click-to-pin wiring. Bound once per page.
                 if (!grid._tipBound) {
                     grid._tipBound = true;
                     const wkdShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+                    const pinned = document.getElementById('heatmapPinned');
                     grid.addEventListener('pointerover', (e) => {
                         const c = e.target.closest('.heatmap-cell');
                         if (!c || !c.dataset.date) return;
@@ -2261,6 +2278,25 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         c.setAttribute('data-tip', chg == null
                             ? `${dow}, ${fmtDate(ds)} · No trading`
                             : `${dow}, ${fmtDate(ds)} · ${chg >= 0 ? '▲ +' : '▼ −'}${fmtINR(Math.abs(chg))}`);
+                    });
+                    // Click pins the cell's details into the footer until the
+                    // next click. Also highlights the chosen cell.
+                    grid.addEventListener('click', (e) => {
+                        const c = e.target.closest('.heatmap-cell');
+                        if (!c || !c.dataset.date) return;
+                        grid.querySelectorAll('.heatmap-cell.selected').forEach(x => x.classList.remove('selected'));
+                        c.classList.add('selected');
+                        if (!pinned) return;
+                        const ds = c.dataset.date;
+                        const chg = c.dataset.change ? Number(c.dataset.change) : null;
+                        const dow = wkdShort[new Date(ds + 'T00:00:00').getDay()];
+                        if (chg == null) {
+                            pinned.innerHTML = `<strong>${dow}, ${fmtDate(ds)}</strong> · No trading`;
+                        } else {
+                            const cls  = chg >= 0 ? 'up' : 'down';
+                            const sign = chg >= 0 ? '▲ +' : '▼ −';
+                            pinned.innerHTML = `<strong>${dow}, ${fmtDate(ds)}</strong> · <span class="${cls}">${sign}${fmtINR(Math.abs(chg))}</span>`;
+                        }
                     });
                 }
             }
