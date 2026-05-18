@@ -1875,7 +1875,6 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     const vals = rows.map(getter).filter(v => v != null);
                     return vals.length ? vals.reduce((a, b) => a + b, 0) / vals.length : null;
                 };
-                const fmtMul = (v) => (v == null || !isFinite(v)) ? '—' : `${v.toFixed(1)}×`;
                 const fmtPp  = (v) => `${v >= 0 ? '+' : '−'}${Math.abs(v).toFixed(2)} pp`;
 
                 const totalAt    = (r) => r ? ((r.nse_end_outstanding || 0) + (r.bse_end_outstanding || 0)) : 0;
@@ -1920,13 +1919,6 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     ? ((nseLatest.nse_end_outstanding || 0) / totalEnd) * 100 : 0;
                 const sharePctNsePrev = (prevTotalEnd && nsePrev)
                     ? ((nsePrev.nse_end_outstanding || 0) / prevTotalEnd) * 100 : null;
-
-                const ratio = (bseLatest.bse_end_outstanding > 0)
-                    ? (nseLatest.nse_end_outstanding || 0) / bseLatest.bse_end_outstanding
-                    : null;
-                const ratioPrev = (bsePrev && bsePrev.bse_end_outstanding > 0)
-                    ? (nsePrev.nse_end_outstanding || 0) / bsePrev.bse_end_outstanding
-                    : null;
 
                 statsContainer.innerHTML = [
                     card('Total Outstanding', fmtINR(totalEnd),
@@ -2010,12 +2002,6 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                          sharePctNsePrev != null
                             ? { text: `${fmtPp(sharePctNse - sharePctNsePrev)} vs prev day`,
                                 cls: deltaCls(sharePctNse, sharePctNsePrev) }
-                            : null),
-                    card('NSE / BSE Ratio', fmtMul(ratio),
-                         `NSE / BSE outstanding`, 'TOTAL',
-                         (ratio != null && ratioPrev != null)
-                            ? { text: `${ratio >= ratioPrev ? '+' : '−'}${Math.abs(ratio - ratioPrev).toFixed(2)}× vs prev day`,
-                                cls: deltaCls(ratio, ratioPrev) }
                             : null),
                     card('Avg Daily Net Flow (30d)',
                          avgNetFlow30 != null
