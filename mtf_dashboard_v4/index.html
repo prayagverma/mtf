@@ -226,10 +226,14 @@
 .app-footer .status-bar{padding:1rem 0 0;border-top:1px solid var(--border);color:var(--muted-foreground)}
 @media(max-width:768px){.app-footer{padding:0 1rem 1rem}}
 /* Compact sticky header — tab nav inline, lower vertical padding. */
-.app-header-inner{padding-top:.5rem;padding-bottom:.5rem}
+.app-header-inner{padding-top:.5rem;padding-bottom:0;align-items:flex-end;gap:1.25rem}
+.app-header-inner .brand{align-items:center;padding-bottom:.55rem}
+.app-header-inner .header-meta{padding-bottom:.55rem}
 .app-header-inner .tab-navigation{flex:1 1 auto;justify-content:center;border:0;background:transparent;margin:0;align-self:stretch}
-.app-header-inner .tab-btn{padding-top:.65rem;padding-bottom:.65rem;background:transparent}
-.app-header-inner .tab-btn::after{bottom:0}
+.app-header-inner .tab-btn{padding-top:.85rem;padding-bottom:.85rem;background:transparent}
+/* Pull the active-tab indicator down so it sits on the header's bottom
+   border instead of floating mid-air above it. */
+.app-header-inner .tab-btn::after{bottom:-1px}
 /* On narrow viewports, drop the nav to a second row under brand/meta. */
 @media(max-width:900px){
   .app-header-inner{flex-wrap:wrap;row-gap:.25rem}
@@ -263,7 +267,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 <div class="brand">
                     <span class="brand-mark" aria-hidden="true">MTF</span>
                     <span class="brand-text">
-                        <span class="brand-title">Margin Trading Funding</span>
+                        <span class="brand-title">Margin Trade Funding Stats</span>
                         <small>Daily NSE &amp; BSE outstanding, exposure &amp; stock-level activity since 2017</small>
                     </span>
                 </div>
