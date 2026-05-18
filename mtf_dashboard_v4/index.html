@@ -184,14 +184,11 @@
 .card-tip-popover.below::before{top:-12px;border-bottom-color:var(--border)}
 .card-tip-popover.above::before{bottom:-12px;border-top-color:var(--border)}
 @media(max-width:640px){.tab-btn .tab-icon{display:none}}
-/* Tab nav now lives INSIDE the sticky header instead of as a separate
-   row in the main column. Brand sits left, nav fills the middle (with
-   horizontal scroll if it overflows), meta + theme toggle on the right.
-   Active-tab underline still draws at the bottom of the nav buttons,
-   which sits flush with the header's bottom border. */
-.app-header-inner .tab-navigation{flex:1 1 auto;justify-content:center;border-bottom:0;margin:0;align-self:stretch}
-.app-header-inner .tab-btn{padding-top:1.1rem;padding-bottom:1.1rem}
-.app-header-inner .tab-btn::after{bottom:-1px}
+/* Tab nav lives INSIDE the sticky header — no separate background or
+   border bar; the header's own translucent background carries through. */
+.app-header-inner .tab-navigation{flex:1 1 auto;justify-content:center;border:0;background:transparent;margin:0;align-self:stretch}
+.app-header-inner .tab-btn{padding-top:1.1rem;padding-bottom:1.1rem;background:transparent}
+.app-header-inner .tab-btn::after{bottom:0}
 /* On narrow viewports, drop the nav to a second row under brand/meta. */
 @media(max-width:900px){
   .app-header-inner{flex-wrap:wrap;row-gap:.25rem}
@@ -366,7 +363,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         <div class="chart-options">
                             <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" id="smoothLines" checked> Smooth</label>
                             <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" id="logScale"> Log</label>
-                            <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" id="crosshairMagnet"> Magnet</label>
+                            <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" id="crosshairMagnet" checked> Magnet</label>
                             <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" id="showGrid" checked> Grid</label>
                             <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" id="autoScale" checked> Auto-fit Y</label>
                             <button class="chart-icon-btn chart-legend-pos" data-legend-scope="overview" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
@@ -408,7 +405,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     <div class="chart-options stock-chart-options" data-stock-opts="nse">
                         <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
                         <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
-                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet" checked> Magnet</label>
                         <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
                         <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
                         <button class="chart-icon-btn chart-legend-pos" data-legend-scope="nse" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
@@ -451,7 +448,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     <div class="chart-options stock-chart-options" data-stock-opts="bse">
                         <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
                         <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
-                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet" checked> Magnet</label>
                         <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
                         <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
                         <button class="chart-icon-btn chart-legend-pos" data-legend-scope="bse" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
@@ -489,7 +486,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     <div class="chart-options stock-chart-options" data-stock-opts="cross">
                         <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
                         <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
-                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet" checked> Magnet</label>
                         <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
                         <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
                         <button class="chart-icon-btn chart-legend-pos" data-legend-scope="cross" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
@@ -527,7 +524,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     <div class="chart-options stock-chart-options" data-stock-opts="changes">
                         <label class="chart-option" title="Curved (Bezier) line interpolation"><i class="fa-regular fa-bezier-curve" aria-hidden="true"></i><input type="checkbox" data-stock-opt="smooth" checked> Smooth</label>
                         <label class="chart-option" title="Logarithmic price scale"><i class="fa-regular fa-arrow-trend-up" aria-hidden="true"></i><input type="checkbox" data-stock-opt="log"> Log</label>
-                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet"> Magnet</label>
+                        <label class="chart-option" title="Crosshair snaps to data points"><i class="fa-regular fa-magnet" aria-hidden="true"></i><input type="checkbox" data-stock-opt="magnet" checked> Magnet</label>
                         <label class="chart-option" title="Show grid lines"><i class="fa-regular fa-table-cells" aria-hidden="true"></i><input type="checkbox" data-stock-opt="grid" checked> Grid</label>
                         <label class="chart-option" title="Auto-fit Y axis to visible data"><i class="fa-regular fa-arrows-up-down" aria-hidden="true"></i><input type="checkbox" data-stock-opt="autoscale" checked> Auto-fit Y</label>
                         <button class="chart-icon-btn chart-legend-pos" data-legend-scope="changes" type="button" title="Legend position (click to cycle)" aria-label="Legend position"><i class="fa-regular fa-table-list" aria-hidden="true"></i></button>
