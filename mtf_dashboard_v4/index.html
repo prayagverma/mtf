@@ -80,6 +80,26 @@
 [data-fs-root="bse"]:fullscreen .stock-chart-container{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 180px)}
 [data-fs-root="nse"]:fullscreen .stock-chart-wrap,
 [data-fs-root="bse"]:fullscreen .stock-chart-wrap{flex:1 1 auto;display:flex;flex-direction:column;min-height:0}
+/* Reveal animations — minimal but sophisticated. Honors reduced-motion. */
+@keyframes hm-cell-in    { from { opacity: 0; transform: scale(.35); }  to { opacity: 1; transform: scale(1); } }
+@keyframes hist-row-in   { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes hist-bar-grow { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+@media (prefers-reduced-motion: no-preference) {
+  .heatmap-cell:not(.placeholder){
+    animation: hm-cell-in .42s cubic-bezier(.22,.61,.36,1) backwards;
+    animation-delay: calc(var(--c, 0) * 9ms + var(--r, 0) * 2ms);
+  }
+  .histogram-grid > div{
+    animation: hist-row-in .38s cubic-bezier(.16,.84,.32,1) backwards;
+    animation-delay: calc(var(--i, 0) * 55ms);
+  }
+  .histogram-bar-fill{
+    animation: hist-bar-grow .6s cubic-bezier(.16,.84,.32,1) backwards;
+    animation-delay: calc(var(--i, 0) * 55ms + 140ms);
+  }
+  .row-nse .histogram-bar-fill{ transform-origin: right; }
+  .row-bse .histogram-bar-fill{ transform-origin: left; }
+}
 /* Stock-size distribution — horizontal pyramid (NSE-left / BSE-right).
    Each row is a bucket; bar lengths are independently scaled per side so
    the SHAPE of each exchange's distribution is visible regardless of the
@@ -2449,19 +2469,22 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 // 3. Scale each side independently.
                 const nseMax = Math.max(...buckets.map(b => b.nse), 1);
                 const bseMax = Math.max(...buckets.map(b => b.bse), 1);
-                grid.innerHTML = buckets.map(b => {
+                grid.innerHTML = buckets.map((b, i) => {
                     const nsePct = (b.nse / nseMax) * 100;
                     const bsePct = (b.bse / bseMax) * 100;
                     const nseTip = `${b.label} · NSE — ${fmtCount(b.nse)} stocks`;
                     const bseTip = `${b.label} · BSE — ${fmtCount(b.bse)} stocks`;
+                    // --i drives the cascading row + bar-grow reveal animation
+                    // declared in the .histogram-grid / .histogram-bar-fill
+                    // keyframe rules. Top buckets animate first.
                     return `
-                        <div class="row-nse">
+                        <div class="row-nse" style="--i:${i}">
                             <span class="histogram-bar-count">${fmtCount(b.nse)}</span>
-                            <div class="histogram-bar-fill nse" style="width:${nsePct.toFixed(2)}%" data-tip="${esc(nseTip)}"></div>
+                            <div class="histogram-bar-fill nse" style="--i:${i};width:${nsePct.toFixed(2)}%" data-tip="${esc(nseTip)}"></div>
                         </div>
-                        <div class="row-label">${b.label}</div>
-                        <div class="row-bse">
-                            <div class="histogram-bar-fill bse" style="width:${bsePct.toFixed(2)}%" data-tip="${esc(bseTip)}"></div>
+                        <div class="row-label" style="--i:${i}">${b.label}</div>
+                        <div class="row-bse" style="--i:${i}">
+                            <div class="histogram-bar-fill bse" style="--i:${i};width:${bsePct.toFixed(2)}%" data-tip="${esc(bseTip)}"></div>
                             <span class="histogram-bar-count">${fmtCount(b.bse)}</span>
                         </div>
                     `;
@@ -2551,6 +2574,11 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             cell.className = 'heatmap-cell ' + bucket(chg);
                             cell.dataset.date   = ds;
                             cell.dataset.change = chg == null ? '' : String(chg);
+                            // Staggered reveal — wave left-to-right with a
+                            // small per-row drip on top. --c = week column,
+                            // --r = day-of-week row.
+                            cell.style.setProperty('--c', w);
+                            cell.style.setProperty('--r', r);
                         }
                         frag.appendChild(cell);
                     }
