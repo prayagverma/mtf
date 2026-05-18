@@ -217,9 +217,12 @@
 .card-tip-popover.below::before{top:-12px;border-bottom-color:var(--border)}
 .card-tip-popover.above::before{bottom:-12px;border-top-color:var(--border)}
 @media(max-width:640px){.tab-btn .tab-icon{display:none}}
-/* Header brand — title line above a one-line summary. */
-.brand-title{font-size:.88rem;font-weight:800;color:var(--foreground);letter-spacing:-.01em;line-height:1.15}
-.brand-text small{margin-top:1px}
+/* Header brand — title line above a one-line summary. Cap text width
+   so a long summary never pushes the centre nav into overflow scroll. */
+.brand-text{max-width:280px}
+.brand-title{font-size:.88rem;font-weight:800;color:var(--foreground);letter-spacing:-.01em;line-height:1.15;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.brand-text small{margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+@media(max-width:900px){.brand-text{max-width:none}}
 @media(max-width:640px){.brand-text small{display:none}}
 /* Footer (status bar lives here now — was previously inside main). */
 .app-footer{max-width:1280px;margin:0 auto;padding:0 1.5rem 1.5rem}
@@ -268,7 +271,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     <span class="brand-mark" aria-hidden="true">MTF</span>
                     <span class="brand-text">
                         <span class="brand-title">Margin Trade Funding Stats</span>
-                        <small>Daily NSE &amp; BSE outstanding, exposure &amp; stock-level activity since 2017</small>
+                        <small>NSE &amp; BSE · daily MTF data since 2017</small>
                     </span>
                 </div>
                 <nav class="tab-navigation" role="tablist" aria-label="Sections">
