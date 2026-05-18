@@ -629,7 +629,41 @@ class StockMTFExtractor:
             last_dt = _parse(sr[-1]['date'])
             if anchor is None or last_dt > anchor:
                 anchor = last_dt
-        cutoff = (anchor - timedelta(days=WINDOW_DAYS)) if anchor else None
+        cutoff      = (anchor - timedelta(days=WINDOW_DAYS)) if anchor else None
+        # Same algorithm applied to the window ending one day earlier — gives
+        # us "what the Market Changes row WOULD HAVE looked like yesterday"
+        # so the UI can render a side-by-side current-vs-prior comparison.
+        prev_anchor = (anchor - timedelta(days=1))         if anchor else None
+        prev_cutoff = (prev_anchor - timedelta(days=WINDOW_DAYS)) if prev_anchor else None
+
+        # Best-swing helper — single-pass running-min/max scan.
+        def _best_swing(records_window):
+            if len(records_window) < 2:
+                return None
+            first = records_window[0]
+            run_min_val = run_max_val = float(first['amount_financed'])
+            run_min_rec = run_max_rec = first
+            best_pct = 0.0
+            best_from = best_to = None
+            for r in records_window[1:]:
+                cur = float(r['amount_financed'])
+                up = (cur - run_min_val) / run_min_val * 100
+                if abs(up) > abs(best_pct):
+                    best_pct, best_from, best_to = up, run_min_rec, r
+                down = (cur - run_max_val) / run_max_val * 100
+                if abs(down) > abs(best_pct):
+                    best_pct, best_from, best_to = down, run_max_rec, r
+                if cur < run_min_val:
+                    run_min_val, run_min_rec = cur, r
+                if cur > run_max_val:
+                    run_max_val, run_max_rec = cur, r
+            if best_from is None or best_to is None:
+                return None
+            if float(best_from['amount_financed']) < MIN_AMOUNT:
+                return None
+            if abs(best_pct) < MIN_ABS_PCT:
+                return None
+            return (best_to, best_from, best_pct)
 
         # Pass 2: for each (stock, exchange) pair, find the biggest swing
         # inside the window.
@@ -655,52 +689,34 @@ class StockMTFExtractor:
             ]
             if len(in_window_all) < 2:
                 continue
+            # Same filter on the previous (t-1 ending) window.
+            in_prev_all = [
+                r for r in sr
+                if (prev_cutoff is None or (prev_cutoff <= _parse(r['date']) <= prev_anchor))
+                and float(r.get('amount_financed', 0) or 0) > 0
+            ]
 
             by_ex = defaultdict(list)
             for r in in_window_all:
                 by_ex[r.get('exchange') or '?'].append(r)
+            by_ex_prev = defaultdict(list)
+            for r in in_prev_all:
+                by_ex_prev[r.get('exchange') or '?'].append(r)
 
             for ex_name, in_window in by_ex.items():
-                if len(in_window) < 2:
+                cur_swing = _best_swing(in_window)
+                if cur_swing is None:
                     continue
-                first = in_window[0]
-                run_min_val = run_max_val = float(first['amount_financed'])
-                run_min_rec = run_max_rec = first
-
-                best_pct  = 0.0
-                best_from = best_to = None
-                for r in in_window[1:]:
-                    cur = float(r['amount_financed'])
-                    # Increase: cur vs the lowest value seen earlier.
-                    up = (cur - run_min_val) / run_min_val * 100
-                    if abs(up) > abs(best_pct):
-                        best_pct, best_from, best_to = up, run_min_rec, r
-                    # Decrease: cur vs the highest value seen earlier.
-                    down = (cur - run_max_val) / run_max_val * 100
-                    if abs(down) > abs(best_pct):
-                        best_pct, best_from, best_to = down, run_max_rec, r
-                    # Update running extrema AFTER comparison so swings always
-                    # go forward in time (from_date < to_date).
-                    if cur < run_min_val:
-                        run_min_val, run_min_rec = cur, r
-                    if cur > run_max_val:
-                        run_max_val, run_max_rec = cur, r
-
-                if best_from is None or best_to is None:
-                    continue
-                from_val = float(best_from['amount_financed'])
-                to_val   = float(best_to['amount_financed'])
-                # Require the START of the swing to be substantial. Drops the
-                # "stock appeared from dust" false positives without dropping
-                # real spike-downs.
-                if from_val < MIN_AMOUNT:
-                    continue
-                if abs(best_pct) < MIN_ABS_PCT:
-                    continue
-                sudden_changes.append((symbol, best_to, best_from, best_pct))
+                best_to, best_from, best_pct = cur_swing
+                # Same algorithm against the t-1 window — gives the prior
+                # iteration's biggest swing. May be None if that window has
+                # too few records or doesn't pass the size / magnitude filters.
+                prev_swing = _best_swing(by_ex_prev.get(ex_name, []))
+                sudden_changes.append((symbol, best_to, best_from, best_pct, prev_swing))
 
         # Sort: most-recent to_date first, tie-break by abs(change_percent).
         # Lexicographic ISO-8601 date comparison gives chronological order.
+        # Tuple shape now is (symbol, best_to, best_from, best_pct, prev_swing).
         analytics['latest_snapshot']['sudden_changes'] = sorted(
             sudden_changes,
             key=lambda x: (x[1]['date'], abs(x[3])),
@@ -857,8 +873,20 @@ class StockMTFExtractor:
                     'change_percent':  change_pct,
                     'from_date':       prev['date'],
                     'to_date':         latest['date'],
+                    # Same swing computation against the window ending one day
+                    # earlier (anchor − 1 → anchor − 31). Lets the UI render a
+                    # side-by-side "today vs yesterday's snapshot of the same
+                    # 30-day window" comparison. None if the prior window had
+                    # too few records / didn't pass size + magnitude filters.
+                    **({
+                        'prev_iter_amount':           prev_swing[0]['amount_financed'],
+                        'prev_iter_previous_amount':  prev_swing[1]['amount_financed'],
+                        'prev_iter_change_percent':   prev_swing[2],
+                        'prev_iter_from_date':        prev_swing[1]['date'],
+                        'prev_iter_to_date':          prev_swing[0]['date'],
+                    } if prev_swing else {}),
                 }
-                for symbol, latest, prev, change_pct in analytics['latest_snapshot']['sudden_changes']
+                for symbol, latest, prev, change_pct, prev_swing in analytics['latest_snapshot']['sudden_changes']
             ],
             'cross_exchange_stocks': analytics['latest_snapshot']['cross_exchange_stocks'],
             'active_securities': analytics['latest_snapshot']['active_securities'],
