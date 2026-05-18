@@ -197,6 +197,10 @@
 .card-tip-popover.below::before{top:-12px;border-bottom-color:var(--border)}
 .card-tip-popover.above::before{bottom:-12px;border-top-color:var(--border)}
 @media(max-width:640px){.tab-btn .tab-icon{display:none}}
+/* Header brand — title line above a one-line summary. */
+.brand-title{font-size:.88rem;font-weight:800;color:var(--foreground);letter-spacing:-.01em;line-height:1.15}
+.brand-text small{margin-top:1px}
+@media(max-width:640px){.brand-text small{display:none}}
 /* Footer (status bar lives here now — was previously inside main). */
 .app-footer{max-width:1280px;margin:0 auto;padding:0 1.5rem 1.5rem}
 .app-footer .status-bar{padding:1rem 0 0;border-top:1px solid var(--border);color:var(--muted-foreground)}
@@ -239,7 +243,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 <div class="brand">
                     <span class="brand-mark" aria-hidden="true">MTF</span>
                     <span class="brand-text">
-                        <small>NSE &amp; BSE · Margin Trading</small>
+                        <span class="brand-title">Margin Trading Funding</span>
+                        <small>Daily NSE &amp; BSE outstanding, exposure &amp; stock-level activity since 2017</small>
                     </span>
                 </div>
                 <nav class="tab-navigation" role="tablist" aria-label="Sections">
