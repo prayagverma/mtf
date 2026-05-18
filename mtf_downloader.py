@@ -46,7 +46,8 @@ class MTFDownloader:
                 response = self.bse_session.get(self.bse_base_url, timeout=30)
                 if response.status_code == 200:
                     print(f"Successfully visited {exchange} base site")
-                    print(f"BSE Cookies: {self.bse_session.cookies.get_dict()}")
+                    # Cookie dicts intentionally NOT logged — they include
+                    # session tokens that would land in publicly-readable CI logs.
                     time.sleep(self.delay)
                     return True
             else:  # NSE
@@ -59,7 +60,7 @@ class MTFDownloader:
                     response = self.nse_session.get(reports_url, timeout=30)
                     if response.status_code == 200:
                         print(f"Successfully visited {exchange} reports page")
-                        print(f"NSE Cookies: {self.nse_session.cookies.get_dict()}")
+                        # Cookies intentionally NOT logged — see BSE branch above.
                         time.sleep(self.delay)
                         return True
             

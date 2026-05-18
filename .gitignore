@@ -95,6 +95,11 @@ node_modules/
 .aider*
 .history/
 
+# --- Claude Code local settings ----
+# `.local.json` is a user-local override per Claude Code's convention.
+# Permission allowlists and other personal config don't belong in git.
+.claude/settings.local.json
+
 # --- OS cruft ----
 .DS_Store
 .AppleDouble

@@ -24,13 +24,17 @@
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Crect width=%2764%27 height=%2764%27 rx=%2710%27 fill=%27%23000%27/%3E%3Ctext x=%2732%27 y=%2744%27 font-family=%27-apple-system,Inter,sans-serif%27 font-weight=%27900%27 font-size=%2734%27 letter-spacing=%27-2%27 text-anchor=%27middle%27 fill=%27white%27%3EM%3C/text%3E%3Ccircle cx=%2750%27 cy=%2724%27 r=%273%27 fill=%27%232563eb%27/%3E%3C/svg%3E">
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@knadh/oat@0.6.1/oat.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/@knadh/oat@0.6.1/oat.min.js" defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/@knadh/oat@0.6.1/oat.min.js"
+            integrity="sha384-8HmcVM0x1xxqp24p+SnO9TxUAaj2avZd6KxKrGwEq0Dqb9tJiabfApY1DFvQVeu8"
+            crossorigin="anonymous" defer></script>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"
+            integrity="sha384-q1KYLSKHgBnW5tWYGGR8+6YV4/iPy31dILoF2I1OD7XiVUvHEp/TaxIQVmB0j3R2"
+            crossorigin="anonymous"></script>
 
     <!-- Font Awesome Pro Kit (domain-allowlisted to mtf.trading) -->
     <script src="https://kit.fontawesome.com/957d1f8ec0.js" crossorigin="anonymous"></script>
@@ -476,6 +480,14 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             const sign = pct  >= 0 ? '▲' : '▼';
             const absStr = `${diff >= 0 ? '+' : '−'}${fmt(Math.abs(diff))}`;
             return `${sign} ${Math.abs(pct).toFixed(2)}% · ${absStr}`;
+        }
+        // HTML-escape utility for values interpolated into innerHTML template
+        // literals. Stock names/symbols originate from BSE/NSE report files
+        // (third-party content) — defense-in-depth requires encoding even
+        // though regulated exchanges are unlikely to publish XSS payloads.
+        const _ESC_MAP = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+        function esc(s) {
+            return (s == null ? '' : String(s)).replace(/[&<>"']/g, c => _ESC_MAP[c]);
         }
         function fmtDate(ds) {
             if (!ds) return '—';
@@ -1604,14 +1616,14 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     return;
                 }
                 searchResultsDiv.innerHTML = results.map(stock => `
-                    <div class="search-result-item" data-key="${stock.key || stock.symbol}" data-symbol="${stock.symbol}" data-name="${stock.name}" data-exchange="${stock.exchange}">
+                    <div class="search-result-item" data-key="${esc(stock.key || stock.symbol)}" data-symbol="${esc(stock.symbol)}" data-name="${esc(stock.name)}" data-exchange="${esc(stock.exchange)}">
                         <div class="stock-info">
-                            <div class="stock-symbol">${stock.symbol}</div>
-                            <div class="stock-name">${stock.name}</div>
+                            <div class="stock-symbol">${esc(stock.symbol)}</div>
+                            <div class="stock-name">${esc(stock.name)}</div>
                         </div>
                         <div class="stock-metrics">
                             <div class="stock-amount">${fmtINR(stock.latestAmount)}</div>
-                            <div class="stock-exchange exchange-${stock.exchange?.toLowerCase()}">${stock.exchange}</div>
+                            <div class="stock-exchange exchange-${esc(stock.exchange || '').toLowerCase()}">${esc(stock.exchange)}</div>
                         </div>
                     </div>
                 `).join('');
@@ -2341,8 +2353,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ${(nseData.top_funded || []).slice(0, 50).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${stock.symbol}</div>
-                                        <div class="stock-name">${stock.name}</div>
+                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
+                                        <div class="stock-name">${esc(stock.name)}</div>
                                     </div>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
@@ -2377,8 +2389,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ${(nseData.volume_breakers || []).slice(0, 15).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${stock.symbol}</div>
-                                        <div class="stock-name">${stock.name}</div>
+                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
+                                        <div class="stock-name">${esc(stock.name)}</div>
                                     </div>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtCount(stock.qty_financed)}</div>
@@ -2413,8 +2425,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ${(bseData.top_funded || []).slice(0, 50).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${stock.symbol}</div>
-                                        <div class="stock-name">${stock.name}</div>
+                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
+                                        <div class="stock-name">${esc(stock.name)}</div>
                                     </div>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
@@ -2449,8 +2461,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ${(bseData.volume_breakers || []).slice(0, 15).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${stock.symbol}</div>
-                                        <div class="stock-name">${stock.name}</div>
+                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
+                                        <div class="stock-name">${esc(stock.name)}</div>
                                     </div>
                                     <div class="stock-metrics">
                                         <div class="stock-amount">${fmtCount(stock.qty_financed)}</div>
@@ -2476,8 +2488,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             ${crossExchangeData.slice(0, 50).map(stock => `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${stock.symbol}</div>
-                                        <div class="stock-name">${stock.name}</div>
+                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
+                                        <div class="stock-name">${esc(stock.name)}</div>
                                     </div>
                                     <div class="cross-exchange-info">
                                         <div>NSE: ${fmtINR(stock.nse_data?.amount_financed || 0)}</div>
@@ -2569,8 +2581,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                 return `
                                 <div class="stock-item">
                                     <div class="stock-info">
-                                        <div class="stock-symbol">${headline}</div>
-                                        <div class="stock-name">${subline}${window ? ` · ${window}` : ''}</div>
+                                        <div class="stock-symbol">${esc(headline)}</div>
+                                        <div class="stock-name">${esc(subline)}${window ? ` · ${esc(window)}` : ''}</div>
                                     </div>
                                     <div class="stock-metrics">
                                         ${ex ? `<div class="stock-exchange ${exClass}">${ex}</div>` : ''}
