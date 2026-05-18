@@ -184,6 +184,22 @@
 .card-tip-popover.below::before{top:-12px;border-bottom-color:var(--border)}
 .card-tip-popover.above::before{bottom:-12px;border-top-color:var(--border)}
 @media(max-width:640px){.tab-btn .tab-icon{display:none}}
+/* Tab nav now lives INSIDE the sticky header instead of as a separate
+   row in the main column. Brand sits left, nav fills the middle (with
+   horizontal scroll if it overflows), meta + theme toggle on the right.
+   Active-tab underline still draws at the bottom of the nav buttons,
+   which sits flush with the header's bottom border. */
+.app-header-inner .tab-navigation{flex:1 1 auto;justify-content:center;border-bottom:0;margin:0;align-self:stretch}
+.app-header-inner .tab-btn{padding-top:1.1rem;padding-bottom:1.1rem}
+.app-header-inner .tab-btn::after{bottom:-1px}
+/* On narrow viewports, drop the nav to a second row under brand/meta. */
+@media(max-width:900px){
+  .app-header-inner{flex-wrap:wrap;row-gap:.25rem}
+  .app-header-inner .brand{flex:1 1 auto;min-width:0}
+  .app-header-inner .header-meta{order:2}
+  .app-header-inner .tab-navigation{order:3;flex:1 1 100%;justify-content:flex-start;margin-top:.25rem}
+  .app-header-inner .tab-btn{padding-top:.7rem;padding-bottom:.7rem}
+}
 /* Theme toggle icon visibility — driven by body[data-theme] so it survives
    Font Awesome's <i>→<svg> replacement (which detaches the captured node
    references). `body` prefix bumps specificity above FA's .svg-inline--fa. */
@@ -203,7 +219,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
     <!-- Hidden until data loads -->
     <div id="mainContent" style="display: none;">
 
-        <!-- Sticky header -->
+        <!-- Sticky header (brand · tab nav · meta) -->
         <header class="app-header">
             <div class="app-header-inner">
                 <div class="brand">
@@ -212,6 +228,13 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         <small>NSE &amp; BSE · Margin Trading</small>
                     </span>
                 </div>
+                <nav class="tab-navigation" role="tablist" aria-label="Sections">
+                    <button class="tab-btn active" data-tab="overview" role="tab" type="button"><i class="fa-regular fa-gauge-high tab-icon" aria-hidden="true"></i>Overview</button>
+                    <button class="tab-btn" data-tab="nse-stocks" role="tab" type="button"><i class="fa-regular fa-chart-line tab-icon" aria-hidden="true"></i>NSE Stocks</button>
+                    <button class="tab-btn" data-tab="bse-stocks" role="tab" type="button"><i class="fa-regular fa-building-columns tab-icon" aria-hidden="true"></i>BSE Stocks</button>
+                    <button class="tab-btn" data-tab="cross-exchange" role="tab" type="button"><i class="fa-regular fa-arrow-right-arrow-left tab-icon" aria-hidden="true"></i>Cross-Exchange</button>
+                    <button class="tab-btn" data-tab="sudden-changes" role="tab" type="button"><i class="fa-regular fa-bolt tab-icon" aria-hidden="true"></i>Market Changes</button>
+                </nav>
                 <div class="header-meta">
                     <span class="meta-text" id="lastUpdatedText">
                         <span class="live-dot" aria-hidden="true"></span>
@@ -231,15 +254,6 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             <div class="status-bar" id="statusBar">
                 Loading…
             </div>
-
-            <!-- Tab nav -->
-            <nav class="tab-navigation" role="tablist" aria-label="Sections">
-                <button class="tab-btn active" data-tab="overview" role="tab" type="button"><i class="fa-regular fa-gauge-high tab-icon" aria-hidden="true"></i>Overview</button>
-                <button class="tab-btn" data-tab="nse-stocks" role="tab" type="button"><i class="fa-regular fa-chart-line tab-icon" aria-hidden="true"></i>NSE Stocks</button>
-                <button class="tab-btn" data-tab="bse-stocks" role="tab" type="button"><i class="fa-regular fa-building-columns tab-icon" aria-hidden="true"></i>BSE Stocks</button>
-                <button class="tab-btn" data-tab="cross-exchange" role="tab" type="button"><i class="fa-regular fa-arrow-right-arrow-left tab-icon" aria-hidden="true"></i>Cross-Exchange</button>
-                <button class="tab-btn" data-tab="sudden-changes" role="tab" type="button"><i class="fa-regular fa-bolt tab-icon" aria-hidden="true"></i>Market Changes</button>
-            </nav>
 
             <!-- Overview -->
             <section class="tab-content active" id="overview-tab" role="tabpanel">
