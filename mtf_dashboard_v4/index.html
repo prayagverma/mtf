@@ -186,7 +186,16 @@
 .heatmap-panel{padding:1rem 1.1rem}
 .heatmap-header{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.7rem;flex-wrap:wrap}
 .heatmap-title{font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
-.heatmap-meta{font-size:.7rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
+.heatmap-meta{font-size:.7rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em;font-weight:700;display:flex;align-items:baseline;gap:.45rem;flex-wrap:wrap;justify-content:flex-end}
+.heatmap-meta .hw-period{color:var(--muted-foreground)}
+.heatmap-meta .hw-sep{opacity:.5}
+.heatmap-meta .hw-range{color:var(--muted-foreground);font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0;font-size:.78rem;font-weight:600;cursor:help}
+.heatmap-meta .hw-range strong{color:var(--foreground);font-weight:800}
+.heatmap-meta .hw-change{font-variant-numeric:tabular-nums;text-transform:none;letter-spacing:0;font-size:.78rem;font-weight:700}
+.heatmap-meta .hw-change.up   strong{color:var(--positive)}
+.heatmap-meta .hw-change.down strong{color:var(--negative)}
+.heatmap-meta .hw-change.up   {color:var(--positive)}
+.heatmap-meta .hw-change.down {color:var(--negative)}
 .heatmap-canvas{display:flex;flex-direction:column;gap:.3rem;padding-bottom:.2rem}
 .heatmap-month-labels{display:grid;grid-template-columns:repeat(53,1fr);column-gap:3px;height:14px;font-size:.68rem;color:var(--muted-foreground);font-weight:600;padding-left:30px;letter-spacing:.04em}
 .heatmap-month-labels span{white-space:nowrap;line-height:14px;align-self:end}
@@ -372,7 +381,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 <section class="panel heatmap-panel" aria-label="Daily activity heatmap">
                     <div class="heatmap-header">
                         <div class="heatmap-title">Daily Activity</div>
-                        <div class="heatmap-meta">Trailing 52 weeks · book change vs prev trading day</div>
+                        <div class="heatmap-meta" id="heatmapWindowStats">Trailing 52 weeks</div>
                     </div>
                     <div class="heatmap-canvas">
                         <div class="heatmap-month-labels" id="heatmapMonths" aria-hidden="true"></div>
@@ -2823,6 +2832,36 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 //     longest up/down streaks. Iterate the actual changes
                 //     map filtered to dates inside the window, in date order.
                 this._renderHeatmapStats(changes, start, endOfWeek);
+
+                // 4c) Window range stats — start value, end value, abs +
+                //     pct change. "Start" = the first data row whose date
+                //     sits inside the visible window; "End" = the latest
+                //     data row. Uses ffTotal so single-exchange-day gaps
+                //     at either edge don't manufacture artificial values.
+                const winStartIso = start.toISOString().slice(0, 10);
+                let sIdx = -1;
+                for (let i = 0; i < this.data.length; i++) {
+                    if (this.data[i].date >= winStartIso) { sIdx = i; break; }
+                }
+                const eIdx = this.data.length - 1;
+                const winStatsEl = document.getElementById('heatmapWindowStats');
+                if (winStatsEl && sIdx >= 0 && sIdx < eIdx) {
+                    const sVal = ffTotal[sIdx];
+                    const eVal = ffTotal[eIdx];
+                    const abs  = eVal - sVal;
+                    const pct  = sVal > 0 ? (abs / sVal) * 100 : 0;
+                    const arrow = abs >= 0 ? '▲' : '▼';
+                    const tone  = abs >= 0 ? 'up' : 'down';
+                    const sign  = abs >= 0 ? '+' : '−';
+                    const tip = `Combined NSE+BSE book moved from ${fmtINR(sVal)} on ${fmtDate(this.data[sIdx].date)} to ${fmtINR(eVal)} on ${fmtDate(this.data[eIdx].date)} — a ${sign}${fmtINR(Math.abs(abs))} swing over the trailing 52 weeks.`;
+                    winStatsEl.innerHTML = `
+                        <span class="hw-period">Trailing 52 weeks</span>
+                        <span class="hw-sep">·</span>
+                        <span class="hw-range" data-tip="${esc(tip)}"><strong>${fmtINR(sVal)}</strong> → <strong>${fmtINR(eVal)}</strong></span>
+                        <span class="hw-sep">·</span>
+                        <span class="hw-change ${tone}"><strong>${arrow} ${sign}${fmtINR(Math.abs(abs))}</strong> (${arrow} ${Math.abs(pct).toFixed(2)}%)</span>
+                    `;
+                }
 
                 // 5) Tooltip + click-to-pin wiring. Bound once per page.
                 if (!grid._tipBound) {
