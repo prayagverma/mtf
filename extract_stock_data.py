@@ -141,6 +141,16 @@ class StockMTFExtractor:
                 csv_name = z.namelist()[0]
                 csv_content = z.read(csv_name).decode('utf-8')
 
+            # Skip "provisional" NSE files entirely — their per-stock
+            # block is partial and would poison the time series. The
+            # dual-block (revised) flavour carries both 'provisional'
+            # AND 'for reporting date' markers; we keep those and read
+            # the rightmost block via sym_offset below.
+            head = csv_content[:4000].lower()
+            if 'provisional' in head and 'for reporting date' not in head:
+                logger.info(f"Skipping provisional-only NSE file for {date}")
+                return []
+
             lines = csv_content.split('\n')
 
             # Find the data section

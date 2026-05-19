@@ -52,7 +52,33 @@ def extract_nse_totals(filepath, date):
             
             csv_content = z.read(csv_files[0]).decode('utf-8', errors='ignore')
             lines = csv_content.split('\n')
-        
+
+        # Drop "provisional" reports — NSE occasionally publishes
+        # partial figures with a row-1 disclaimer ("Please note the
+        # figures are provisional as few members have not submitted
+        # the data"). Ingesting these creates artificial dips in the
+        # time series that recover the next trading day. The dual-
+        # block (revised) variant of the report carries the same
+        # disclaimer plus a 'for reporting date' marker — that path
+        # is handled by extract_value_from_line's "last-numeric-wins"
+        # rule and is NOT dropped here. Dates without any revision
+        # available on NSE side fall through to the sanitizer's
+        # spike-island filter.
+        head = csv_content[:4000].lower()
+        is_dual_block  = 'for reporting date' in head
+        is_provisional = 'provisional' in head and not is_dual_block
+        if is_provisional:
+            print(f"  [SKIP] {date.strftime('%Y-%m-%d')} — NSE report marked provisional, no revision available")
+            return {
+                'date': date.strftime('%Y-%m-%d'),
+                'exchange': 'NSE',
+                'beginning_outstanding': None,
+                'fresh_exposure': None,
+                'exposure_liquidated': None,
+                'end_outstanding': None,
+                'securities_count': 0
+            }
+
         totals = {
             'date': date.strftime('%Y-%m-%d'),
             'exchange': 'NSE',

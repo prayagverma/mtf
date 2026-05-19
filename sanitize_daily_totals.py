@@ -22,6 +22,41 @@ from datetime import datetime
 from typing import Dict, List
 
 
+def _spike_island_pass(rows: List[dict]) -> tuple[List[dict], List[dict]]:
+    """Drop undisclaimered single-day partial-report dips.
+
+    A row is dropped iff its end_outstanding sits >=10% below the
+    average of the immediately-adjacent trading days AND those two
+    neighbours are within 5% of each other. Real market shocks
+    take several days to recover, so prev/next can't be that
+    close to each other unless today is the outlier.
+
+    Targets the 18-Nov-2022 family (~13 historical dates where NSE
+    published a partial report with no 'provisional' header).
+    """
+    if len(rows) < 3:
+        return list(rows), []
+    kept = [rows[0]]
+    dropped: List[dict] = []
+    for i in range(1, len(rows) - 1):
+        r = rows[i]
+        v = r.get('end_outstanding') or 0
+        prev_v = rows[i - 1].get('end_outstanding') or 0
+        next_v = rows[i + 1].get('end_outstanding') or 0
+        if v <= 0 or prev_v <= 0 or next_v <= 0:
+            kept.append(r); continue
+        avg_n = (prev_v + next_v) / 2.0
+        if avg_n <= 0:
+            kept.append(r); continue
+        dip = (v - avg_n) / avg_n               # < 0 for a dip
+        gap = abs(prev_v - next_v) / prev_v     # neighbour spread
+        if dip < -0.10 and gap < 0.05:
+            dropped.append(r); continue
+        kept.append(r)
+    kept.append(rows[-1])
+    return kept, dropped
+
+
 def sanitize_series(rows: List[dict]) -> tuple[List[dict], List[dict]]:
     """Return (kept_rows, dropped_rows). Operates on a single-exchange list sorted by date."""
     cur = [r for r in rows if (r.get('end_outstanding') or 0) > 0]
@@ -52,6 +87,12 @@ def sanitize_series(rows: List[dict]) -> tuple[List[dict], List[dict]]:
         cur = out
         if not removed:
             break
+
+    # Second pass: spike-island filter (~13 NSE dates without
+    # explicit provisional disclaimer that exhibit the same dip-
+    # then-recover signature).
+    cur, more_dropped = _spike_island_pass(cur)
+    dropped.extend(more_dropped)
     return cur, dropped
 
 
