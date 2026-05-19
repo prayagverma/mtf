@@ -281,10 +281,20 @@
 .app-footer{max-width:1280px;margin:0 auto;padding:0 1.5rem 1.5rem}
 .app-footer .status-bar{padding:1rem 0 0;border-top:1px solid var(--border);color:var(--muted-foreground)}
 @media(max-width:768px){.app-footer{padding:0 1rem 1rem}}
-/* Compact sticky header — tab nav inline, lower vertical padding. */
-.app-header-inner{padding-top:.5rem;padding-bottom:0;align-items:stretch;gap:1.25rem}
-.app-header-inner .brand{align-items:center;padding-bottom:.55rem}
-.app-header-inner .header-meta{padding-bottom:.55rem;align-items:center}
+/* Compact sticky header — tab nav inline, lower vertical padding.
+   `align-items:baseline` aligns the first-line baseline of each
+   direct child (brand-title, tab-btn text, meta-text) so the brand's
+   main title sits on the same Y as the right-corner "AS OF …" text
+   and the tab labels. The brand's subtitle hangs below the title
+   without affecting that alignment. */
+.app-header-inner{padding-top:.85rem;padding-bottom:.55rem;align-items:baseline;gap:1.25rem}
+.app-header-inner .brand{align-items:baseline;padding-bottom:0}
+/* header-meta keeps `align-items:center` internally so the theme-toggle
+   button sits visually centered next to the "AS OF …" meta-text; the
+   block as a whole still baseline-aligns with the brand-title because
+   app-header-inner's `align-items:baseline` uses header-meta's first
+   inline child (the meta-text) as its baseline reference. */
+.app-header-inner .header-meta{padding-bottom:0;align-items:center}
 .app-header-inner .tab-navigation{flex:1 1 auto;justify-content:center;border:0;background:transparent;margin:0}
 /* Header bottom separator. No active-tab underline — active state is
    conveyed by the foreground-color shift on the tab text alone, which
