@@ -57,6 +57,55 @@ def _spike_island_pass(rows: List[dict]) -> tuple[List[dict], List[dict]]:
     return kept, dropped
 
 
+def _window_median_pass(rows: List[dict],
+                        threshold: float = 0.15,
+                        floor_lakhs: float = 500000.0) -> tuple[List[dict], List[dict]]:
+    """Drop rows whose end_outstanding deviates from the median of 4
+    nearby trading days (2 before + 2 after, excluding today) by more
+    than `threshold`. Catches single-day spikes that survive the
+    narrower 3-day spike-island rule because the neighbour-spread guard
+    is too strict — e.g. 01-Dec-2021 (+26%) and 08-Jul-2022 (-19%).
+
+    Bidirectional: catches both single-day INFLATE (spike-up) and
+    DEFLATE (dip-down) anomalies.
+
+    Floor guard: the rule only fires when the 4-day median itself is
+    above `floor_lakhs`. Early MTF history (2017–18) had ~₹100-3,000
+    Cr book sizes — natural 10-25% single-day volatility on a small
+    base, NOT reporting glitches. Floor of 5,00,000 lakhs (~₹5K Cr)
+    excludes that era while keeping the rule active from 2019 onward.
+    """
+    if len(rows) < 5:
+        return list(rows), []
+    kept_set = set(range(len(rows)))
+    dropped: List[dict] = []
+    for i in range(2, len(rows) - 2):
+        r = rows[i]
+        v = r.get('end_outstanding') or 0
+        if v <= 0:
+            continue
+        # 4 neighbours: indices i-2, i-1, i+1, i+2. Skip rule if any
+        # neighbour is null (gappy data → unreliable median).
+        ns = []
+        ok = True
+        for j in (i - 2, i - 1, i + 1, i + 2):
+            nv = rows[j].get('end_outstanding') or 0
+            if nv <= 0:
+                ok = False
+                break
+            ns.append(nv)
+        if not ok:
+            continue
+        med = statistics.median(ns)
+        if med < floor_lakhs:
+            continue
+        if abs(v - med) / med > threshold:
+            dropped.append(r)
+            kept_set.discard(i)
+    kept = [rows[i] for i in sorted(kept_set)]
+    return kept, dropped
+
+
 def sanitize_series(rows: List[dict]) -> tuple[List[dict], List[dict]]:
     """Return (kept_rows, dropped_rows). Operates on a single-exchange list sorted by date."""
     cur = [r for r in rows if (r.get('end_outstanding') or 0) > 0]
@@ -93,6 +142,14 @@ def sanitize_series(rows: List[dict]) -> tuple[List[dict], List[dict]]:
     # then-recover signature).
     cur, more_dropped = _spike_island_pass(cur)
     dropped.extend(more_dropped)
+
+    # Third pass: 4-neighbour median-deviation filter — catches single-
+    # day spikes (UP or DOWN) where the prev/next 5%-spread rule in
+    # _spike_island_pass is too strict. Hits 01-Dec-2021 (+26% spike)
+    # and 08-Jul-2022 (-19% dip) that slipped through earlier passes.
+    cur, even_more_dropped = _window_median_pass(cur)
+    dropped.extend(even_more_dropped)
+
     return cur, dropped
 
 
