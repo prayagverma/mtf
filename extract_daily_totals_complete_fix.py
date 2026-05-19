@@ -40,105 +40,182 @@ def extract_value_from_line(line, search_term):
                 continue
     return last_value
 
+def _null_nse_totals(date):
+    return {
+        'date': date.strftime('%Y-%m-%d'),
+        'exchange': 'NSE',
+        'beginning_outstanding': None,
+        'fresh_exposure': None,
+        'exposure_liquidated': None,
+        'end_outstanding': None,
+        'securities_count': 0
+    }
+
+
+def _pick_nse_csv_for_date(zip_obj, date):
+    """Pick the best inner CSV in a NSE zip for the given target date.
+
+    Some legacy NSE zips contain multiple CSVs — e.g. a `final_DDMMYYYY`
+    for the previous day alongside the current day's `provisional_…`.
+    Picking csv_files[0] (insertion order) silently attributed
+    PREVIOUS-day data to the current zip's date for 28-Feb-2023, 09-Mar-
+    2023, 28-Mar-2023, and several others. This picker scores each
+    candidate by:
+
+      1. The DDMMYYYY date in its filename matching the target date.
+      2. Whether the filename contains 'final' (priority 3 = revised),
+         a bare date (priority 2 = regular), or 'provisional' (priority
+         1 = partial).
+
+    Highest priority wins. Returns (inner_name, label) or (None, None)
+    when no CSV in the zip references the target date — in which case
+    we fall through to the first available CSV for backward compat.
+    """
+    target_ddmm = date.strftime('%d%m%Y')
+    target_yyyymmdd = date.strftime('%Y%m%d')
+    csvs = [n for n in zip_obj.namelist() if n.lower().endswith('.csv')]
+    if not csvs:
+        return None, None
+    best, best_pri = None, -1
+    for c in csvs:
+        base = os.path.basename(c).lower()
+        if target_ddmm not in base and target_yyyymmdd not in base:
+            continue
+        if 'final' in base:
+            pri = 3
+        elif 'provisional' in base:
+            pri = 1
+        else:
+            pri = 2
+        if pri > best_pri:
+            best_pri = pri
+            best = c
+    if best:
+        return best, ['', 'provisional', 'regular', 'final'][best_pri]
+    # Backward-compat fallback: zip without date-tagged filename
+    return csvs[0], 'unknown'
+
+
+def _parse_nse_totals_from_content(csv_content, date):
+    """Pure parser: given a NSE CSV's text content and a target date,
+    return the totals dict. No file or zip I/O.
+
+    Drops "provisional"-disclaimer-only files to null. Dual-block files
+    (with both the disclaimer AND a 'for reporting date' marker) are
+    kept and the rightmost numeric per metric line wins (the FINAL
+    block — handled by extract_value_from_line).
+    """
+    head = csv_content[:4000].lower()
+    is_dual_block  = 'for reporting date' in head
+    is_provisional = 'provisional' in head and not is_dual_block
+    if is_provisional:
+        print(f"  [SKIP] {date.strftime('%Y-%m-%d')} — NSE report marked provisional, no revision available")
+        return _null_nse_totals(date)
+
+    totals = _null_nse_totals(date)
+    lines = csv_content.split('\n')
+
+    for line in lines[:30]:
+        if 'Outstanding on the beginning' in line or 'Total Outstanding on the beginning' in line:
+            value = extract_value_from_line(line, 'Outstanding on the beginning')
+            if value and totals['beginning_outstanding'] is None:
+                totals['beginning_outstanding'] = value
+
+        elif 'Fresh Exposure taken' in line:
+            value = extract_value_from_line(line, 'Fresh Exposure taken')
+            if value and totals['fresh_exposure'] is None:
+                totals['fresh_exposure'] = value
+
+        elif 'Exposure liquidated' in line:
+            value = extract_value_from_line(line, 'Exposure liquidated')
+            if value and totals['exposure_liquidated'] is None:
+                totals['exposure_liquidated'] = value
+
+        elif 'outstanding at the end' in line or 'Net outstanding at the end' in line:
+            value = extract_value_from_line(line, 'outstanding at the end')
+            if value and totals['end_outstanding'] is None:
+                totals['end_outstanding'] = value
+
+    in_data = False
+    for line in lines:
+        if 'Symbol,Name,Qty Fin' in line:
+            in_data = True
+            continue
+        if in_data and line.strip():
+            parts = line.split(',')
+            if len(parts) >= 3:
+                symbol = parts[0].strip()
+                if symbol and not symbol.startswith(',') and symbol != '':
+                    if 'Total' not in symbol and 'TOTAL' not in symbol:
+                        if not symbol.isdigit() and len(symbol) > 0:
+                            totals['securities_count'] += 1
+
+    return totals
+
+
 def extract_nse_totals(filepath, date):
-    """Extract totals from NSE MTF file with robust parsing for all formats"""
+    """Extract totals from a NSE MTF zip for the given trading date.
+
+    When the zip contains multiple CSVs (some legacy zips bundle a
+    revised final-for-prev-day next to the current day's provisional),
+    `_pick_nse_csv_for_date` selects the right one for `date`.
+    """
     try:
         with zipfile.ZipFile(filepath, 'r') as z:
-            # Find CSV files (might be nested in directories)
-            csv_files = [f for f in z.namelist() if f.endswith('.csv')]
-            if not csv_files:
+            inner, _label = _pick_nse_csv_for_date(z, date)
+            if not inner:
                 print(f"No CSV found in {filepath}")
                 return None
-            
-            csv_content = z.read(csv_files[0]).decode('utf-8', errors='ignore')
-            lines = csv_content.split('\n')
-
-        # Drop "provisional" reports — NSE occasionally publishes
-        # partial figures with a row-1 disclaimer ("Please note the
-        # figures are provisional as few members have not submitted
-        # the data"). Ingesting these creates artificial dips in the
-        # time series that recover the next trading day. The dual-
-        # block (revised) variant of the report carries the same
-        # disclaimer plus a 'for reporting date' marker — that path
-        # is handled by extract_value_from_line's "last-numeric-wins"
-        # rule and is NOT dropped here. Dates without any revision
-        # available on NSE side fall through to the sanitizer's
-        # spike-island filter.
-        head = csv_content[:4000].lower()
-        is_dual_block  = 'for reporting date' in head
-        is_provisional = 'provisional' in head and not is_dual_block
-        if is_provisional:
-            print(f"  [SKIP] {date.strftime('%Y-%m-%d')} — NSE report marked provisional, no revision available")
-            return {
-                'date': date.strftime('%Y-%m-%d'),
-                'exchange': 'NSE',
-                'beginning_outstanding': None,
-                'fresh_exposure': None,
-                'exposure_liquidated': None,
-                'end_outstanding': None,
-                'securities_count': 0
-            }
-
-        totals = {
-            'date': date.strftime('%Y-%m-%d'),
-            'exchange': 'NSE',
-            'beginning_outstanding': None,
-            'fresh_exposure': None,
-            'exposure_liquidated': None,
-            'end_outstanding': None,
-            'securities_count': 0
-        }
-        
-        # Search for values in first 30 lines with flexible parsing
-        for line in lines[:30]:
-            if 'Outstanding on the beginning' in line or 'Total Outstanding on the beginning' in line:
-                value = extract_value_from_line(line, 'Outstanding on the beginning')
-                if value and totals['beginning_outstanding'] is None:
-                    totals['beginning_outstanding'] = value
-                    
-            elif 'Fresh Exposure taken' in line:
-                value = extract_value_from_line(line, 'Fresh Exposure taken')
-                if value and totals['fresh_exposure'] is None:
-                    totals['fresh_exposure'] = value
-                    
-            elif 'Exposure liquidated' in line:
-                value = extract_value_from_line(line, 'Exposure liquidated')
-                if value and totals['exposure_liquidated'] is None:
-                    totals['exposure_liquidated'] = value
-                    
-            elif 'outstanding at the end' in line or 'Net outstanding at the end' in line:
-                value = extract_value_from_line(line, 'outstanding at the end')
-                if value and totals['end_outstanding'] is None:
-                    totals['end_outstanding'] = value
-        
-        # Count securities
-        in_data = False
-        for line in lines:
-            if 'Symbol,Name,Qty Fin' in line:
-                in_data = True
-                continue
-            if in_data and line.strip():
-                # Check if it's a data line
-                parts = line.split(',')
-                if len(parts) >= 3:
-                    # First part should be a symbol (not empty, not starting with comma)
-                    symbol = parts[0].strip()
-                    if symbol and not symbol.startswith(',') and symbol != '':
-                        # Exclude totals and numeric codes
-                        if 'Total' not in symbol and 'TOTAL' not in symbol:
-                            # Check if it looks like a valid symbol
-                            if not symbol.isdigit() and len(symbol) > 0:
-                                totals['securities_count'] += 1
-        
-        # Validate we got the critical data
-        if totals['end_outstanding'] is None:
-            print(f"Warning: No end_outstanding found in {filepath}")
-            
-        return totals
-        
+            csv_content = z.read(inner).decode('utf-8', errors='ignore')
+        return _parse_nse_totals_from_content(csv_content, date)
     except Exception as e:
         print(f"Error processing NSE file {filepath}: {e}")
         return None
+
+
+def extract_nse_embedded_finals(filepath, zip_date):
+    """Yield (other_date_iso, totals) for each `final_DDMMYYYY` CSV in
+    the zip whose date is NOT the zip's own date. Used to rescue
+    previously-dropped provisional dates whose revised final happens
+    to live inside a later zip.
+
+    Same-date CSVs (e.g. final_DDMMYYYY in the zip for that day) are
+    already picked by extract_nse_totals via `_pick_nse_csv_for_date`
+    and are NOT yielded here.
+    """
+    zip_iso = zip_date.strftime('%Y-%m-%d')
+    try:
+        with zipfile.ZipFile(filepath, 'r') as z:
+            for inner in z.namelist():
+                base = os.path.basename(inner).lower()
+                if not base.endswith('.csv'):
+                    continue
+                if 'final' not in base:
+                    continue
+                m = re.search(r'final[_-]?(\d{2})(\d{2})(\d{4})', base) or \
+                    re.search(r'final[_-]?(\d{4})(\d{2})(\d{2})', base) or \
+                    re.search(r'(\d{2})(\d{2})(\d{4})_final', base) or \
+                    re.search(r'(\d{4})(\d{2})(\d{2})_final', base)
+                if not m:
+                    continue
+                a, b, c = m.groups()
+                try:
+                    if len(a) == 2:                     # DDMMYYYY
+                        dd, mm, yyyy = a, b, c
+                    else:                                # YYYYMMDD
+                        yyyy, mm, dd = a, b, c
+                    other_date = datetime(int(yyyy), int(mm), int(dd))
+                except ValueError:
+                    continue
+                other_iso = other_date.strftime('%Y-%m-%d')
+                if other_iso == zip_iso:
+                    continue
+                content = z.read(inner).decode('utf-8', errors='ignore')
+                totals = _parse_nse_totals_from_content(content, other_date)
+                yield other_iso, totals
+    except Exception as e:
+        print(f"Error scanning NSE file {filepath} for embedded finals: {e}")
+        return
 
 def extract_bse_totals(filepath, date):
     """Extract totals from a BSE MTF file.
@@ -308,23 +385,31 @@ def main():
     print("=" * 80)
     
     all_totals = []
-    
+
     # Process NSE files
     nse_dir = "mtf_reports/NSE"
     if os.path.exists(nse_dir):
         nse_files = sorted([f for f in os.listdir(nse_dir) if f.endswith('.zip')])
         print(f"\nProcessing {len(nse_files)} NSE files...")
-        
+
         blank_count = 0
         success_count = 0
-        
+        # Cross-date rescue: some NSE zips bundle a `final_DDMMYYYY.csv`
+        # for an earlier (revised) date. Collect those in a side-channel
+        # and apply as patches once the primary pass finishes. First
+        # encountered wins (sorted by date → patches from the EARLIEST
+        # next-day zip win, matching how a human would resolve the
+        # "which final is canonical?" question).
+        nse_patches = {}        # iso_date -> totals dict
+        patch_sources = {}      # iso_date -> source zip filename (for logging)
+
         for i, filename in enumerate(nse_files):
             if i % 100 == 0:
                 print(f"  Processing NSE file {i+1}/{len(nse_files)}...")
-            
+
             filepath = os.path.join(nse_dir, filename)
             date_str = filename.replace('NSE_MTF_', '').replace('.zip', '')
-            
+
             try:
                 date = datetime.strptime(date_str, '%d%m%Y')
                 totals = extract_nse_totals(filepath, date)
@@ -334,12 +419,36 @@ def main():
                     else:
                         success_count += 1
                     all_totals.append(totals)
+
+                # Scan for embedded finals that fix OTHER dates.
+                for other_iso, patch in extract_nse_embedded_finals(filepath, date):
+                    if other_iso in nse_patches:
+                        continue
+                    nse_patches[other_iso] = patch
+                    patch_sources[other_iso] = filename
             except Exception as e:
                 print(f"Error with {filename}: {e}")
-        
+
+        # Apply patches: any row in all_totals whose date is a key in
+        # nse_patches AND whose end_outstanding is null/zero (i.e. was
+        # dropped by the provisional-disclaimer guard) gets replaced by
+        # the rescued final.
+        patched = 0
+        for idx, row in enumerate(all_totals):
+            if row.get('exchange') != 'NSE':
+                continue
+            iso = row.get('date')
+            if iso in nse_patches:
+                cur = row.get('end_outstanding') or 0
+                if cur <= 0:
+                    all_totals[idx] = nse_patches[iso]
+                    print(f"  [PATCH] {iso} ← rescued final embedded in {patch_sources[iso]} (end_outstanding={nse_patches[iso].get('end_outstanding')})")
+                    patched += 1
+
         print(f"\n  NSE Processing Summary:")
         print(f"    Successfully extracted: {success_count}")
         print(f"    Files with blank totals: {blank_count}")
+        print(f"    Embedded-final patches applied: {patched}")
     
     # Process BSE files (both legacy .xls and new .csv formats)
     bse_dir = "mtf_reports/BSE"

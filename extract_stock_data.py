@@ -124,87 +124,190 @@ class StockMTFExtractor:
         # longer prefix of it (RELINFRA, MANGCHEFER, ANDREWYULC ⊃ ANDREWYU).
         self.bse_name_to_legacy = {}
         
+    def _pick_nse_csv_for_date(self, zip_obj, date):
+        """Pick the best inner CSV for the target trading date. Mirrors
+        _pick_nse_csv_for_date in extract_daily_totals_complete_fix.py.
+
+        Some NSE zips bundle multiple CSVs (e.g. the final for the
+        previous trading day next to the current day's provisional).
+        Score each candidate by:
+          (1) the DDMMYYYY / YYYYMMDD in its filename matching `date`,
+          (2) preference for `final_` > regular > `provisional_`.
+        Highest priority wins.
+        """
+        target_ddmm = date.strftime('%d%m%Y')
+        target_ymd  = date.strftime('%Y%m%d')
+        csvs = [n for n in zip_obj.namelist() if n.lower().endswith('.csv')]
+        if not csvs:
+            return None
+        best, best_pri = None, -1
+        for c in csvs:
+            base = os.path.basename(c).lower()
+            if target_ddmm not in base and target_ymd not in base:
+                continue
+            if 'final' in base:
+                pri = 3
+            elif 'provisional' in base:
+                pri = 1
+            else:
+                pri = 2
+            if pri > best_pri:
+                best_pri = pri
+                best = c
+        return best or csvs[0]
+
     def extract_nse_stocks(self, filepath, date):
         """Extract individual stock data from NSE MTF file.
 
-        Handles "dual-block" NSE CSVs (e.g. 01-SEP-2025) where each
-        physical row carries the same symbol twice — once in the
-        left (PROVISIONAL) block and once in the right (FINAL,
-        revised) block. We locate the RIGHTMOST `Symbol` column in
-        the header line and read every data row from that offset, so
-        the per-stock figures persisted to the time series are the
-        revised/final numbers. Single-block files have one `Symbol`
-        column (offset 0), preserving the original behaviour.
+        Handles two NSE oddities:
+          1. Multi-CSV zips — some legacy zips bundle the FINAL for
+             the previous trading day next to the current day's
+             PROVISIONAL or REGULAR file. _pick_nse_csv_for_date()
+             chooses the CSV that matches THIS date with the highest
+             quality tag (final > regular > provisional).
+          2. Dual-block CSVs — a single CSV with PROVISIONAL on the
+             left columns and FINAL on the right, separated by blanks.
+             We locate the rightmost `Symbol` column and read each
+             data row from that offset so the per-stock figures use
+             the revised numbers.
         """
         try:
             with zipfile.ZipFile(filepath, 'r') as z:
-                csv_name = z.namelist()[0]
+                csv_name = self._pick_nse_csv_for_date(z, date)
+                if not csv_name:
+                    return []
                 csv_content = z.read(csv_name).decode('utf-8')
 
-            # Skip "provisional" NSE files entirely — their per-stock
-            # block is partial and would poison the time series. The
-            # dual-block (revised) flavour carries both 'provisional'
-            # AND 'for reporting date' markers; we keep those and read
-            # the rightmost block via sym_offset below.
-            head = csv_content[:4000].lower()
-            if 'provisional' in head and 'for reporting date' not in head:
-                logger.info(f"Skipping provisional-only NSE file for {date}")
-                return []
-
-            lines = csv_content.split('\n')
-
-            # Find the data section
-            data_start = False
-            sym_offset = 0   # rightmost Symbol column; > 0 only for dual-block files
-            stocks = []
-
-            for line in lines:
-                if 'Symbol,Name,Qty Fin by all the members' in line:
-                    parts = line.split(',')
-                    sym_cols = [i for i, p in enumerate(parts) if p.strip() == 'Symbol']
-                    if sym_cols:
-                        sym_offset = sym_cols[-1]   # FINAL block when dual, else 0
-                    data_start = True
-                    continue
-
-                if data_start and line.strip() and ',' in line:
-                    parts = line.split(',')
-                    if len(parts) >= sym_offset + 4:
-                        try:
-                            symbol = parts[sym_offset].strip()
-                            name = parts[sym_offset + 1].strip()
-                            qty_financed = float(parts[sym_offset + 2]) if parts[sym_offset + 2] else 0
-                            amount_financed = float(parts[sym_offset + 3].strip().rstrip('\r')) if parts[sym_offset + 3] else 0
-                            
-                            # Skip empty symbols, header rows, total row, and the
-                            # NSE CSV footer (" * Figures are rounded to the nearest decimal.").
-                            if not symbol or symbol.startswith('*') or symbol.lower() in ['symbol', 'total']:
-                                continue
-                            
-                            stock_record = {
-                                'date': date.strftime('%Y-%m-%d'),
-                                'exchange': 'NSE',
-                                'symbol': symbol,
-                                'name': name,
-                                # ISIN from the NSE equity master, blank if the
-                                # symbol isn't listed (ETFs, fresh listings).
-                                'isin': self.nse_isin_map.get(symbol, ''),
-                                'qty_financed': qty_financed,
-                                'amount_financed': amount_financed,
-                                'avg_price': amount_financed / qty_financed if qty_financed > 0 else 0
-                            }
-                            
-                            stocks.append(stock_record)
-                            self.stock_data[symbol].append(stock_record)
-                            
-                        except (ValueError, ZeroDivisionError):
-                            continue
-            
-            return stocks
-            
+            return self._parse_nse_stocks_content(csv_content, date)
         except Exception as e:
             logger.error(f"Error processing NSE file {filepath}: {e}")
             return []
+
+    def extract_nse_embedded_finals(self, filepath, zip_date):
+        """Yield (other_date_iso, list_of_stock_records) for each
+        `final_DDMMYYYY` CSV inside the zip whose date is NOT the
+        zip's own date. Used to rescue previously-dropped provisional
+        per-stock snapshots whose final happens to live in a later
+        zip's bundle.
+        """
+        zip_iso = zip_date.strftime('%Y-%m-%d')
+        try:
+            with zipfile.ZipFile(filepath, 'r') as z:
+                for inner in z.namelist():
+                    base = os.path.basename(inner).lower()
+                    if not base.endswith('.csv'):
+                        continue
+                    if 'final' not in base:
+                        continue
+                    m = re.search(r'final[_-]?(\d{2})(\d{2})(\d{4})', base) or \
+                        re.search(r'final[_-]?(\d{4})(\d{2})(\d{2})', base) or \
+                        re.search(r'(\d{2})(\d{2})(\d{4})_final', base) or \
+                        re.search(r'(\d{4})(\d{2})(\d{2})_final', base)
+                    if not m:
+                        continue
+                    a, b, c = m.groups()
+                    try:
+                        if len(a) == 2:
+                            dd, mm, yyyy = a, b, c
+                        else:
+                            yyyy, mm, dd = a, b, c
+                        other_date = datetime(int(yyyy), int(mm), int(dd))
+                    except ValueError:
+                        continue
+                    other_iso = other_date.strftime('%Y-%m-%d')
+                    if other_iso == zip_iso:
+                        continue
+                    content = z.read(inner).decode('utf-8')
+                    stocks = self._parse_nse_stocks_content(content, other_date, accumulate=False)
+                    yield other_iso, stocks
+        except Exception as e:
+            logger.error(f"Error scanning embedded finals in {filepath}: {e}")
+
+    def _replace_nse_date(self, iso, new_stocks):
+        """Remove all NSE entries for `iso` across self.stock_data and
+        insert the supplied stock_records. Used to apply an embedded-
+        final rescue after the primary pass has already ingested a
+        provisional or partial snapshot for the same date.
+        """
+        removed = 0
+        for sym in list(self.stock_data.keys()):
+            lst = self.stock_data[sym]
+            before = len(lst)
+            lst[:] = [r for r in lst if not (r.get('date') == iso and r.get('exchange') == 'NSE')]
+            removed += before - len(lst)
+        for rec in new_stocks:
+            self.stock_data[rec['symbol']].append(rec)
+        return removed
+
+    def _parse_nse_stocks_content(self, csv_content, date, accumulate=True):
+        """Pure parser: NSE CSV content + target date → list of stock
+        records. When `accumulate` is True (default), also append each
+        record into `self.stock_data[symbol]` (matches the original
+        extract_nse_stocks behaviour). Set to False for patch-only
+        extraction where the caller manages accumulation via
+        _replace_nse_date.
+        """
+        # Skip "provisional" NSE files entirely — their per-stock
+        # block is partial and would poison the time series. The
+        # dual-block (revised) flavour carries both 'provisional'
+        # AND 'for reporting date' markers; we keep those and read
+        # the rightmost block via sym_offset below.
+        head = csv_content[:4000].lower()
+        if 'provisional' in head and 'for reporting date' not in head:
+            logger.info(f"Skipping provisional-only NSE content for {date}")
+            return []
+
+        lines = csv_content.split('\n')
+
+        # Find the data section
+        data_start = False
+        sym_offset = 0   # rightmost Symbol column; > 0 only for dual-block files
+        stocks = []
+
+        for line in lines:
+            if 'Symbol,Name,Qty Fin by all the members' in line:
+                parts = line.split(',')
+                sym_cols = [i for i, p in enumerate(parts) if p.strip() == 'Symbol']
+                if sym_cols:
+                    sym_offset = sym_cols[-1]   # FINAL block when dual, else 0
+                data_start = True
+                continue
+
+            if data_start and line.strip() and ',' in line:
+                parts = line.split(',')
+                if len(parts) >= sym_offset + 4:
+                    try:
+                        symbol = parts[sym_offset].strip()
+                        name = parts[sym_offset + 1].strip()
+                        qty_financed = float(parts[sym_offset + 2]) if parts[sym_offset + 2] else 0
+                        amount_financed = float(parts[sym_offset + 3].strip().rstrip('\r')) if parts[sym_offset + 3] else 0
+
+                        # Skip empty symbols, header rows, total row, and the
+                        # NSE CSV footer (" * Figures are rounded to the nearest decimal.").
+                        if not symbol or symbol.startswith('*') or symbol.lower() in ['symbol', 'total']:
+                            continue
+
+                        stock_record = {
+                            'date': date.strftime('%Y-%m-%d'),
+                            'exchange': 'NSE',
+                            'symbol': symbol,
+                            'name': name,
+                            # ISIN from the NSE equity master, blank if the
+                            # symbol isn't listed (ETFs, fresh listings).
+                            'isin': self.nse_isin_map.get(symbol, ''),
+                            'qty_financed': qty_financed,
+                            'amount_financed': amount_financed,
+                            'avg_price': amount_financed / qty_financed if qty_financed > 0 else 0
+                        }
+
+                        stocks.append(stock_record)
+                        if accumulate:
+                            self.stock_data[symbol].append(stock_record)
+
+                    except (ValueError, ZeroDivisionError):
+                        continue
+
+        return stocks
     
     def extract_bse_stocks(self, filepath, date):
         """Extract individual stock data from a BSE MTF file.
@@ -939,6 +1042,13 @@ class StockMTFExtractor:
                 nse_files = nse_files[-sample_size:]  # Take recent files for sample
             logger.info(f"Processing {len(nse_files)} NSE files (filter: dates >= {MIN_DATE.date()})...")
 
+            # Cross-date rescue: some NSE zips bundle `final_DDMMYYYY.csv`
+            # for an earlier (revised) date. Collect them and apply
+            # after the main pass to overwrite the provisional snapshot
+            # for the rescued date. First-encountered wins.
+            nse_stock_patches = {}        # iso_date -> list[stock_record]
+            stock_patch_sources = {}      # iso_date -> source zip filename
+
             for i, filename in enumerate(nse_files):
                 if i % 200 == 0:
                     logger.info(f"  NSE {i}/{len(nse_files)}  ({total_stocks_extracted:,} records so far)")
@@ -951,9 +1061,29 @@ class StockMTFExtractor:
                     stocks = self.extract_nse_stocks(filepath, date)
                     total_stocks_extracted += len(stocks)
                     total_files_processed += 1
+
+                    # Scan for embedded finals targeting OTHER dates.
+                    for other_iso, patch_stocks in self.extract_nse_embedded_finals(filepath, date):
+                        if other_iso in nse_stock_patches:
+                            continue
+                        nse_stock_patches[other_iso] = patch_stocks
+                        stock_patch_sources[other_iso] = filename
                 except Exception as e:
                     logger.warning(f"Failed to process {filename}: {e}")
                     continue
+
+            # Apply NSE stock patches: replace any existing snapshot for
+            # the patched date with the rescued final block.
+            patches_applied = 0
+            for iso, patch_stocks in nse_stock_patches.items():
+                removed = self._replace_nse_date(iso, patch_stocks)
+                total_stocks_extracted += len(patch_stocks) - removed
+                patches_applied += 1
+                logger.info(
+                    f"  [PATCH] {iso} ← embedded final from {stock_patch_sources[iso]} "
+                    f"(replaced {removed} provisional records with {len(patch_stocks)} final)"
+                )
+            logger.info(f"  NSE embedded-final stock patches applied: {patches_applied}")
 
         # Process BSE files (both legacy .xls and new .csv formats)
         bse_dir = "mtf_reports/BSE"
