@@ -375,13 +375,13 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 <div class="stats-grid" id="statsContainer"></div>
 
                 <!-- GitHub-style daily activity heatmap. Each cell is one
-                     calendar day in the trailing 52 weeks; green = book
+                     calendar day in the trailing 53 weeks; green = book
                      grew vs prev trading day, red = book shrank, gray =
                      no trading. Populated by renderActivityHeatmap(). -->
                 <section class="panel heatmap-panel" aria-label="Daily activity heatmap">
                     <div class="heatmap-header">
                         <div class="heatmap-title">Daily Activity</div>
-                        <div class="heatmap-meta" id="heatmapWindowStats">Trailing 52 weeks</div>
+                        <div class="heatmap-meta" id="heatmapWindowStats">Trailing 53 weeks</div>
                     </div>
                     <div class="heatmap-canvas">
                         <div class="heatmap-month-labels" id="heatmapMonths" aria-hidden="true"></div>
@@ -389,7 +389,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                             <div class="heatmap-dow-labels" aria-hidden="true">
                                 <span></span><span>Mon</span><span></span><span>Wed</span><span></span><span>Fri</span><span></span>
                             </div>
-                            <div class="heatmap-grid" id="heatmapGrid" role="img" aria-label="Daily activity heatmap — trailing 52 weeks"></div>
+                            <div class="heatmap-grid" id="heatmapGrid" role="img" aria-label="Daily activity heatmap — trailing 53 weeks"></div>
                         </div>
                     </div>
                     <div class="heatmap-footer">
@@ -2618,8 +2618,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 flushRun();
 
                 const fmtSum = (v) => `${v >= 0 ? '+' : '−'}${fmtINR(Math.abs(v))}`;
-                const tipUp = `${upCount} trading days in the past 52 weeks where the combined NSE+BSE book grew vs the previous day. Cumulative gain across those days: ${fmtSum(upSum)}.`;
-                const tipDown = `${downCount} trading days in the past 52 weeks where the combined NSE+BSE book shrank vs the previous day. Cumulative loss across those days: ${fmtSum(downSum)}.`;
+                const tipUp = `${upCount} trading days in the past 53 weeks where the combined NSE+BSE book grew vs the previous day. Cumulative gain across those days: ${fmtSum(upSum)}.`;
+                const tipDown = `${downCount} trading days in the past 53 weeks where the combined NSE+BSE book shrank vs the previous day. Cumulative loss across those days: ${fmtSum(downSum)}.`;
                 tallies.innerHTML = `
                     <span class="up" data-tip="${esc(tipUp)}"><strong>▲ ${upCount}</strong> up · ${fmtSum(upSum)}</span>
                     <span class="sep">·</span>
@@ -2630,10 +2630,10 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     const arrow = dir === '↑' ? 'up' : 'down';
                     const longLabel = dir === '↑' ? 'up' : 'down';
                     if (!s.len) {
-                        const tip = `No ${longLabel} streak detected in the past 52 weeks.`;
+                        const tip = `No ${longLabel} streak detected in the past 53 weeks.`;
                         return `<span class="${arrow}" data-tip="${esc(tip)}">${dir} —</span>`;
                     }
-                    const tip = `Longest ${longLabel}-day streak in the past 52 weeks: ${s.len} consecutive trading days, ${fmtDate(s.start)} → ${fmtDate(s.end)} (combined NSE+BSE book ${longLabel === 'up' ? 'grew' : 'shrank'} every day in that window).`;
+                    const tip = `Longest ${longLabel}-day streak in the past 53 weeks: ${s.len} consecutive trading days, ${fmtDate(s.start)} → ${fmtDate(s.end)} (combined NSE+BSE book ${longLabel === 'up' ? 'grew' : 'shrank'} every day in that window).`;
                     return `<span data-tip="${esc(tip)}"><span class="${arrow}"><strong>${dir} ${s.len}d</strong></span> · ${fmtDate(s.start)} → ${fmtDate(s.end)}</span>`;
                 };
                 streaks.innerHTML = `
@@ -2729,7 +2729,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             }
 
             // Daily-activity heatmap — one cell per calendar day in the
-            // trailing 52 weeks. Cell color encodes (today.end − yesterday.end)
+            // trailing 53 weeks. Cell color encodes (today.end − yesterday.end)
             // for the combined NSE+BSE book: green = grew, red = shrank,
             // gray = no trading. Hover surfaces the date and signed ₹ change
             // via the existing card-tip floating popover.
@@ -2773,13 +2773,15 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 };
 
                 // 3) Window. Anchor at the Sunday >= latest data row, then
-                //    walk back 52 weeks. Mon row 0 → Sun row 6.
+                //    walk back 53 weeks (371 days — covers a full year
+                //    with a small overshoot, matching GitHub's heatmap
+                //    convention and our 53-column grid). Mon row 0 → Sun row 6.
                 const lastDate  = new Date(this.data.at(-1).date + 'T00:00:00');
                 const endOfWeek = new Date(lastDate);
                 const dow = endOfWeek.getDay();          // 0=Sun … 6=Sat
                 endOfWeek.setDate(endOfWeek.getDate() + ((7 - dow) % 7));
                 const start = new Date(endOfWeek);
-                start.setDate(start.getDate() - 7 * 52 + 1);
+                start.setDate(start.getDate() - 7 * 53 + 1);
                 // Roll back to that week's Monday so col 0 starts on Mon.
                 const startDow = start.getDay();
                 const backToMon = (startDow + 6) % 7;    // Mon→0, Sun→6
@@ -2853,9 +2855,9 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     const arrow = abs >= 0 ? '▲' : '▼';
                     const tone  = abs >= 0 ? 'up' : 'down';
                     const sign  = abs >= 0 ? '+' : '−';
-                    const tip = `Combined NSE+BSE book moved from ${fmtINR(sVal)} on ${fmtDate(this.data[sIdx].date)} to ${fmtINR(eVal)} on ${fmtDate(this.data[eIdx].date)} — a ${sign}${fmtINR(Math.abs(abs))} swing over the trailing 52 weeks.`;
+                    const tip = `Combined NSE+BSE book moved from ${fmtINR(sVal)} on ${fmtDate(this.data[sIdx].date)} to ${fmtINR(eVal)} on ${fmtDate(this.data[eIdx].date)} — a ${sign}${fmtINR(Math.abs(abs))} swing over the trailing 53 weeks.`;
                     winStatsEl.innerHTML = `
-                        <span class="hw-period">Trailing 52 weeks</span>
+                        <span class="hw-period">Trailing 53 weeks</span>
                         <span class="hw-sep">·</span>
                         <span class="hw-range" data-tip="${esc(tip)}"><strong>${fmtINR(sVal)}</strong> → <strong>${fmtINR(eVal)}</strong></span>
                         <span class="hw-sep">·</span>
