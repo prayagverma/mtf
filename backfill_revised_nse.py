@@ -167,9 +167,13 @@ def main() -> int:
     os.makedirs(BACKUP_DIR, exist_ok=True)
 
     downloader = MTFDownloader(output_dir="mtf_reports", delay=args.delay)
+    # NSE's www.nseindia.com homepage often 403s for non-residential
+    # IPs (matches the production downloader's behaviour, which also
+    # logs a Warning and continues). The per-date API endpoint is
+    # more permissive in practice, so we proceed regardless and let
+    # the per-date fetches mark FETCH_FAILED if they 403 too.
     if not downloader.visit_base_site("NSE"):
-        print("ERROR: could not warm up NSE session — aborting.")
-        return 1
+        print("Warning: could not warm up NSE session — proceeding anyway, per-date fetches may 403.")
 
     rows = []
     for iso in candidates:
