@@ -125,31 +125,46 @@ class StockMTFExtractor:
         self.bse_name_to_legacy = {}
         
     def extract_nse_stocks(self, filepath, date):
-        """Extract individual stock data from NSE MTF file"""
+        """Extract individual stock data from NSE MTF file.
+
+        Handles "dual-block" NSE CSVs (e.g. 01-SEP-2025) where each
+        physical row carries the same symbol twice — once in the
+        left (PROVISIONAL) block and once in the right (FINAL,
+        revised) block. We locate the RIGHTMOST `Symbol` column in
+        the header line and read every data row from that offset, so
+        the per-stock figures persisted to the time series are the
+        revised/final numbers. Single-block files have one `Symbol`
+        column (offset 0), preserving the original behaviour.
+        """
         try:
             with zipfile.ZipFile(filepath, 'r') as z:
                 csv_name = z.namelist()[0]
                 csv_content = z.read(csv_name).decode('utf-8')
-            
+
             lines = csv_content.split('\n')
-            
+
             # Find the data section
             data_start = False
+            sym_offset = 0   # rightmost Symbol column; > 0 only for dual-block files
             stocks = []
-            
+
             for line in lines:
                 if 'Symbol,Name,Qty Fin by all the members' in line:
+                    parts = line.split(',')
+                    sym_cols = [i for i, p in enumerate(parts) if p.strip() == 'Symbol']
+                    if sym_cols:
+                        sym_offset = sym_cols[-1]   # FINAL block when dual, else 0
                     data_start = True
                     continue
-                
+
                 if data_start and line.strip() and ',' in line:
                     parts = line.split(',')
-                    if len(parts) >= 4:
+                    if len(parts) >= sym_offset + 4:
                         try:
-                            symbol = parts[0].strip()
-                            name = parts[1].strip()
-                            qty_financed = float(parts[2]) if parts[2] else 0
-                            amount_financed = float(parts[3].strip().rstrip('\r')) if parts[3] else 0
+                            symbol = parts[sym_offset].strip()
+                            name = parts[sym_offset + 1].strip()
+                            qty_financed = float(parts[sym_offset + 2]) if parts[sym_offset + 2] else 0
+                            amount_financed = float(parts[sym_offset + 3].strip().rstrip('\r')) if parts[sym_offset + 3] else 0
                             
                             # Skip empty symbols, header rows, total row, and the
                             # NSE CSV footer (" * Figures are rounded to the nearest decimal.").

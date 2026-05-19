@@ -8,31 +8,37 @@ import json
 import re
 
 def extract_value_from_line(line, search_term):
-    """Extract numeric value from a line containing the search term"""
+    """Extract numeric value from a line containing the search term.
+
+    Returns the RIGHTMOST (last) numeric value > 1000 on the line so
+    that NSE "dual-block" reports — where both PROVISIONAL (left
+    columns) and FINAL (right columns) figures are stamped on the
+    same physical row — yield the FINAL number rather than the stale
+    provisional one. Example: on 01-SEP-2025 the NSE CSV has
+
+        ,1,Outstanding…,7853857.57,,,,1,Outstanding…,9377865.90
+
+    where 7,853,857.57 is the provisional figure that was later
+    revised up to 9,377,865.90. Picking the last numeric on the
+    line works correctly for both single-block (one value per line,
+    so last == first) and dual-block (last = revised/final) files.
+    """
     if search_term not in line:
         return None
-    
-    # Split by comma and look for numeric values
-    parts = line.split(',')
-    
-    # Try to find a numeric value in the parts
-    for part in parts:
-        # Clean the part
-        cleaned = part.strip()
-        # Remove any non-numeric characters except . and -
-        cleaned = re.sub(r'[^\d.-]', '', cleaned)
-        
-        # Check if it's a valid number and looks like a large value (in lakhs)
+
+    last_value = None
+    for part in line.split(','):
+        cleaned = re.sub(r'[^\d.-]', '', part.strip())
         if cleaned and '.' in cleaned:
             try:
                 value = float(cleaned)
-                # MTF values are typically large (in lakhs), so filter out small numbers like line numbers
-                if value > 1000:  # At least 1000 lakhs
-                    return value
-            except:
+                # MTF values are typically large (in lakhs); skip
+                # the Sr.No. column ("1", "2", "3", "4") and similar.
+                if value > 1000:
+                    last_value = value
+            except ValueError:
                 continue
-    
-    return None
+    return last_value
 
 def extract_nse_totals(filepath, date):
     """Extract totals from NSE MTF file with robust parsing for all formats"""
