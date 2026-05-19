@@ -842,12 +842,20 @@ class StockMTFExtractor:
                 prev_swing = _best_swing(by_ex_prev.get(ex_name, []))
                 sudden_changes.append((symbol, best_to, best_from, best_pct, prev_swing))
 
-        # Sort: most-recent to_date first, tie-break by abs(change_percent).
-        # Lexicographic ISO-8601 date comparison gives chronological order.
-        # Tuple shape now is (symbol, best_to, best_from, best_pct, prev_swing).
+        # Sort: biggest |change_percent| first; tie-break by to_date desc
+        # so equally-sized moves prefer the fresher swing.
+        #
+        # The previous sort prioritised to_date over magnitude, which meant
+        # a +400% mover whose swing endpoint was 3 days ago got pushed below
+        # 200+ smaller-but-fresher movers and silently dropped from the
+        # top-200 list (Nazara BSE 14→15 May 2026 = +444% swing endpoint at
+        # 15-May, demoted below 200 entries with to_date=18-May, vanished
+        # from Market Changes). The 30-day window already enforces recency;
+        # within it, magnitude is what the user actually wants to see.
+        # Tuple shape: (symbol, best_to, best_from, best_pct, prev_swing).
         analytics['latest_snapshot']['sudden_changes'] = sorted(
             sudden_changes,
-            key=lambda x: (x[1]['date'], abs(x[3])),
+            key=lambda x: (abs(x[3]), x[1]['date']),
             reverse=True,
         )[:200]
         
