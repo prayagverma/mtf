@@ -1,34 +1,25 @@
-name: Backfill revised NSE reports (one-shot)
-
-# One-shot manual workflow that re-fetches the 61 NSE dates flagged as
-# "provisional" or "spike-island" partial reports, swaps in any newer
-# revised versions NSE has published since our original download, and
-# commits the improved zips back to main.
-#
-# Run from GitHub Actions UI → "Backfill revised NSE reports (one-shot)"
-# → "Run workflow". Defaults are safe; review the artifact CSV before
-# committing.
+name: Backfill revised NSE reports
 
 on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: "Dry-run only (no fetching, no commits)"
+        description: "Dry-run only"
         required: false
-        default: false
-        type: boolean
+        default: "false"
+        type: string
       commit:
         description: "Commit improved zips back to main"
         required: false
-        default: true
-        type: boolean
+        default: "true"
+        type: string
       delay:
         description: "Seconds between NSE fetches"
         required: false
         default: "4"
         type: string
       dates:
-        description: "Optional space-separated ISO dates (default = all 61 candidates)"
+        description: "Optional space-separated ISO dates"
         required: false
         default: ""
         type: string
@@ -44,16 +35,13 @@ jobs:
   backfill:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           fetch-depth: 1
           persist-credentials: true
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
@@ -62,11 +50,15 @@ jobs:
         run: pip install -r requirements.txt
 
       - name: Run backfill
+        env:
+          DRY: ${{ inputs.dry_run }}
+          DELAY: ${{ inputs.delay }}
+          DATES: ${{ inputs.dates }}
         run: |
           set -e
-          ARGS="--delay ${{ inputs.delay }}"
-          if [ "${{ inputs.dry_run }}" = "true" ]; then ARGS="$ARGS --dry-run"; fi
-          if [ -n "${{ inputs.dates }}" ]; then ARGS="$ARGS --dates ${{ inputs.dates }}"; fi
+          ARGS="--delay $DELAY"
+          if [ "$DRY" = "true" ]; then ARGS="$ARGS --dry-run"; fi
+          if [ -n "$DATES" ]; then ARGS="$ARGS --dates $DATES"; fi
           echo "Running: python backfill_revised_nse.py $ARGS"
           python backfill_revised_nse.py $ARGS
 
@@ -79,25 +71,10 @@ jobs:
             backfill_revised_nse_report.csv
             mtf_reports/NSE/_provisional_backup/
 
-      - name: Show summary
-        if: always()
-        run: |
-          echo '## Backfill summary' >> $GITHUB_STEP_SUMMARY
-          if [ -f backfill_revised_nse_report.csv ]; then
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            head -1 backfill_revised_nse_report.csv >> $GITHUB_STEP_SUMMARY
-            grep -E 'REVISED|FETCH_FAILED|MISSING_ORIG' backfill_revised_nse_report.csv >> $GITHUB_STEP_SUMMARY || true
-            echo '```' >> $GITHUB_STEP_SUMMARY
-            echo '' >> $GITHUB_STEP_SUMMARY
-            REVISED=$(grep -c 'REVISED' backfill_revised_nse_report.csv || echo 0)
-            SAME=$(grep -c 'SAME' backfill_revised_nse_report.csv || echo 0)
-            FAILED=$(grep -c 'FETCH_FAILED' backfill_revised_nse_report.csv || echo 0)
-            echo "REVISED=$REVISED  SAME=$SAME  FETCH_FAILED=$FAILED" >> $GITHUB_STEP_SUMMARY
-          fi
-
       - name: Commit improved zips
-        if: ${{ inputs.commit && !inputs.dry_run }}
+        if: ${{ inputs.commit == 'true' && inputs.dry_run != 'true' }}
         run: |
+          set -e
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add mtf_reports/NSE/NSE_MTF_*.zip backfill_revised_nse_report.csv || true
@@ -105,15 +82,5 @@ jobs:
             echo "No changes to commit"
             exit 0
           fi
-          git commit -m "data: backfill revised NSE reports (one-shot)
-
-Re-fetched the 61 NSE candidate dates flagged as provisional /
-partial reports. Any zips whose NSE-side content has since been
-revised are now updated in this commit; originals were backed up
-to mtf_reports/NSE/_provisional_backup/ during the run.
-
-See backfill_revised_nse_report.csv (artifact) for the per-date
-verdict (REVISED / SAME / FETCH_FAILED).
-
-Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>"
+          git commit -m "data: backfill revised NSE reports"
           git push origin main
