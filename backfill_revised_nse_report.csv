@@ -1,0 +1,3 @@
+date,verdict,orig_provisional,orig_dual_block,orig_end_outstanding,new_provisional,new_dual_block,new_end_outstanding,diff_lakhs
+2022-11-18,SAME,False,False,2051944.07,False,False,2051944.07,0.0
+2023-06-22,SAME,True,False,2505679.83,True,False,2505679.83,0.0
