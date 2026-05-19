@@ -99,17 +99,19 @@
   }
   .row-nse .histogram-bar-fill{ transform-origin: right; }
   .row-bse .histogram-bar-fill{ transform-origin: left; }
-  /* Seasonality bars — cascade left-to-right within each block. */
+  /* Seasonality bars — cascade left-to-right; bar fill scales from
+     the center baseline. transform-origin already set on the static
+     rules above so the scaleY animation grows in the right direction
+     for both up (origin bottom) and down (origin top) bars. */
   .seasonality-bar{
     animation: hist-row-in .38s cubic-bezier(.16,.84,.32,1) backwards;
-    animation-delay: calc(var(--i, 0) * 30ms);
+    animation-delay: calc(var(--i, 0) * 35ms);
   }
+  @keyframes seas-bar-grow { from { transform: scaleY(0); } to { transform: scaleY(1); } }
   .seasonality-bar .bar-fill{
-    animation: hist-bar-grow .55s cubic-bezier(.16,.84,.32,1) backwards;
-    animation-delay: calc(var(--i, 0) * 30ms + 120ms);
-    transform-origin: bottom;
+    animation: seas-bar-grow .55s cubic-bezier(.16,.84,.32,1) backwards;
+    animation-delay: calc(var(--i, 0) * 35ms + 140ms);
   }
-  .seasonality-bar .bar-fill.down{ transform-origin: top; }
 }
 /* Stock-size distribution — horizontal pyramid (NSE-left / BSE-right).
    Each row is a bucket; bar lengths are independently scaled per side so
@@ -139,34 +141,30 @@
 .histogram-legend-swatch{display:inline-block;width:10px;height:10px;border-radius:2px}
 .histogram-legend-swatch.nse{background:var(--nse-color)}
 .histogram-legend-swatch.bse{background:var(--bse-color)}
-/* Seasonality patterns panel — two side-by-side diverging-bar charts.
-   Bars sit on a central zero baseline: positive averages grow upward
-   (green), negative averages grow downward (red). The weekday block
-   gets less horizontal room than the month block because it has 5 bars
-   vs 12, so on wide viewports the visual density matches. */
+/* Seasonality (weekday + month) — diverging-bar mini-charts. Each
+   bar's drawing strip has a definite pixel height; the fill is
+   absolute-positioned and uses calc(--mag * 50%) so positive bars
+   grow upward from a center baseline and negatives grow downward.
+   Two separate panels (one per dimension) per design spec. */
 .seasonality-panel{padding:1rem 1.1rem}
 .seasonality-header{display:flex;align-items:baseline;justify-content:space-between;gap:1rem;margin-bottom:.85rem;flex-wrap:wrap}
 .seasonality-title{font-weight:800;font-size:1.05rem;letter-spacing:-.02em}
 .seasonality-meta{font-size:.7rem;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em;font-weight:700}
-.seasonality-grid{display:grid;grid-template-columns:1fr 2fr;gap:1.6rem}
-.seasonality-block-label{font-size:.66rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.14em;margin-bottom:.55rem}
-.seasonality-bars{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.4rem;align-items:stretch;height:130px;position:relative}
-/* Center baseline — drawn at the 50% mark of the .seasonality-bars
-   strip via a 1px horizontal line. Bars extend up or down from this. */
-.seasonality-bars:before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border);z-index:0}
-.seasonality-bar{display:grid;grid-template-rows:1fr 1fr auto;align-items:end;justify-items:center;height:100%;position:relative;z-index:1}
-.seasonality-bar .bar-slot{width:100%;display:flex}
-.seasonality-bar .bar-slot.up  {align-items:flex-end}
-.seasonality-bar .bar-slot.down{align-items:flex-start}
-.seasonality-bar .bar-fill{width:78%;min-height:0;border-radius:3px 3px 0 0;transition:filter .15s}
-.seasonality-bar .bar-fill.down{border-radius:0 0 3px 3px}
+.seasonality-bars{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:.5rem;align-items:stretch}
+.seasonality-bar{display:flex;flex-direction:column;align-items:stretch;min-width:0}
+/* Drawing strip: fixed pixel height so the absolute-positioned bars
+   compute their height percentages reliably across browsers. */
+.seasonality-bar-strip{position:relative;height:140px;background:transparent}
+.seasonality-bar-strip:before{content:"";position:absolute;left:0;right:0;top:50%;height:1px;background:var(--border)}
+.seasonality-bar .bar-fill{position:absolute;left:11%;right:11%;height:calc(var(--mag, 0) * 50%);min-height:2px;transition:filter .15s;cursor:default}
+.seasonality-bar .bar-fill.up  {bottom:50%;border-radius:3px 3px 0 0;background:var(--positive);transform-origin:bottom}
+.seasonality-bar .bar-fill.down{top:50%;border-radius:0 0 3px 3px;background:var(--negative);transform-origin:top}
 .seasonality-bar .bar-fill:hover{filter:brightness(1.15)}
-.seasonality-bar .bar-fill.up   {background:var(--positive)}
-.seasonality-bar .bar-fill.down {background:var(--negative)}
-.seasonality-bar .bar-label{font-size:.66rem;font-weight:700;color:var(--muted-foreground);margin-top:.3rem;font-variant-numeric:tabular-nums}
-@media(max-width:800px){
-  .seasonality-grid{grid-template-columns:1fr;gap:1.1rem}
-  .seasonality-bars{height:110px}
+.seasonality-bar .bar-label{font-size:.7rem;font-weight:700;color:var(--muted-foreground);margin-top:.45rem;text-align:center;font-variant-numeric:tabular-nums;line-height:1.1}
+.seasonality-bar .bar-value{font-size:.62rem;font-weight:600;color:var(--faint-foreground);text-align:center;font-variant-numeric:tabular-nums;line-height:1.15;margin-top:.15rem}
+@media(max-width:640px){
+  .seasonality-bar-strip{height:110px}
+  .seasonality-bar .bar-value{display:none}
 }
 /* Stock-list sparklines — tiny inline 30-day trend per row. */
 .stock-sparkline{display:inline-flex;width:80px;height:24px;align-items:center;justify-content:center;margin-right:.5rem;flex-shrink:0;color:var(--muted-foreground)}
@@ -402,27 +400,27 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     </div>
                 </section>
 
-                <!-- Seasonality patterns — two side-by-side bar charts
-                     (weekday + month) showing the average daily NET flow
-                     by calendar bucket across full history. Each block
-                     scales independently so the smaller-amplitude
-                     weekday pattern stays readable next to the month
-                     pattern. -->
-                <section class="panel seasonality-panel" aria-label="Seasonality patterns">
+                <!-- Seasonality (weekday) — diverging bar chart of average
+                     daily NET flow grouped by day-of-week across the full
+                     history. Center baseline; green grows up, red grows
+                     down. -->
+                <section class="panel seasonality-panel" aria-label="Seasonality by weekday">
                     <div class="seasonality-header">
-                        <div class="seasonality-title">Seasonality Patterns</div>
-                        <div class="seasonality-meta">Average daily net flow by calendar bucket · full history</div>
+                        <div class="seasonality-title">Net Flow by Weekday</div>
+                        <div class="seasonality-meta" id="seasonalityWeekdayMeta">Average daily net flow · full history</div>
                     </div>
-                    <div class="seasonality-grid">
-                        <div class="seasonality-block">
-                            <div class="seasonality-block-label">By Weekday</div>
-                            <div class="seasonality-bars" id="seasonalityWeekdayBars"></div>
-                        </div>
-                        <div class="seasonality-block">
-                            <div class="seasonality-block-label">By Month</div>
-                            <div class="seasonality-bars" id="seasonalityMonthBars"></div>
-                        </div>
+                    <div class="seasonality-bars" id="seasonalityWeekdayBars"></div>
+                </section>
+
+                <!-- Seasonality (month) — same chart as above but grouped
+                     by calendar month. Surfaces fiscal-year-end and
+                     quarter-end effects. -->
+                <section class="panel seasonality-panel" aria-label="Seasonality by month">
+                    <div class="seasonality-header">
+                        <div class="seasonality-title">Net Flow by Month</div>
+                        <div class="seasonality-meta" id="seasonalityMonthMeta">Average daily net flow · full history</div>
                     </div>
+                    <div class="seasonality-bars" id="seasonalityMonthBars"></div>
                 </section>
 
                 <!-- Chart controls (Overview-only — drive the chart below) -->
@@ -2486,12 +2484,14 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 this.renderSeasonality();
             }
 
-            /* Seasonality renderer — two diverging-bar mini-charts. Each
-               cell on the .seasonality-bars grid is split into an upper
-               (positive) and lower (negative) half by a 1px baseline.
-               Bar fill grows from the baseline outward (up for positive
-               averages, down for negative). Scaling is independent per
-               block so weekday signal isn't dwarfed by month outliers. */
+            /* Seasonality renderer — two separate diverging-bar charts
+               (one panel per dimension). Each bar's fill is
+               absolute-positioned inside a fixed-height strip, with the
+               magnitude carried by a --mag CSS variable (0..1). Positive
+               bars grow up from the center baseline; negative grow down.
+               Scaling is independent per chart so the weekday signal
+               isn't dwarfed by the month signal. Counts of contributing
+               days are surfaced in the panel meta. */
             renderSeasonality() {
                 if (!this.data || this.data.length < 2 || !this._ffTotal) return;
                 const labelsWk = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
@@ -2513,28 +2513,33 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 }
                 const avgWk = sumWk.map((s, i) => cntWk[i] ? s / cntWk[i] : 0);
                 const avgMo = sumMo.map((s, i) => cntMo[i] ? s / cntMo[i] : 0);
-                this._renderSeasonalityBars('seasonalityWeekdayBars', labelsWk, avgWk);
-                this._renderSeasonalityBars('seasonalityMonthBars',   labelsMo, avgMo);
+                this._renderSeasonalityBars('seasonalityWeekdayBars', labelsWk, avgWk, cntWk);
+                this._renderSeasonalityBars('seasonalityMonthBars',   labelsMo, avgMo, cntMo);
+
+                const totalWk = cntWk.reduce((a, b) => a + b, 0);
+                const totalMo = cntMo.reduce((a, b) => a + b, 0);
+                const wkMeta = document.getElementById('seasonalityWeekdayMeta');
+                const moMeta = document.getElementById('seasonalityMonthMeta');
+                if (wkMeta) wkMeta.textContent = `Average daily net flow · ${fmtCount(totalWk)} trading days`;
+                if (moMeta) moMeta.textContent = `Average daily net flow · ${fmtCount(totalMo)} trading days`;
             }
 
-            _renderSeasonalityBars(id, labels, values) {
+            _renderSeasonalityBars(id, labels, values, counts) {
                 const el = document.getElementById(id);
                 if (!el) return;
                 const max = Math.max(...values.map(Math.abs)) || 1;
                 el.innerHTML = labels.map((lab, i) => {
                     const v = values[i];
-                    const pct = (Math.abs(v) / max) * 100;
+                    const mag = Math.abs(v) / max;             // 0..1, drives --mag
                     const sign = v >= 0 ? 'up' : 'down';
-                    const tip = `${lab} · avg ${v >= 0 ? '+' : '−'}${fmtINR(Math.abs(v))} / day`;
-                    // Two slots stacked top-half / bottom-half. Bar fill
-                    // lives in the matching half for the sign so it grows
-                    // from the central baseline outward.
-                    const upFill   = sign === 'up'   ? `<div class="bar-fill up"   style="height:${pct.toFixed(1)}%" data-tip="${esc(tip)}"></div>` : '';
-                    const downFill = sign === 'down' ? `<div class="bar-fill down" style="height:${pct.toFixed(1)}%" data-tip="${esc(tip)}"></div>` : '';
+                    const sub  = `${v >= 0 ? '+' : '−'}${fmtINR(Math.abs(v))}`;
+                    const tip  = `${lab} · avg ${sub} / day · ${fmtCount(counts[i] || 0)} days`;
                     return `<div class="seasonality-bar" style="--i:${i}">
-                        <div class="bar-slot up">${upFill}</div>
-                        <div class="bar-slot down">${downFill}</div>
+                        <div class="seasonality-bar-strip">
+                            <div class="bar-fill ${sign}" style="--mag:${mag.toFixed(3)}" data-tip="${esc(tip)}"></div>
+                        </div>
                         <div class="bar-label">${lab}</div>
+                        <div class="bar-value">${sub}</div>
                     </div>`;
                 }).join('');
             }
