@@ -53,6 +53,17 @@
    badge so users can see today's swing vs yesterday's snapshot at a glance. */
 .stock-change-stack{display:flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.1}
 .stock-change-stack .prev-iter-badge{font-size:.55rem;padding:.1rem .3rem;opacity:.7;border-style:dashed}
+/* Market Changes — live market-cap column (BSE ListofScripData). */
+.stock-mcap{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15;min-width:62px}
+.stock-mcap-label{font-size:.58rem;font-weight:700;color:var(--faint-foreground);text-transform:uppercase;letter-spacing:.06em}
+.stock-mcap-val{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--foreground)}
+.stock-mcap.is-na .stock-mcap-val{color:var(--muted-foreground)}
+/* Market Changes — sort pill group. */
+.mc-sort{display:inline-flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.85rem}
+.mc-sort-label{font-size:.68rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em}
+.mc-sort-btn{background:transparent;color:var(--muted-foreground);border:1px solid var(--border);border-radius:6px;padding:.3rem .6rem;font-size:.74rem;font-weight:700;font-family:inherit;cursor:pointer;font-variant-numeric:tabular-nums;transition:background-color .12s,color .12s,border-color .12s}
+.mc-sort-btn:hover{color:var(--foreground);border-color:var(--input);background:var(--faint)}
+.mc-sort-btn.active{background:var(--foreground);color:var(--background);border-color:var(--foreground)}
 /* Stock chart per-exchange option row (mirror of Overview's .chart-options). */
 .stock-chart-options{margin:.15rem 0 .85rem;padding:.45rem .15rem .55rem;border-top:1px dashed var(--border);justify-content:flex-end}
 .stock-chart-options .chart-option{font-size:.7rem}
@@ -748,6 +759,19 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 return `₹${crores.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`;
             }
             return `₹${lakhs.toLocaleString('en-IN', { maximumFractionDigits: 2 })} L`;
+        }
+        // Market-cap formatter. Like fmtINR (input in lakhs) but adds a
+        // lakh-crore (L Cr) tier so the biggest stocks read naturally
+        // ("₹17.89 L Cr") instead of fmtINR's "₹1,789 K Cr". Used only by
+        // the Market Changes mcap column to avoid changing ₹-formatting
+        // elsewhere on the dashboard.
+        function fmtMcap(value) {
+            const crores = (Number(value) || 0) / 100;
+            const a = Math.abs(crores);
+            if (a >= 100000) return `₹${(crores / 100000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} L Cr`;
+            if (a >= 1000)   return `₹${(crores / 1000).toLocaleString('en-IN', { maximumFractionDigits: 2 })} K Cr`;
+            if (a >= 1)      return `₹${crores.toLocaleString('en-IN', { maximumFractionDigits: 2 })} Cr`;
+            return `₹${(Number(value) || 0).toLocaleString('en-IN', { maximumFractionDigits: 2 })} L`;
         }
         function fmtCount(value) {
             return Number(value || 0).toLocaleString('en-IN');
@@ -3413,9 +3437,29 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 // Cache the full set so toggle filtering can re-render without recomputing.
                 this._suddenChangesAll = suddenChanges;
                 if (!this._suddenChangesFilter) this._suddenChangesFilter = 'all';
+                if (!this._suddenChangesSort) this._suddenChangesSort = 'change';
+                if (!this._suddenChangesSortDir) this._suddenChangesSortDir = 'desc';
                 const filter = this._suddenChangesFilter;
-                const filtered = filter === 'all' ? suddenChanges
+                const sortBy = this._suddenChangesSort;
+                const dir = this._suddenChangesSortDir === 'asc' ? 1 : -1;
+                let filtered = filter === 'all' ? suddenChanges.slice()
                               : suddenChanges.filter(s => (s.exchange || '').toUpperCase() === filter);
+                // Client-side sort of the top-200 movers. Stocks with no
+                // mcap sink to the bottom regardless of direction so the
+                // "—" rows never crowd out ranked stocks.
+                const _sortKey = {
+                    change: s => Math.abs(s.change_percent || 0),
+                    mcap:   s => (s.mcap_lakhs == null ? null : s.mcap_lakhs),
+                    amount: s => (s.amount_financed || 0),
+                };
+                const keyFn = _sortKey[sortBy] || _sortKey.change;
+                filtered.sort((a, b) => {
+                    const ka = keyFn(a), kb = keyFn(b);
+                    if (ka == null && kb == null) return 0;
+                    if (ka == null) return 1;          // nulls always last
+                    if (kb == null) return -1;
+                    return (ka - kb) * dir;
+                });
                 // Each row is a ~1-month change inside a rolling 30-day window
                 // anchored at the freshest available stock-level date.
                 const anchor = suddenChanges._anchor;
@@ -3443,12 +3487,22 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         <button class="timeframe-btn ${filter==='NSE' ? 'active' : ''}" data-mc-filter="NSE" type="button">NSE · ${counts.NSE}</button>
                         <button class="timeframe-btn ${filter==='BSE' ? 'active' : ''}" data-mc-filter="BSE" type="button">BSE · ${counts.BSE}</button>
                     </div>`;
+                // Sort pills — click the active one to flip direction.
+                const _arrow = this._suddenChangesSortDir === 'asc' ? ' ↑' : ' ↓';
+                const sortHTML = `
+                    <div class="mc-sort" role="group" aria-label="Sort by">
+                        <span class="mc-sort-label">Sort</span>
+                        <button class="mc-sort-btn ${sortBy==='change' ? 'active' : ''}" data-mc-sort="change" type="button">Change %${sortBy==='change' ? _arrow : ''}</button>
+                        <button class="mc-sort-btn ${sortBy==='mcap' ? 'active' : ''}" data-mc-sort="mcap" type="button">Market Cap${sortBy==='mcap' ? _arrow : ''}</button>
+                        <button class="mc-sort-btn ${sortBy==='amount' ? 'active' : ''}" data-mc-sort="amount" type="button">Amount${sortBy==='amount' ? _arrow : ''}</button>
+                    </div>`;
 
                 grid.innerHTML = `
                     <div class="analytics-section" style="grid-column: 1 / -1;">
                         <h3>Recent Market Changes</h3>
                         ${subtitle ? `<div class="stat-sub" style="margin: -.5rem 0 .65rem">${subtitle}</div>` : ''}
                         ${toggleHTML}
+                        ${sortHTML}
                         <div class="stock-list">
                             ${filtered.slice(0, 200).map(stock => {
                                 // BSE per-stock keys are numeric scrip codes (e.g. "590096.0").
@@ -3466,6 +3520,12 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                 const prevPctClass = stock.prev_iter_change_percent != null
                                     ? (stock.prev_iter_change_percent > 0 ? 'positive-change' : 'negative-change')
                                     : '';
+                                // Live market cap (₹ lakhs from BSE). data-tip
+                                // makes the cell a tooltip target so the row-
+                                // click → chart handler skips it.
+                                const mcapCell = stock.mcap_lakhs != null
+                                    ? `<div class="stock-mcap" data-tip="Live market capitalisation (BSE), as of latest trading day"><span class="stock-mcap-label">M-Cap</span><span class="stock-mcap-val">${fmtMcap(stock.mcap_lakhs)}</span></div>`
+                                    : `<div class="stock-mcap is-na" data-tip="Market cap unavailable for this security"><span class="stock-mcap-label">M-Cap</span><span class="stock-mcap-val">—</span></div>`;
                                 return `
                                 <div class="stock-item">
                                     <div class="stock-info">
@@ -3474,6 +3534,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                     </div>
                                     <div class="stock-metrics">
                                         ${ex ? `<div class="stock-exchange ${exClass}">${ex}</div>` : ''}
+                                        ${mcapCell}
                                         <div class="stock-amount-stack">
                                             <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
                                             ${stock.previous_amount != null ? `<div class="stock-prev">from ${fmtINR(stock.previous_amount)}</div>` : ''}
@@ -3498,6 +3559,20 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 grid.querySelectorAll('[data-mc-filter]').forEach(btn => {
                     btn.addEventListener('click', () => {
                         this._suddenChangesFilter = btn.dataset.mcFilter;
+                        this.populateSuddenChanges(this._suddenChangesAll);
+                    });
+                });
+                // Sort pills — click active pill flips direction, otherwise
+                // switch to that column (descending).
+                grid.querySelectorAll('[data-mc-sort]').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const next = btn.dataset.mcSort;
+                        if (this._suddenChangesSort === next) {
+                            this._suddenChangesSortDir = this._suddenChangesSortDir === 'desc' ? 'asc' : 'desc';
+                        } else {
+                            this._suddenChangesSort = next;
+                            this._suddenChangesSortDir = 'desc';
+                        }
                         this.populateSuddenChanges(this._suddenChangesAll);
                     });
                 });

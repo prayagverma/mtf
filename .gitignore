@@ -21,6 +21,13 @@ stock_analytics_compressed.json.gz
 # version would go stale and confuse readers.
 mtf_reports/NSE/_equity_master.csv
 
+# --- Live market caps (ISIN → mcap_lakhs) ----
+# fetch_market_caps.py pulls this fresh from BSE's ListofScripData
+# endpoint every CI run; extract_stock_data.py consumes it to enrich the
+# Market Changes feed. Regenerated each run — never committed (changes
+# daily, would churn history).
+/market_caps.json
+
 # --- Compressed stock chunks (~38 MB / refresh) ----
 # Rebuilt fresh in CI every cron run and uploaded directly to Cloudflare Pages
 # via `wrangler pages deploy` (no git push needed). Keeping them out of git

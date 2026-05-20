@@ -123,7 +123,45 @@ class StockMTFExtractor:
         # Stripping whitespace from Symbol often yields a legacy scripname or a
         # longer prefix of it (RELINFRA, MANGCHEFER, ANDREWYULC ⊃ ANDREWYU).
         self.bse_name_to_legacy = {}
-        
+        # Live market caps keyed by ISIN, written by fetch_market_caps.py
+        # from BSE's ListofScripData endpoint. mcap_lakhs lets the
+        # Market Changes tab render + sort by market cap. Secondary index
+        # by BSE symbol covers rows whose ISIN is blank.
+        self.market_caps, self.market_caps_by_symbol = self._load_market_caps()
+
+    @staticmethod
+    def _load_market_caps(path='market_caps.json'):
+        by_isin, by_symbol = {}, {}
+        if not os.path.exists(path):
+            logger.info("market_caps.json not found — mcap enrichment skipped")
+            return by_isin, by_symbol
+        try:
+            with open(path, encoding='utf-8') as f:
+                data = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            logger.warning(f"Could not read {path}: {e}")
+            return by_isin, by_symbol
+        for isin, rec in data.items():
+            mc = rec.get('mcap_lakhs')
+            if mc is None:
+                continue
+            by_isin[isin.upper()] = mc
+            sym = (rec.get('symbol_bse') or '').strip().upper()
+            if sym:
+                by_symbol[sym] = mc
+        logger.info(f"Loaded {len(by_isin)} market caps from {path}")
+        return by_isin, by_symbol
+
+    def _mcap_for(self, record):
+        """Look up mcap_lakhs for a stock record, ISIN first then symbol."""
+        isin = (record.get('isin') or '').strip().upper()
+        if isin and isin in self.market_caps:
+            return self.market_caps[isin]
+        sym = (record.get('symbol') or '').strip().upper()
+        if sym and sym in self.market_caps_by_symbol:
+            return self.market_caps_by_symbol[sym]
+        return None
+
     def _pick_nse_csv_for_date(self, zip_obj, date):
         """Pick the best inner CSV for the target trading date. Mirrors
         _pick_nse_csv_for_date in extract_daily_totals_complete_fix.py.
@@ -1009,6 +1047,10 @@ class StockMTFExtractor:
                     'change_percent':  change_pct,
                     'from_date':       prev['date'],
                     'to_date':         latest['date'],
+                    # Live market cap (₹ lakhs) from BSE ListofScripData,
+                    # keyed by ISIN. None when the stock isn't in the BSE
+                    # universe or has no published mcap.
+                    'mcap_lakhs':      self._mcap_for(latest),
                     # Same swing computation against the window ending one day
                     # earlier (anchor − 1 → anchor − 31). Lets the UI render a
                     # side-by-side "today vs yesterday's snapshot of the same

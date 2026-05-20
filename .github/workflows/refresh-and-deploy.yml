@@ -153,23 +153,39 @@ jobs:
             fi
           done
 
+      # 1.4) Refresh live market caps from BSE's ListofScripData endpoint.
+      #      Writes market_caps.json (ISIN → mcap_lakhs), consumed by
+      #      extract_stock_data.py to enrich the Market Changes feed.
+      #      Tolerant of failure: on a fetch error the script keeps any
+      #      committed market_caps.json, and a missing file simply means
+      #      mcap renders as '—' in the UI. Not gated by the stock-data
+      #      cache (cheap, ~2 s), so it always runs; the values only get
+      #      baked into the dashboard when extraction re-runs (trading
+      #      days / script changes).
+      - name: Refresh market caps (BSE)
+        run: python fetch_market_caps.py || true
+
       # 1.5) Fingerprint the inputs to the stock-data pipeline so we can cache
       #      the (deterministic) output. The pipeline is a pure function of:
       #        - the contents of mtf_reports/ (raw NSE/BSE files, append-only)
       #        - the source of extract_stock_data.py
       #        - the source of compress_stock_data.py
+      #        - the contents of market_caps.json (mcap enrichment input)
       #      File name + size is enough — raw report files are append-only
       #      (never edited in place), so size uniquely identifies content.
       #      mtimes are intentionally excluded: actions/checkout@v4 resets
       #      them every run, which would defeat caching across runs even
       #      when the corpus is identical. Computed AFTER the fetch step
       #      so newly-downloaded files participate in the key.
+      #      market_caps.json hash is included so a fresh mcap pull
+      #      re-bakes the Market Changes feed even on a no-new-report day.
       - name: Compute pipeline fingerprint
         id: fp
         run: |
           REP=$(find mtf_reports -type f -printf '%P %s\n' 2>/dev/null | LC_ALL=C sort | sha256sum | cut -c1-32)
-          SCR=$(sha256sum extract_stock_data.py compress_stock_data.py | sha256sum | cut -c1-16)
-          KEY="mtf-stock-v1-${SCR}-${REP}"
+          SCR=$(sha256sum extract_stock_data.py compress_stock_data.py fetch_market_caps.py | sha256sum | cut -c1-16)
+          MCAP=$(sha256sum market_caps.json 2>/dev/null | cut -c1-12 || echo "none")
+          KEY="mtf-stock-v2-${SCR}-${MCAP}-${REP}"
           echo "key=${KEY}" >> "$GITHUB_OUTPUT"
           echo "Pipeline fingerprint: ${KEY}"
 
