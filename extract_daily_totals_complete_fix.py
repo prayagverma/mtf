@@ -136,7 +136,12 @@ def _parse_nse_totals_from_content(csv_content, date):
             if value and totals['end_outstanding'] is None:
                 totals['end_outstanding'] = value
 
+    # Count UNIQUE symbols, not rows. Some NSE files list a scrip on
+    # multiple rows (e.g. 01/02-Jun-2021 had 742 symbols duplicated
+    # 2-3x → 2,238 rows for only 1,485 distinct symbols), which a naive
+    # per-row tally inflated by ~55%.
     in_data = False
+    seen_symbols = set()
     for line in lines:
         if 'Symbol,Name,Qty Fin' in line:
             in_data = True
@@ -148,7 +153,8 @@ def _parse_nse_totals_from_content(csv_content, date):
                 if symbol and not symbol.startswith(',') and symbol != '':
                     if 'Total' not in symbol and 'TOTAL' not in symbol:
                         if not symbol.isdigit() and len(symbol) > 0:
-                            totals['securities_count'] += 1
+                            seen_symbols.add(symbol.upper())
+    totals['securities_count'] = len(seen_symbols)
 
     return totals
 
@@ -279,8 +285,14 @@ def _extract_bse_new_csv(filepath, date):
     # Detect by matching "Amt Fin" / "Qty Fin" anywhere in the header row.
     in_data = False
     amt_col_idx = None
-    sec_count = 0
+    isin_col_idx = None
     amount_total = 0.0
+    # Dedup by ISIN (when present) else the first cell. The early new-
+    # format BSE CSVs (e.g. 01/03-Oct-2025 transitional 5-col files)
+    # listed every scrip twice, which inflated both the count (~2,932
+    # rows for ~1,597 distinct scrips) and the summed amount. Counting
+    # and summing unique keys fixes both.
+    seen_keys = set()
     reader = _csv.reader(lines)
     for row in reader:
         if not row:
@@ -288,11 +300,13 @@ def _extract_bse_new_csv(filepath, date):
         if not in_data:
             joined = ','.join(c.strip().lower() for c in row)
             if 'amt fin' in joined and ('qty fin' in joined or 'no.of shares' in joined):
-                # Header found — locate the Amt column index
+                # Header found — locate the Amt + ISIN column indexes
                 for j, c in enumerate(row):
-                    if 'amt fin' in c.strip().lower():
+                    cl = c.strip().lower()
+                    if amt_col_idx is None and 'amt fin' in cl:
                         amt_col_idx = j
-                        break
+                    if isin_col_idx is None and 'isin' in cl:
+                        isin_col_idx = j
                 in_data = True
             continue
         # Inside securities table
@@ -307,11 +321,16 @@ def _extract_bse_new_csv(filepath, date):
             amt = float(row[amt_col_idx].strip())
         except ValueError:
             continue
-        sec_count += 1
+        key = (row[isin_col_idx].strip().upper()
+               if isin_col_idx is not None and len(row) > isin_col_idx and row[isin_col_idx].strip()
+               else first.upper())
+        if key in seen_keys:
+            continue
+        seen_keys.add(key)
         amount_total += amt
 
-    totals['securities_count'] = sec_count
-    totals['amount_financed'] = round(amount_total, 2) if sec_count else None
+    totals['securities_count'] = len(seen_keys)
+    totals['amount_financed'] = round(amount_total, 2) if seen_keys else None
     return totals
 
 
@@ -337,7 +356,9 @@ def _extract_bse_legacy_tsv(filepath, date):
             'exposure_taken': None,
             'exposure_liquidated': None,
             'end_outstanding': None,
-            'securities_count': len(df)
+            # Unique scrips (defensive — legacy files rarely duplicate,
+            # but stay consistent with the NSE / new-CSV unique counts).
+            'securities_count': int(df['scrip_code'].nunique())
         }
         
         # Find the total line (usually last line)
