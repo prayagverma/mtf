@@ -60,7 +60,13 @@
    equally (flex:1 1 0), so the fixed-width mcap column sits in the
    middle of the row. Metrics right-align their content. */
 .stock-item.has-mcap{gap:.5rem}
-.stock-item.has-mcap .stock-info{flex:1 1 0;min-width:0}
+/* The second selector beats the higher-specificity
+   `#sudden-changes-tab .stock-info{flex:1 1 auto}` rule so info uses a
+   basis-0 grow that matches metrics — otherwise info's content-width
+   basis makes the left column wider and pushes the mcap right of
+   centre on the Market Changes tab. */
+.stock-item.has-mcap .stock-info,
+#sudden-changes-tab .stock-item.has-mcap .stock-info{flex:1 1 0;min-width:0}
 .stock-item.has-mcap .stock-metrics{flex:1 1 0;min-width:0;justify-content:flex-end}
 .stock-mcap-mid{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px;line-height:1.2;padding:0 1rem;min-width:96px}
 .stock-mcap-label{font-size:.56rem;font-weight:700;color:var(--faint-foreground);text-transform:uppercase;letter-spacing:.06em}
