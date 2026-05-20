@@ -69,8 +69,13 @@
   .stock-mcap-pct{display:none}
 }
 /* NSE / BSE tabs — 2-column grid (Top Funded | Volume Leaders) with
-   the Market Concentration strip spanning both via grid-column:1/-1. */
-#nseAnalyticsGrid,#bseAnalyticsGrid{grid-template-columns:1fr 1fr}
+   the Market Concentration strip spanning both via grid-column:1/-1.
+   minmax(0,1fr) (not the default minmax(auto,1fr)) lets each track
+   shrink below its rows' min-content so long stock names ellipsis
+   instead of blowing the grid wider than the chart container above it.
+   .analytics-section needs min-width:0 for the same reason. */
+#nseAnalyticsGrid,#bseAnalyticsGrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+#nseAnalyticsGrid .analytics-section,#bseAnalyticsGrid .analytics-section{min-width:0}
 @media(max-width:760px){#nseAnalyticsGrid,#bseAnalyticsGrid{grid-template-columns:1fr}}
 /* Concentration stats laid out horizontally as small cards across the
    full width instead of a stacked list. */
