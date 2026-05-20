@@ -53,11 +53,31 @@
    badge so users can see today's swing vs yesterday's snapshot at a glance. */
 .stock-change-stack{display:flex;flex-direction:column;align-items:flex-end;gap:3px;line-height:1.1}
 .stock-change-stack .prev-iter-badge{font-size:.55rem;padding:.1rem .3rem;opacity:.7;border-style:dashed}
-/* Market Changes — live market-cap column (BSE ListofScripData). */
-.stock-mcap{display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.15;min-width:62px}
-.stock-mcap-label{font-size:.58rem;font-weight:700;color:var(--faint-foreground);text-transform:uppercase;letter-spacing:.06em}
-.stock-mcap-val{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--foreground)}
-.stock-mcap.is-na .stock-mcap-val{color:var(--muted-foreground)}
+/* Middle market-cap cell (BSE ListofScripData). Sits just after the
+   name, divided from it by a left border, with the right-side metrics
+   pushed to the far edge via margin-right:auto. */
+.stock-item.has-mcap{gap:.5rem}
+.stock-item.has-mcap .stock-info{flex:1 1 0;min-width:0}
+.stock-item.has-mcap .stock-metrics{flex:0 0 auto}
+.stock-mcap-mid{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.2;margin-right:.85rem;padding:0 .9rem;border-left:1px solid var(--border);border-right:1px solid var(--border);min-width:88px}
+.stock-mcap-label{font-size:.56rem;font-weight:700;color:var(--faint-foreground);text-transform:uppercase;letter-spacing:.06em}
+.stock-mcap-val{font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--foreground)}
+.stock-mcap-pct{font-size:.62rem;font-weight:600;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
+.stock-mcap-mid.is-na .stock-mcap-val{color:var(--muted-foreground)}
+@media(max-width:560px){
+  .stock-mcap-mid{margin-left:.5rem;padding-left:.5rem;min-width:64px}
+  .stock-mcap-pct{display:none}
+}
+/* NSE / BSE tabs — 2-column grid (Top Funded | Volume Leaders) with
+   the Market Concentration strip spanning both via grid-column:1/-1. */
+#nseAnalyticsGrid,#bseAnalyticsGrid{grid-template-columns:1fr 1fr}
+@media(max-width:760px){#nseAnalyticsGrid,#bseAnalyticsGrid{grid-template-columns:1fr}}
+/* Concentration stats laid out horizontally as small cards across the
+   full width instead of a stacked list. */
+.concentration-stats-horizontal{flex-direction:row;flex-wrap:wrap;gap:.75rem}
+.concentration-stats-horizontal .stat-item{flex:1 1 150px;flex-direction:column;align-items:flex-start;gap:.3rem;padding:.65rem .85rem;border-bottom:0;border:1px solid var(--border);border-radius:8px;background:var(--faint)}
+.concentration-stats-horizontal .stat-item .stat-label{font-size:.64rem}
+.concentration-stats-horizontal .stat-item .stat-value{font-size:1.1rem}
 /* Market Changes — sort pill group. */
 .mc-sort{display:inline-flex;align-items:center;gap:.4rem;flex-wrap:wrap;margin-bottom:.85rem}
 .mc-sort-label{font-size:.68rem;font-weight:700;color:var(--muted-foreground);text-transform:uppercase;letter-spacing:.08em}
@@ -3152,6 +3172,25 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 return `<button class="stock-chart-link" type="button" data-link-symbol="${safe}" data-link-exchange="${exchange}" data-link-scope="${sc}" aria-label="Chart ${safe}" title="Show on chart"><i class="fa-solid fa-chart-line" aria-hidden="true"></i></button>`;
             }
 
+            // Middle market-cap cell — sits between the name and the
+            // right-side metrics. data-tip makes it a tooltip target so the
+            // row-click → chart handler skips it. withPct adds the MTF-book-
+            // ÷-mcap line (Market Changes only).
+            _mcapMidCell(stock, withPct = false) {
+                if (stock.mcap_lakhs == null) {
+                    return `<div class="stock-mcap-mid is-na" data-tip="Market cap unavailable for this security"><span class="stock-mcap-label">Mkt Cap</span><span class="stock-mcap-val">—</span></div>`;
+                }
+                const mtfPct = (withPct && stock.amount_financed)
+                    ? (stock.amount_financed / stock.mcap_lakhs * 100)
+                    : null;
+                const tip = `Live market cap (BSE)${mtfPct != null ? ` · MTF book is ${mtfPct.toFixed(2)}% of market cap` : ''}`;
+                return `<div class="stock-mcap-mid" data-tip="${esc(tip)}">
+                    <span class="stock-mcap-label">Mkt Cap</span>
+                    <span class="stock-mcap-val">${fmtMcap(stock.mcap_lakhs)}</span>
+                    ${mtfPct != null ? `<span class="stock-mcap-pct">${mtfPct < 0.01 ? '&lt;0.01' : mtfPct.toFixed(2)}% of mcap</span>` : ''}
+                </div>`;
+            }
+
             // Locate the stock_index dict key for a (symbol, exchange) pair.
             // For dual-listed tickers (INFY etc.) the key may be compound
             // ("BSE:INFY"); for the majority the key is the plain symbol.
@@ -3250,66 +3289,76 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 nseData.__top10Display = top10;
                 nseData.__top50Display = top50;
                 nseData.__extraStats = this._buildMarketStats(active, totalOutstanding, nseData.top_funded);
-                grid.innerHTML = `
-                    <div class="analytics-section">
-                        <h3>Top Funded Stocks</h3>
-                        <div class="stock-list">
-                            ${(nseData.top_funded || []).slice(0, 50).map(stock => `
-                                <div class="stock-item">
-                                    <div class="stock-info">
-                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
-                                        <div class="stock-name">${esc(stock.name)}</div>
-                                    </div>
-                                    <div class="stock-metrics">
-                                        <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
-                                        <div class="stock-exchange exchange-nse">NSE</div>
-                                        ${this._sparklineSlot(stock.symbol, 'nse')}
-                                        ${this._chartLinkBtn(stock.symbol, 'nse')}
-                                    </div>
-                                </div>
-                            `).join('')}
+                grid.innerHTML = this._renderExchangeTab('NSE', 'nse', nseData);
+                this._wireChartLinks(grid, 'nse');
+                this._fillSparklines(grid);
+            }
+
+            // Shared NSE/BSE tab layout: a full-width Market Concentration
+            // strip on top, then a 2-column grid (Top Funded left, Volume
+            // Leaders right). Both lists carry the middle market-cap cell.
+            _renderExchangeTab(label, scope, data) {
+                const exClass = scope === 'nse' ? 'exchange-nse' : 'exchange-bse';
+                const fundedRow = (stock) => `
+                    <div class="stock-item has-mcap">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${esc(stock.symbol)}</div>
+                            <div class="stock-name">${esc(stock.name)}</div>
                         </div>
-                    </div>
-                    <div class="analytics-section">
+                        ${this._mcapMidCell(stock)}
+                        <div class="stock-metrics">
+                            <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
+                            <div class="stock-exchange ${exClass}">${label}</div>
+                            ${this._sparklineSlot(stock.symbol, scope)}
+                            ${this._chartLinkBtn(stock.symbol, scope)}
+                        </div>
+                    </div>`;
+                const volumeRow = (stock) => `
+                    <div class="stock-item has-mcap">
+                        <div class="stock-info">
+                            <div class="stock-symbol">${esc(stock.symbol)}</div>
+                            <div class="stock-name">${esc(stock.name)}</div>
+                        </div>
+                        ${this._mcapMidCell(stock)}
+                        <div class="stock-metrics">
+                            <div class="stock-amount" title="${fmtCount(stock.qty_financed)} shares">${fmtCountShort(stock.qty_financed)}</div>
+                            <div class="stock-exchange ${exClass}">QTY</div>
+                            ${this._sparklineSlot(stock.symbol, scope)}
+                            ${this._chartLinkBtn(stock.symbol, scope)}
+                        </div>
+                    </div>`;
+                return `
+                    <div class="analytics-section concentration-strip" style="grid-column: 1 / -1;">
                         <h3>Market Concentration</h3>
-                        <div class="concentration-stats">
+                        <div class="concentration-stats concentration-stats-horizontal">
                             <div class="stat-item">
                                 <span class="stat-label">Total Outstanding</span>
-                                <span class="stat-value">${fmtINR(nseData.__totalDisplay)}</span>
+                                <span class="stat-value">${fmtINR(data.__totalDisplay)}</span>
                             </div>
-                            ${nseData.__extraStats}
+                            ${data.__extraStats}
                             <div class="stat-item">
                                 <span class="stat-label">Top 10 Share</span>
-                                <span class="stat-value">${nseData.__top10Display.toFixed(1)}%</span>
+                                <span class="stat-value">${data.__top10Display.toFixed(1)}%</span>
                             </div>
                             <div class="stat-item">
                                 <span class="stat-label">Top 50 Share</span>
-                                <span class="stat-value">${nseData.__top50Display.toFixed(1)}%</span>
+                                <span class="stat-value">${data.__top50Display.toFixed(1)}%</span>
                             </div>
+                        </div>
+                    </div>
+                    <div class="analytics-section">
+                        <h3>Top Funded Stocks</h3>
+                        <div class="stock-list">
+                            ${(data.top_funded || []).slice(0, 50).map(fundedRow).join('')}
                         </div>
                     </div>
                     <div class="analytics-section">
                         <h3>Volume Leaders</h3>
                         <div class="stock-list">
-                            ${(nseData.volume_breakers || []).slice(0, 15).map(stock => `
-                                <div class="stock-item">
-                                    <div class="stock-info">
-                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
-                                        <div class="stock-name">${esc(stock.name)}</div>
-                                    </div>
-                                    <div class="stock-metrics">
-                                        <div class="stock-amount" title="${fmtCount(stock.qty_financed)} shares">${fmtCountShort(stock.qty_financed)}</div>
-                                        <div class="stock-exchange exchange-nse">QTY</div>
-                                        ${this._sparklineSlot(stock.symbol, 'nse')}
-                                        ${this._chartLinkBtn(stock.symbol, 'nse')}
-                                    </div>
-                                </div>
-                            `).join('')}
+                            ${(data.volume_breakers || []).slice(0, 15).map(volumeRow).join('')}
                         </div>
                     </div>
                 `;
-                this._wireChartLinks(grid, 'nse');
-                this._fillSparklines(grid);
             }
 
             populateBSEStocks(bseData) {
@@ -3325,64 +3374,7 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 bseData.__top10Display = top10;
                 bseData.__top50Display = top50;
                 bseData.__extraStats = this._buildMarketStats(active, totalOutstanding, bseData.top_funded);
-                grid.innerHTML = `
-                    <div class="analytics-section">
-                        <h3>Top Funded Stocks</h3>
-                        <div class="stock-list">
-                            ${(bseData.top_funded || []).slice(0, 50).map(stock => `
-                                <div class="stock-item">
-                                    <div class="stock-info">
-                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
-                                        <div class="stock-name">${esc(stock.name)}</div>
-                                    </div>
-                                    <div class="stock-metrics">
-                                        <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
-                                        <div class="stock-exchange exchange-bse">BSE</div>
-                                        ${this._sparklineSlot(stock.symbol, 'bse')}
-                                        ${this._chartLinkBtn(stock.symbol, 'bse')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                    <div class="analytics-section">
-                        <h3>Market Concentration</h3>
-                        <div class="concentration-stats">
-                            <div class="stat-item">
-                                <span class="stat-label">Total Outstanding</span>
-                                <span class="stat-value">${fmtINR(bseData.__totalDisplay)}</span>
-                            </div>
-                            ${bseData.__extraStats}
-                            <div class="stat-item">
-                                <span class="stat-label">Top 10 Share</span>
-                                <span class="stat-value">${bseData.__top10Display.toFixed(1)}%</span>
-                            </div>
-                            <div class="stat-item">
-                                <span class="stat-label">Top 50 Share</span>
-                                <span class="stat-value">${bseData.__top50Display.toFixed(1)}%</span>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="analytics-section">
-                        <h3>Volume Leaders</h3>
-                        <div class="stock-list">
-                            ${(bseData.volume_breakers || []).slice(0, 15).map(stock => `
-                                <div class="stock-item">
-                                    <div class="stock-info">
-                                        <div class="stock-symbol">${esc(stock.symbol)}</div>
-                                        <div class="stock-name">${esc(stock.name)}</div>
-                                    </div>
-                                    <div class="stock-metrics">
-                                        <div class="stock-amount" title="${fmtCount(stock.qty_financed)} shares">${fmtCountShort(stock.qty_financed)}</div>
-                                        <div class="stock-exchange exchange-bse">QTY</div>
-                                        ${this._sparklineSlot(stock.symbol, 'bse')}
-                                        ${this._chartLinkBtn(stock.symbol, 'bse')}
-                                    </div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    </div>
-                `;
+                grid.innerHTML = this._renderExchangeTab('BSE', 'bse', bseData);
                 this._wireChartLinks(grid, 'bse');
                 this._fillSparklines(grid);
             }
@@ -3520,21 +3512,15 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                                 const prevPctClass = stock.prev_iter_change_percent != null
                                     ? (stock.prev_iter_change_percent > 0 ? 'positive-change' : 'negative-change')
                                     : '';
-                                // Live market cap (₹ lakhs from BSE). data-tip
-                                // makes the cell a tooltip target so the row-
-                                // click → chart handler skips it.
-                                const mcapCell = stock.mcap_lakhs != null
-                                    ? `<div class="stock-mcap" data-tip="Live market capitalisation (BSE), as of latest trading day"><span class="stock-mcap-label">M-Cap</span><span class="stock-mcap-val">${fmtMcap(stock.mcap_lakhs)}</span></div>`
-                                    : `<div class="stock-mcap is-na" data-tip="Market cap unavailable for this security"><span class="stock-mcap-label">M-Cap</span><span class="stock-mcap-val">—</span></div>`;
                                 return `
-                                <div class="stock-item">
+                                <div class="stock-item has-mcap">
                                     <div class="stock-info">
                                         <div class="stock-symbol">${esc(headline)}</div>
                                         <div class="stock-name">${esc(subline)}${window ? ` · ${esc(window)}` : ''}</div>
                                     </div>
+                                    ${this._mcapMidCell(stock, true)}
                                     <div class="stock-metrics">
                                         ${ex ? `<div class="stock-exchange ${exClass}">${ex}</div>` : ''}
-                                        ${mcapCell}
                                         <div class="stock-amount-stack">
                                             <div class="stock-amount">${fmtINR(stock.amount_financed)}</div>
                                             ${stock.previous_amount != null ? `<div class="stock-prev">from ${fmtINR(stock.previous_amount)}</div>` : ''}

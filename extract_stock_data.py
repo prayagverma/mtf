@@ -1008,7 +1008,10 @@ class StockMTFExtractor:
                     'amount_financed': data['amount_financed'],
                     'qty_financed': data.get('qty_financed', 0),
                     'avg_price': data.get('avg_price', 0),
-                    'date': data['date']
+                    'date': data['date'],
+                    # Live market cap (₹ lakhs) from BSE ListofScripData,
+                    # by ISIN then BSE-symbol. None when unavailable.
+                    'mcap_lakhs': self._mcap_for(data),
                 }
                 for symbol, data in stock_list
             ]
