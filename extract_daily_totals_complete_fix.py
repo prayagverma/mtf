@@ -392,7 +392,31 @@ def _extract_bse_legacy_tsv(filepath, date):
                 totals['exposure_liquidated'] = df['EL_DD'].sum()
             if 'NO_EOD' in numeric_cols:
                 totals['end_outstanding'] = df['NO_EOD'].sum()
-        
+
+        # Recompute exposure_taken / exposure_liquidated from per-scrip
+        # rows with a physical-possibility clamp. The raw EL_DD / ET_DD
+        # columns (and the Total line that just sums them) occasionally
+        # carry a corrupt single-scrip value — e.g. EASEMYTRIP on
+        # 2022-12-29 reported EL_DD = 1,00,007 lakh against a ₹0.78 Cr
+        # position, spiking the day's closed-positions total ~50x. A
+        # scrip can't liquidate more than it began with plus what it
+        # took (EL ≤ TO_BOD + ET_DD), nor take more than it ended with
+        # plus what it liquidated. When a value is impossible, fall back
+        # to the balance-derived figure. On clean days the clamped sum
+        # equals the Total line exactly, so only corrupt days change.
+        if {'TO_BOD', 'ET_DD', 'EL_DD', 'NO_EOD'} <= set(df.columns):
+            sub = df[['TO_BOD', 'ET_DD', 'EL_DD', 'NO_EOD']].apply(
+                pd.to_numeric, errors='coerce').dropna()
+            if not sub.empty:
+                tobod, et, el, eod = sub['TO_BOD'], sub['ET_DD'], sub['EL_DD'], sub['NO_EOD']
+                eps = 1.0
+                el_fixed = el.where(el <= tobod + et + eps,
+                                    (tobod + et - eod).clip(lower=0))
+                et_fixed = et.where(et <= eod + el_fixed + eps,
+                                    (eod + el_fixed - tobod).clip(lower=0))
+                totals['exposure_liquidated'] = round(float(el_fixed.sum()), 2)
+                totals['exposure_taken'] = round(float(et_fixed.sum()), 2)
+
         return totals
         
     except Exception as e:
