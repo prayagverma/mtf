@@ -56,16 +56,19 @@
 /* Middle market-cap cell (BSE ListofScripData). Sits just after the
    name, divided from it by a left border, with the right-side metrics
    pushed to the far edge via margin-right:auto. */
+/* Centre the mcap cell: the name (left) and metrics (right) both grow
+   equally (flex:1 1 0), so the fixed-width mcap column sits in the
+   middle of the row. Metrics right-align their content. */
 .stock-item.has-mcap{gap:.5rem}
 .stock-item.has-mcap .stock-info{flex:1 1 0;min-width:0}
-.stock-item.has-mcap .stock-metrics{flex:0 0 auto}
-.stock-mcap-mid{flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end;gap:1px;line-height:1.2;margin-right:.85rem;padding:0 .9rem;border-left:1px solid var(--border);border-right:1px solid var(--border);min-width:88px}
+.stock-item.has-mcap .stock-metrics{flex:1 1 0;min-width:0;justify-content:flex-end}
+.stock-mcap-mid{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:1px;line-height:1.2;padding:0 1rem;min-width:96px}
 .stock-mcap-label{font-size:.56rem;font-weight:700;color:var(--faint-foreground);text-transform:uppercase;letter-spacing:.06em}
 .stock-mcap-val{font-size:.82rem;font-weight:700;font-variant-numeric:tabular-nums;color:var(--foreground)}
 .stock-mcap-pct{font-size:.62rem;font-weight:600;color:var(--muted-foreground);font-variant-numeric:tabular-nums}
 .stock-mcap-mid.is-na .stock-mcap-val{color:var(--muted-foreground)}
 @media(max-width:560px){
-  .stock-mcap-mid{margin-left:.5rem;padding-left:.5rem;min-width:64px}
+  .stock-mcap-mid{padding:0 .5rem;min-width:72px}
   .stock-mcap-pct{display:none}
 }
 /* NSE / BSE tabs — 2-column grid (Top Funded | Volume Leaders) with
