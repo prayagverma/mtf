@@ -121,6 +121,15 @@
 [data-fs-root]:fullscreen{background:var(--background);padding:1.25rem 1.5rem;overflow:auto;display:flex;flex-direction:column}
 [data-fs-root="overview"]:fullscreen{padding:1.5rem 1.75rem}
 [data-fs-root="overview"]:fullscreen .chart-content{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 120px)}
+[data-fs-root="composition"]:fullscreen{padding:1.5rem 1.75rem}
+[data-fs-root="composition"]:fullscreen .chart-content{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 120px)}
+/* Composition chart chip-legend (always visible; updates on hover). */
+.comp-legend-chips{display:flex;flex-wrap:wrap;gap:.4rem .85rem;align-items:center;font-size:.8rem;line-height:1.2}
+.comp-chip-date{color:var(--muted-foreground);font-weight:600}
+.comp-chip{display:inline-flex;align-items:center;gap:.35rem;color:var(--foreground);white-space:nowrap}
+.comp-chip i{width:10px;height:10px;border-radius:2px;display:inline-block;flex:0 0 auto}
+.comp-chip b{font-weight:600}
+.comp-chip-pct{color:var(--muted-foreground)}
 [data-fs-root="nse"]:fullscreen .stock-chart-container,
 [data-fs-root="bse"]:fullscreen .stock-chart-container{flex:1 1 auto;height:auto !important;min-height:calc(100vh - 180px)}
 [data-fs-root="nse"]:fullscreen .stock-chart-wrap,
@@ -566,6 +575,19 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                         </div>
                     </div>
                     <div class="chart-content" id="chartDiv">
+                        <div class="loading"><div class="spinner"></div> Loading chart…</div>
+                    </div>
+                </div>
+
+                <div class="panel" data-fs-root="composition">
+                    <div class="chart-controls">
+                        <div class="chart-title">MTF Book Composition — F&amp;O vs non-F&amp;O vs ETF</div>
+                        <div class="chart-options">
+                            <div class="comp-legend-chips" id="compLegendChips"></div>
+                            <button class="chart-icon-btn chart-fs" data-fs-scope="composition" type="button" title="Fullscreen" aria-label="Fullscreen"><i class="fa-regular fa-expand" aria-hidden="true"></i></button>
+                        </div>
+                    </div>
+                    <div class="chart-content" id="compositionChartDiv">
                         <div class="loading"><div class="spinner"></div> Loading chart…</div>
                     </div>
                 </div>
@@ -1047,7 +1069,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     try { await this.dataLoader.loadManifest(); } catch (_) { /* fallback: no bust */ }
                     await Promise.all([
                         this.loadDailyTotalsData(),
-                        this.loadCompressedStockData()
+                        this.loadCompressedStockData(),
+                        this.loadCompositionData()
                     ]);
                     // Wire tabs + activate the URL-selected tab BEFORE the
                     // overlay hides. A direct hit on /nse-stocks would otherwise
@@ -1065,7 +1088,10 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     // we're past both the layout pass and the next paint.
                     // Default timeframe on first paint is 1Y (matches the active pill).
                     // setTimeframe internally calls updateChart() with the right window.
-                    requestAnimationFrame(() => requestAnimationFrame(() => this.setTimeframe('1Y')));
+                    requestAnimationFrame(() => requestAnimationFrame(() => {
+                        this.setTimeframe('1Y');
+                        this.setupCompositionChart();
+                    }));
                 } catch (error) {
                     console.error('Failed to initialize:', error);
                     this.showError('Failed to load dashboard data');
@@ -1127,6 +1153,18 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                 } catch (error) {
                     console.error('Failed to load stock data:', error);
                     return null;
+                }
+            }
+
+            // MTF book AUM split into F&O / non-F&O / ETF (₹ lakhs per day),
+            // produced by extract_stock_data.export_aum_by_class(). Optional:
+            // a miss just leaves the composition chart in its empty state.
+            async loadCompositionData() {
+                try {
+                    const r = await fetch('mtf_aum_by_class.json' + this.dataLoader._bust());
+                    this.aumByClass = r.ok ? await r.json() : null;
+                } catch (_) {
+                    this.aumByClass = null;
                 }
             }
 
@@ -1233,6 +1271,82 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
                     console.error(error);
                     chartDiv.innerHTML = '<div class="error">Failed to initialize chart. Please refresh the page.</div>';
                 }
+            }
+
+            // Bands listed bottom→top as they stack in the composition chart.
+            // Fixed (theme-agnostic) hues so the three classes stay distinct
+            // in both light and dark mode.
+            _compBands() {
+                return [
+                    { key: 'fno',     label: 'F&O',     color: '#3b82f6' },
+                    { key: 'non_fno', label: 'Non-F&O', color: '#10b981' },
+                    { key: 'etf',     label: 'ETF',     color: '#8b5cf6' },
+                ];
+            }
+
+            // Overview "MTF Book Composition" stacked-area chart. Lightweight
+            // Charts has no native stacking, so we draw three cumulative AREA
+            // series back-to-front with opaque fills — total (ETF colour),
+            // then F&O+non-F&O (non-F&O colour), then F&O (F&O colour) — so each
+            // upper band hides the lower portion and the visible slice is that
+            // class. Values are ₹ lakhs (fmtINR converts to Cr).
+            setupCompositionChart() {
+                const div = document.getElementById('compositionChartDiv');
+                if (!div || typeof LightweightCharts === 'undefined') return;
+                const rows = this.aumByClass;
+                if (!rows || !rows.length) {
+                    div.innerHTML = '<div class="error">Composition data unavailable.</div>';
+                    return;
+                }
+                div.innerHTML = '';
+                const chart = this._buildChart(div, { logY: false });
+                this.compositionChart = chart;
+                const bands = this._compBands();
+                const colorOf = k => bands.find(b => b.key === k).color;
+
+                const cum = {
+                    etf:     rows.map(r => ({ time: r.date, value: r.total })),
+                    non_fno: rows.map(r => ({ time: r.date, value: (r.fno || 0) + (r.non_fno || 0) })),
+                    fno:     rows.map(r => ({ time: r.date, value: r.fno || 0 })),
+                };
+                ['etf', 'non_fno', 'fno'].forEach(key => {
+                    const color = colorOf(key);
+                    const s = chart.addSeries(LightweightCharts.AreaSeries, {
+                        lineColor: color,
+                        topColor: color,
+                        bottomColor: color,
+                        lineWidth: 1,
+                        priceLineVisible: false,
+                        lastValueVisible: false,
+                        crosshairMarkerVisible: false,
+                        priceFormat: { type: 'custom', minMove: 1, formatter: v => fmtINR(v) },
+                    });
+                    s.setData(cum[key]);
+                });
+                chart.timeScale().fitContent();
+
+                // Always-visible chip legend; reflects the hovered (or latest) day.
+                const chipsEl = document.getElementById('compLegendChips');
+                const times = rows.map(r => ({ time: r.date }));
+                const renderChips = (row) => {
+                    if (!chipsEl || !row) return;
+                    const total = row.total || 0;
+                    chipsEl.innerHTML =
+                        `<span class="comp-chip-date">${fmtDate(row.date)}</span>` +
+                        bands.map(b => {
+                            const v = row[b.key] || 0;
+                            const pct = total > 0 ? (v / total * 100) : 0;
+                            return `<span class="comp-chip"><i style="background:${b.color}"></i>${b.label} <b>${fmtINR(v)}</b> <span class="comp-chip-pct">${pct.toFixed(1)}%</span></span>`;
+                        }).join('');
+                };
+                renderChips(rows[rows.length - 1]);
+                chart.subscribeCrosshairMove((param) => {
+                    if (!param || !param.time) { renderChips(rows[rows.length - 1]); return; }
+                    const ds = (typeof param.time === 'string') ? param.time
+                        : `${param.time.year}-${String(param.time.month).padStart(2, '0')}-${String(param.time.day).padStart(2, '0')}`;
+                    const i = this._binarySearchByTime(times, ds);
+                    renderChips(i >= 0 ? rows[i] : rows[rows.length - 1]);
+                });
             }
 
             _mountLegend(container, scope) {
@@ -1448,6 +1562,8 @@ body[data-theme=dark] #themeIconMoon{display:none}</style>
             repaintCharts() {
                 if (this.chart) this.chart.applyOptions(this.chartLayoutOptions());
                 if (this.stockChart) this.stockChart.applyOptions(this.chartLayoutOptions());
+                // Composition band colours are theme-agnostic; only re-apply layout.
+                if (this.compositionChart) this.compositionChart.applyOptions(this.chartLayoutOptions());
                 // Re-color series & legend (palette may have changed).
                 if (this._chartSeries) {
                     const pal = this.paletteFromCSS();

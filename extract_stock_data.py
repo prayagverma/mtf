@@ -1079,7 +1079,92 @@ class StockMTFExtractor:
             json.dump(export_data, f, indent=2)
         
         logger.info(f"Stock analytics exported to {output_path}")
-        
+
+    def export_aum_by_class(self, fno_path="fno_membership.json",
+                            etf_path="etf_list.json",
+                            output_path="mtf_aum_by_class.json"):
+        """Split the daily MTF book (summed per-scrip amount_financed, ₹ lakhs)
+        into F&O / non-F&O / ETF and write a small time-series JSON for the
+        dashboard's stacked-area composition chart.
+
+        Iterates *every* per-stock daily record across both exchanges — the
+        NSE book and BSE book are separate funding pools that both contribute
+        to total AUM, so records are NOT deduped here. Classification:
+          ETF      — ISIN/symbol in the NSE ETF list, or ISIN starts "INF".
+          F&O      — the stock's NSE underlying is in the F&O segment in that
+                     record's month (point-in-time membership; dual-listed BSE
+                     rows resolve to their NSE symbol via isin_to_nse_symbol).
+          non-F&O  — everything else.
+        No-op (warns) if the universe files are missing."""
+        import bisect
+
+        try:
+            with open(fno_path, encoding="utf-8") as f:
+                membership = json.load(f)
+            with open(etf_path, encoding="utf-8") as f:
+                etf = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.warning("AUM-by-class skipped: cannot read universes (%s). "
+                           "Run fetch_fno_universe.py first.", e)
+            return
+
+        etf_symbols = set(etf.get("symbols", []))
+        etf_isins = set(etf.get("isins", []))
+        fno_sets = {k: set(v) for k, v in membership.items()}
+        months_sorted = sorted(fno_sets)
+
+        # month -> F&O set, carrying the most recent prior month forward (and
+        # the earliest snapshot back for dates before our first month).
+        month_cache = {}
+        def fno_set_for(month):
+            s = month_cache.get(month)
+            if s is not None:
+                return s
+            if month in fno_sets:
+                s = fno_sets[month]
+            elif months_sorted:
+                i = bisect.bisect_right(months_sorted, month) - 1
+                s = fno_sets[months_sorted[max(i, 0)]]
+            else:
+                s = set()
+            month_cache[month] = s
+            return s
+
+        agg = defaultdict(lambda: {"fno": 0.0, "non_fno": 0.0, "etf": 0.0})
+        for records in self.stock_data.values():
+            for rec in records:
+                amt = rec.get("amount_financed") or 0
+                d = rec.get("date")
+                if not amt or not d:
+                    continue
+                isin = (rec.get("isin") or "").strip().upper()
+                sym = (rec.get("symbol") or "").strip().upper()
+                if isin in etf_isins or sym in etf_symbols or isin.startswith("INF"):
+                    cls = "etf"
+                else:
+                    fsym = self.isin_to_nse_symbol.get(isin, sym) if isin else sym
+                    cls = "fno" if fsym in fno_set_for(d[:7]) else "non_fno"
+                agg[d][cls] += amt
+
+        out = []
+        for d in sorted(agg):
+            a = agg[d]
+            total = a["fno"] + a["non_fno"] + a["etf"]
+            out.append({"date": d,
+                        "fno": round(a["fno"], 2),
+                        "non_fno": round(a["non_fno"], 2),
+                        "etf": round(a["etf"], 2),
+                        "total": round(total, 2)})
+
+        with open(output_path, "w", encoding="utf-8") as f:
+            json.dump(out, f, separators=(",", ":"))
+        if out:
+            last = out[-1]
+            logger.info("AUM-by-class written to %s (%d days). Latest %s: "
+                        "F&O %.0f / non-F&O %.0f / ETF %.0f (₹ lakhs)",
+                        output_path, len(out), last["date"],
+                        last["fno"], last["non_fno"], last["etf"])
+
     def run_extraction(self, sample_size=None):
         """Run the complete stock extraction process"""
         logger.info("Starting stock-level MTF data extraction...")
@@ -1189,7 +1274,10 @@ class StockMTFExtractor:
         # Export results
         output_file = "stock_analytics.json"
         self.export_analytics(analytics, output_file)
-        
+
+        # MTF book AUM split (F&O / non-F&O / ETF) for the composition chart.
+        self.export_aum_by_class()
+
         # Print summary
         print("\n" + "="*80)
         print("STOCK-LEVEL MTF ANALYTICS SUMMARY")
